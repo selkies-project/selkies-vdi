@@ -1,0 +1,202 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+   name: vdi
+   annotations:
+     gke.accel.vdi/user: "{{.User}}"
+spec:
+  {{- if .UserParams.enablePersistence}}
+  {{- if eq .UserParams.enablePersistence "true"}}
+  volumeClaimTemplates:
+  - metadata:
+      name: persist
+      annotations:
+        gke.accel.vdi/user: "{{.User}}"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+  {{- end}}
+  {{- end}}
+  template:
+    metadata:
+      annotations:
+        gke.accel.vdi/user: "{{.User}}"
+    spec:
+      nodeSelector:
+        app.broker/initialized: "true"
+        app.broker/tier: {{ .NodeTier.NodeLabel }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: app.broker/initialized
+                    operator: Exists
+                  - key: app.broker/tier
+                    operator: In
+                    values: ["{{ .NodeTier.NodeLabel }}"]
+                  - key: cloud.google.com/gke-accelerator
+                    operator: Exists
+                  {{- if .UserParams.compat32 }}
+                  {{- if eq .UserParams.compat32 "true"}}
+                  - key: cloud.google.com/gke-os-distribution
+                    operator: In
+                    values: ["ubuntu"]
+                  {{- end }}
+                  {{- end }}
+      tolerations:
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "nvidia.com/gpu"
+          effect: "NoSchedule"
+          operator: "Exists"
+      {{- if .UserParams.enablePersistence}}
+      {{- if eq .UserParams.enablePersistence "true"}}
+      initContainers:
+      - name: persist-init
+        image: busybox:latest
+        command: ["/bin/chown", "1000:1000", "/home/app"]
+        volumeMounts:
+        - name: persist
+          mountPath: /home/app
+      {{- end}}
+      {{- end}}
+      containers:
+      {{- if .UserParams.compat32 }}
+      {{- if eq .UserParams.compat32 "true"}}
+      - name: xserver
+        resources:
+          limits:
+            # Virtual uinput mouse for relative mouse motion
+            # control socket is shared with webrtc container.
+            uinput.dev/mouse: 1
+      {{- end}}
+      {{- end}}
+      - name: desktop
+        # Replace image with user provided image from broker.
+        image: {{.ImageRepo}}:{{.ImageTag}}
+        {{- if .UserParams.compat32 }}
+        {{- if eq .UserParams.compat32 "true"}}
+        resources:
+          limits:
+            # hotplug support for uinput devices.
+            # note: does not work with X11 HAL
+            uinput.dev/container: 1
+            # Virtual joystick with control socket shared with webrtc container.
+            uinput.dev/js: 1
+        {{- end}}
+        {{- end}}
+        {{- if .UserParams.enablePersistence}}
+        {{- if eq .UserParams.enablePersistence "true"}}
+        volumeMounts:
+        - name: persist
+          mountPath: /home/app
+        {{- end}}
+        {{- end}}
+        env:
+        - name: VDI_USER
+          value: "{{.User}}"
+        # User params are arbitrary data that can be passed
+        # from the broker at launch time to the environment.
+        {{- if .UserParams.UserParam1}}
+        - name: VDI_USER_PARAM_1
+          value: "{{.UserParams.UserParam1}}"
+        {{- end}}
+        {{- if .UserParams.UserParam2}}
+        - name: VDI_USER_PARAM_2
+          value: "{{.UserParams.UserParam2}}"
+        {{- end}}
+        {{- if .UserParams.UserParam3}}
+        - name: VDI_USER_PARAM_3
+          value: "{{.UserParams.UserParam3}}"
+        {{- end}}
+      #- name: chromoting
+      #  env:
+      #  {{- if .UserParams.crdRedirectURL}}
+      #  - name: CRD_REDIRECT_URL
+      #    value: "{{.UserParams.crdRedirectURL}}"
+      #  {{- end}}
+      #  {{- if .UserParams.crdCode}}
+      #  - name: CRD_CODE
+      #    value: "{{.UserParams.crdCode}}"
+      #  {{- end}}
+      #  {{- if .UserParams.crdPIN}}
+      #  - name: CRD_PIN
+      #    value: "{{.UserParams.crdPIN}}"
+      #  {{- end}}
+      - name: webrtc
+        env:
+        - name: APP_AUTO_INIT
+          value: "{{.UserParams.appAutoInit}}"
+        - name: ENABLE_AUDIO
+          value: "{{.UserParams.enableAudio}}"
+        {{- if .UserParams.compat32 }}
+        {{- if eq .UserParams.compat32 "true"}}
+        - name: UINPUT_MOUSE_SOCKET
+          value: "/var/run/appconfig/mouse0ctl"
+        - name: UINPUT_JS_SOCKET
+          value: "/var/run/appconfig/js0ctl"
+        {{- end}}
+        {{- end}}
+      - name: watchdog
+        env:
+        - name: POD_USER
+          value: "{{.User}}"
+        - name: APP_NAME
+          value: "{{.App}}"
+        {{- if .UserParams.idleShutdown}}
+        - name: WATCHDOG_TIMEOUT
+          value: "{{.AppParams.idleShutdownTimeout}}"
+        {{- end}}
+      {{- if .UserParams.appDev}}
+      {{- if eq .UserParams.appDev "true"}}
+      - name: appdev
+        securityContext:
+          privileged: true
+        tty: true
+        {{- if .UserParams.appDevImage}}
+        image: {{.UserParams.appDevImage}}
+        {{- else}}
+        image: debian:buster
+        {{- end}}
+        imagePullPolicy: Always
+        command: ["/bin/bash", "-c", "while true; do sleep 1000; done"]
+        env:
+          - name: DISPLAY
+            value: ":0"
+          - name: LD_LIBRARY_PATH
+            value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
+        volumeMounts:
+          - name: nvidia
+            mountPath: /usr/local/nvidia
+            readOnly: true
+          # make nvidia-smi available in general PATH
+          - name: nvidia
+            mountPath: /usr/local/bin/nvidia-smi
+            subPath: bin/nvidia-smi
+            readOnly: true
+          # Shared mount for X11 socket.
+          - name: x11
+            mountPath: /tmp/.X11-unix
+      {{- end}}
+      {{- end}}

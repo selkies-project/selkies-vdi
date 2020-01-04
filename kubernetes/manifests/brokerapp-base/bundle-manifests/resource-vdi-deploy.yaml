@@ -1,0 +1,312 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vdi
+spec:
+  selector:
+    app: vdi
+  ports:
+    # Port 80 is the default port routed by the pod broker.
+    - port: 80
+      name: web
+      targetPort: 8082
+    - port: 8080
+      name: signalling
+      targetPort: 8080
+    - port: 8081
+      name: vnc
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vdi
+spec:
+  selector:
+    matchLabels:
+      app: vdi
+  serviceName: vdi
+  replicas: 1
+  volumeClaimTemplates: []
+  template:
+    metadata:
+      labels:
+        app: vdi
+    spec:
+      # Disable service account used for accessing the kubernetes API/
+      automountServiceAccountToken: false
+
+      # Terminate pod after 10 seconds of receiving SIGTERM
+      terminationGracePeriodSeconds: 5
+      volumes:
+        ###
+        # NVIDIA bins and libs from host
+        ###
+        - name: nvidia
+          hostPath:
+            path: /home/kubernetes/bin/nvidia
+        ###
+        # shared x11 socket volume
+        ###
+        - name: x11
+          emptyDir:
+            medium: Memory
+            sizeLimit: 10Mi
+        ###
+        # Shared config volume
+        ###
+        - name: config
+          emptyDir:
+            medium: Memory
+            sizeLimit: 10Mi
+        ###
+        # shared memory mount
+        # used to bypass default container runtime of 64MB
+        ###
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+      containers:
+        ###
+        # NOTE: To speed up container startup time, images are pulled locally in the gpu-node-init daemonset, hence the imagePullPolicy=Never
+        ###
+
+        ###
+        # Xserver container
+        ###
+        - name: xserver
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
+          resources:
+            requests:
+              cpu: 500m
+            limits:
+              # shared GPU
+              nvidia.com/gpu: 1
+
+        ###
+        # Desktop container
+        ###
+        - name: desktop
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop:latest
+          securityContext:
+            privileged: false
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: LD_LIBRARY_PATH
+              value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
+            - name: PULSE_SERVER
+              value: "127.0.0.1:4713"
+          volumeMounts:
+            # Shared pod mount at host for intra-container and cross-pod sharing.
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            # Shared pod mount for intra-container data sharing.
+            - name: config
+              mountPath: /var/run/appconfig
+            # increased shared memory mount
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 2
+            limits:
+              # shared GPU
+              nvidia.com/gpu: 1
+
+        ###
+        # Pulse audio container
+        ###
+        - name: pulseaudio
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: pulseaudio
+              containerPort: 4713
+              protocol: TCP
+
+        ###
+        # NoVNC container
+        ###
+        #- name: novnc
+        #  image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-novnc:latest
+        #  imagePullPolicy: IfNotPresent
+        #  ports:
+        #    - name: novnc
+        #      containerPort: 8081
+        #      protocol: TCP
+        #  readinessProbe:
+        #    httpGet:
+        #      path: /
+        #      port: novnc
+        #  resources:
+        #    requests:
+        #      cpu: 100m
+
+        ###
+        # webrtc container
+        ###
+        - name: webrtc
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          # tty required to gather gpu stats using nvidia-smi and GPUtil python module.
+          tty: true
+          env:
+            - name: GST_DEBUG
+              value: "*:2"
+            - name: LD_LIBRARY_PATH
+              value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
+            - name: DISPLAY
+              value: ":0"
+            - name: "PULSE_SERVER"
+              value: "127.0.0.1:4713"
+            - name: SIGNALLING_SERVER
+              value: "ws://127.0.0.1:8080"
+            - name: "COTURN_AUTH_HEADER_NAME"
+              value: "x-goog-authenticated-user-email"
+            - name: COTURN_WEB_URI
+              value: "http://turn/"
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+          resources:
+            requests:
+              cpu: 500m
+            limits:
+              nvidia.com/gpu: 1
+
+        ###
+        # WebRTC metrics exporter container
+        ###
+        - name: webrtc-metrics
+          image: gcr.io/google-containers/prometheus-to-sd:v0.7.2
+          command:
+            - /monitor
+            - --source=:http://localhost:8000
+            - --stackdriver-prefix=custom.googleapis.com
+            - --pod-id=$(POD_NAME)
+            - --namespace-id=$(POD_NAMESPACE)
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+        ###
+        # signalling container
+        ###
+        - name: signalling
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: signalling
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: signalling
+          resources:
+            requests:
+              cpu: 100m
+
+        ###
+        # web container
+        ###
+        - name: web
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh"]
+          args:
+            - -exc
+            - |
+              sed -i \
+                  -e 's/listen.*80;/listen 8082;/g' \
+                  /etc/nginx/conf.d/default.conf
+
+              exec nginx -g 'daemon off;'
+          ports:
+            - name: web
+              containerPort: 8082
+          readinessProbe:
+            httpGet:
+              path: /
+              port: web
+          resources:
+            requests:
+              cpu: 100m
+
+        ###
+        # Chrome remote desktop container
+        ###
+        #- name: chromoting
+        #  image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-chromoting:latest
+        #  imagePullPolicy: IfNotPresent
+        #  env:
+        #    - name: DISPLAY
+        #      value: ":0"
+        #  volumeMounts:
+        #    # Shared mount for X11 socket.
+        #    - name: x11
+        #      mountPath: /tmp/.X11-unix
+
+        ###
+        # Watchdog container
+        ###
+        - name: watchdog
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "/usr/bin/python3",
+              "/opt/app/xserver_watchdog.py",
+              "--on_timeout=/opt/app/watchdog.sh",
+            ]
+          env:
+            - name: DISPLAY
+              value: ":0"
+            - name: POD_USER
+              value: vdi
+            - name: APP_NAME
+              value: desktop
+            - name: WATCHDOG_TIMEOUT
+              value: "3600"
+            - name: POD_BROKER_SVC
+              value: "http://pod-broker:8080"
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix

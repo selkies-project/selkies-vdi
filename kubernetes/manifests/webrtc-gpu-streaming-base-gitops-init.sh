@@ -1,0 +1,1 @@
+../scripts/gitops-init.sh

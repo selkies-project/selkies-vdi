@@ -1,0 +1,330 @@
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: uinput-device-plugin
+  namespace: kube-system
+  labels:
+    k8s-app: uinput-device-plugin
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: uinput-device-plugin
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        k8s-app: uinput-device-plugin
+    spec:
+      dnsPolicy: ClusterFirst
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 10
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cloud.google.com/gke-accelerator
+                    operator: Exists
+                  - key: gke.accel.vdi/node-init
+                    operator: In
+                    values: ["true"]
+      tolerations:
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: uinput-sockets
+          hostPath:
+            path: /tmp/.uinput
+        - name: docker
+          hostPath:
+            path: /var/run/docker.sock
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+      initContainers:
+        - name: copy-helper
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              rm -f /var/lib/kubelet/device-plugins/uinput-helper
+              cp /usr/bin/uinput-helper /var/lib/kubelet/device-plugins/
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+      containers:
+        ###
+        # Python script to create pool of uinput devices
+        ###
+        - name: uinput-devices
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          securityContext:
+            privileged: true
+          command: ["/usr/local/bin/python3", "/opt/app/uinput_devices.py"]
+          #command: ["/bin/bash"]
+          #args:
+          #  - -ec
+          #  - |
+          #    echo "waiting for /tmp/manual_init_done"
+          #    while [[ ! -f /tmp/manual_init_done ]]; do sleep 1; done
+          #    python3 /opt/app/uinput_devices.py
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: UINPUT_NUM_MICE
+              value: "16"
+            - name: UINPUT_NUM_JS
+              value: "16"
+            - name: UINPUT_MICE_NAME
+              value: "Virtual Input Mouse"
+            - name: UINPUT_MICE_READY_FILE
+              value: "/tmp/.uinput/mouse_devices_ready"
+            - name: UINPUT_JS_READY_FILE
+              value: "/tmp/.uinput/js_devices_ready"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  [
+                    "/usr/local/bin/python3",
+                    "/opt/app/uinput_devices.py",
+                    "--cleanup",
+                  ]
+
+        ###
+        # uinput.dev/mouse device plugin
+        ###
+        - name: mouse-uinput-device-plugin
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "INFO: Wating for devices sidecar."
+              while [[ ! -f "${READY_FILE}" ]]; do sleep 0.5; done
+              echo "INFO: Sidecar is ready."
+
+              /usr/bin/uinput-device-plugin \
+                -logtostderr \
+                -resource-name ${RESOURCE_NAME} \
+                -device-pattern ${DEVICE_PATTERN}
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: READY_FILE
+              value: "/tmp/.uinput/mouse_devices_ready"
+            - name: RESOURCE_NAME
+              value: "uinput.dev/mouse"
+            - name: DEVICE_PATTERN
+              value: "^mouse[0-9]+$"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+        ###
+        # uinput.dev/js device plugin
+        ###
+        - name: js-uinput-device-plugin
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "INFO: Wating for devices sidecar."
+              while [[ ! -f "${READY_FILE}" ]]; do sleep 0.5; done
+              echo "INFO: Sidecar is ready."
+
+              /usr/bin/uinput-device-plugin \
+                -logtostderr \
+                -resource-name ${RESOURCE_NAME} \
+                -device-pattern ${DEVICE_PATTERN}
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: READY_FILE
+              value: "/tmp/.uinput/js_devices_ready"
+            - name: RESOURCE_NAME
+              value: "uinput.dev/js"
+            - name: DEVICE_PATTERN
+              value: "^js[0-9]+$"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+        ###
+        # uinput.dev/container device plugin
+        ###
+        - name: container-uinput-device-plugin
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "INFO: Wating for control sockets sidecar."
+              while [[ ! -f "${READY_FILE}" ]]; do sleep 0.5; done
+              echo "INFO: Sidecar is ready."
+
+              /usr/bin/uinput-device-plugin \
+                -logtostderr \
+                -resource-name ${RESOURCE_NAME} \
+                -device-pattern ${DEVICE_PATTERN}
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: READY_FILE
+              value: "/tmp/.uinput/ctl_devices_ready"
+            - name: RESOURCE_NAME
+              value: "uinput.dev/container"
+            - name: DEVICE_PATTERN
+              value: "^uinputctl[0-9]+$"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+        ###
+        # uinput.dev/pod device plugin
+        ###
+        - name: pod-uinput-device-plugin
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "INFO: Wating for control sockets sidecar."
+              while [[ ! -f "${READY_FILE}" ]]; do sleep 0.5; done
+              echo "INFO: Sidecar is ready."
+
+              /usr/bin/uinput-device-plugin \
+                -logtostderr \
+                -resource-name ${RESOURCE_NAME} \
+                -device-pattern ${DEVICE_PATTERN}
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: READY_FILE
+              value: "/tmp/.uinput/ctl_devices_ready"
+            - name: RESOURCE_NAME
+              value: "uinput.dev/pod"
+            - name: DEVICE_PATTERN
+              value: "^uinputctl[0-9]+$"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+        ###
+        # Monitor for creating the uinputctl sockets and reacting to messages.
+        ###
+        - name: monitor-uinput-device-plugin
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              /usr/bin/uinput-monitor \
+                -logtostderr \
+                -socket-dir ${SOCKET_DIR} \
+                -num-sockets ${NUM_SOCKETS} \
+                -device-file-mode ${DEVICE_FILE_MODE} \
+                -ready-file ${READY_FILE}
+          env:
+            - name: SOCKET_DIR
+              value: "/tmp/.uinput"
+            - name: NUM_SOCKETS
+              value: "16"
+            - name: DEVICE_FILE_MODE
+              value: "0666"
+            - name: READY_FILE
+              value: "/tmp/.uinput/ctl_devices_ready"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /device-plugin
+            - name: dev
+              mountPath: /dev
+            - name: uinput-sockets
+              mountPath: /tmp/.uinput
+            - name: docker
+              mountPath: /var/run/docker.sock
+            - name: sys
+              mountPath: /hostfs/sys
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi

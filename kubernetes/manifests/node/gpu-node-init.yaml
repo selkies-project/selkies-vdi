@@ -1,0 +1,191 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpu-node-init
+  namespace: kube-system
+  labels:
+    app: gpu-node-init
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gpu-node-init
+  labels:
+    app: gpu-node-init
+subjects:
+  - kind: ServiceAccount
+    name: gpu-node-init
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: gpu-node-init
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: gpu-node-init
+  labels:
+    app: gpu-node-init
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["nodes", "pods"]
+    verbs: ["*"]
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: gpu-node-init
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: gpu-node-init
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  template:
+    metadata:
+      labels:
+        app: gpu-node-init
+    spec:
+      # Service account with permissions to modify node when finished.
+      serviceAccountName: gpu-node-init
+      # [START gpu_node_init_scheduling]
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cloud.google.com/gke-accelerator-initialized
+                    operator: In
+                    values: ["true"]
+                  - key: app.broker/initialized
+                    operator: Exists
+      tolerations:
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "cloud.google.com/gke-accelerator-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "nvidia.com/gpu"
+          effect: "NoSchedule"
+          operator: "Exists"
+      # [END gpu_node_init_scheduling]
+      volumes:
+        ###
+        # Local docker socket for pulling images
+        ###
+        - name: docker
+          hostPath:
+            path: /var/run/docker.sock
+            type: File
+        ###
+        # Root filesystem from host
+        ###
+        - name: root-mount
+          hostPath:
+            path: /
+      initContainers:
+        ###
+        # Patch the nvidia-gpu-device-plugin pod with the new image
+        # The daemonset is loaded on the master node and not accessible.
+        # Patches to the daemonset would be replaced automatically with the node version.
+        # As a workaround, just patch the pod with a new image.
+        # This can be removed PR #122 has been merged.
+        # https://github.com/GoogleCloudPlatform/container-engine-accelerators/pull/122
+        ###
+        - name: gpu-plugin-patch
+          image: gcr.io/cloud-builders/kubectl:latest
+          resources:
+            requests:
+              cpu: 0.15
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              export PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/project/project-id)
+              export NVIDIA_GPU_DEVICE_PLUGIN_IMAGE="gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-nvidia-gpu-device-plugin:latest"
+              cat > patch.yaml <<EOF
+              spec:
+                containers:
+                - name: nvidia-gpu-device-plugin
+                  image: ${NVIDIA_GPU_DEVICE_PLUGIN_IMAGE?}
+              EOF
+
+              POD=$(kubectl get pod -n kube-system -l k8s-app=nvidia-gpu-device-plugin --field-selector spec.nodeName=${MY_NODE_NAME} -o jsonpath='{..metadata.name}')
+              if [[ -n "${POD}" ]]; then
+                kubectl -n kube-system patch pod ${POD} --type strategic --patch "$(cat patch.yaml)"
+              else
+                echo "ERROR: pod not found: ${POD}"
+                exit 1
+              fi
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+        ###
+        # Load the uinput kernel module.
+        ###
+        - name: uinput-modprobe
+          image: "debian:buster"
+          resources:
+            requests:
+              cpu: 0.15
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              apt-get update
+              apt-get install -y kmod
+              chroot /root modprobe uinput
+          volumeMounts:
+            - name: root-mount
+              mountPath: /root
+        ###
+        # Remove taint and update node label when finished.
+        ###
+        - name: node-init
+          image: gcr.io/cloud-builders/kubectl:latest
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              # remove taint
+              kubectl taint node "${MY_NODE_NAME}" app.broker/node-init:NoSchedule- || true
+
+              # update node label
+              kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/node-init=true
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+      containers:
+        ###
+        # pause container
+        ###
+        - image: "gcr.io/google-containers/pause:2.0"
+          name: pause

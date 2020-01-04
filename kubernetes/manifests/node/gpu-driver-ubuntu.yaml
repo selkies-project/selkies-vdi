@@ -1,0 +1,244 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The Dockerfile and other source for this daemonset are in
+# https://github.com/GoogleCloudPlatform/cos-gpu-installer
+#
+# This is the same as ../../daemonset.yaml except that it assumes that the
+# docker image is present on the node instead of downloading from GCR. This
+# allows easier upgrades because GKE can preload the correct image on the
+# node and the daemonset can just use that image.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nvidia-driver-installer-ubuntu
+  namespace: kube-system
+  labels:
+    app: nvidia-driver-installer-ubuntu
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: nvidia-driver-installer-ubuntu
+  labels:
+    app: nvidia-driver-installer-ubuntu
+subjects:
+  - kind: ServiceAccount
+    name: nvidia-driver-installer-ubuntu
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: nvidia-driver-installer-ubuntu
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: nvidia-driver-installer-ubuntu
+  labels:
+    app: nvidia-driver-installer-ubuntu
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["nodes"]
+    verbs: ["*"]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-driver-installer-ubuntu
+  namespace: kube-system
+  labels:
+    k8s-app: nvidia-driver-installer-ubuntu
+spec:
+  selector:
+    matchLabels:
+      k8s-app: nvidia-driver-installer-ubuntu
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: nvidia-driver-installer-ubuntu
+        k8s-app: nvidia-driver-installer-ubuntu
+    spec:
+      # Service account with permissions to modify node when finished.
+      serviceAccountName: nvidia-driver-installer-ubuntu
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cloud.google.com/gke-accelerator-initialized
+                    operator: In
+                    values: ["false"]
+                  - key: cloud.google.com/gke-accelerator
+                    operator: Exists
+                  - key: cloud.google.com/gke-os-distribution
+                    operator: In
+                    values: ["ubuntu"]
+      tolerations:
+        - key: gke.accel.vdi/node-init
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "cloud.google.com/gke-accelerator-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "nvidia.com/gpu"
+          effect: "NoSchedule"
+          operator: "Exists"
+      hostNetwork: true
+      hostPID: true
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: boot
+          hostPath:
+            path: /boot
+        - name: root-mount
+          hostPath:
+            path: /
+      initContainers:
+        - image: "ubuntu:18.04"
+          name: nvidia-driver-installer-ubuntu
+          command: ["/usr/sbin/chroot", "/root", "/bin/bash"]
+          args:
+            - -exc
+            - |
+              if [[ -d /home/kubernetes/bin/nvidia/drivers ]]; then
+                echo "Driver already installed, installing kernel modules."
+                for m in /home/kubernetes/bin/nvidia/drivers/updates/dkms/*.ko; do
+                  insmod $m || true
+                done
+                exit 0
+              fi
+
+              mkdir -p /home/kubernetes/bin/nvidia
+              cd /home/kubernetes/bin/nvidia
+
+              # Add the NVIDIA PPA and i386 architecture support.
+              apt-get update
+              apt-get install -y --no-install-recommends software-properties-common dialog
+              add-apt-repository -y ppa:graphics-drivers/ppa
+              dpkg --add-architecture i386
+              apt-get update
+
+              # Install as many of the dependencies as possible before mounting 
+              # the overlayfs to reduce the number of bins and libs that will be mounted
+              # into runtime containers.
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                  build-essential \
+                  dkms \
+                  keyboard-configuration \
+                  xserver-xorg-core \
+                  xorg-dev
+
+              # auto-unmount overlays on exit
+              trap "{ umount /lib/modules/\"$(uname -r)\"; umount /usr/lib/x86_64-linux-gnu ; umount /usr/lib/i386-linux-gnu ; umount /usr/bin; }" EXIT
+
+              # Save files installed to /usr/bin
+              mkdir -p bin bin-workdir
+              mount -t overlay -o lowerdir=/usr/bin,upperdir=bin,workdir=bin-workdir none /usr/bin
+
+              # Save kernel modules installed to /lib/modules
+              mkdir -p drivers drivers-workdir
+              mkdir -p /lib/modules/"$(uname -r)"
+              mount -t overlay -o lowerdir=/lib/modules/"$(uname -r)",upperdir=drivers,workdir=drivers-workdir none /lib/modules/"$(uname -r)"
+
+              # Save 32 bit libs installed to /usr/lib/i386-linux-gnu
+              mkdir -p lib32 lib32-workdir
+              mkdir -p /usr/lib/i386-linux-gnu
+              mount -t overlay -o lowerdir=/usr/lib/i386-linux-gnu,upperdir=lib32,workdir=lib32-workdir none /usr/lib/i386-linux-gnu
+
+              # Save 64 bit libs installed to /usr/lib/x86_64-linux-gnu
+              mkdir -p lib64 lib64-workdir
+              mkdir -p /usr/lib/x86_64-linux-gnu
+              mount -t overlay -o lowerdir=/usr/lib/x86_64-linux-gnu,upperdir=lib64,workdir=lib64-workdir none /usr/lib/x86_64-linux-gnu
+
+              # Install nvidia driver and libs.
+              # Any files created in the mounted overlay dirs will be saved.
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                nvidia-driver-440 \
+                libnvidia-gl-440 \
+                libnvidia-encode-440 \
+                libnvidia-gl-440:i386 \
+                libnvidia-compute-440:i386 \
+                nvidia-cuda-dev
+
+              # Install kernel modules
+              modprobe nvidia-drm modeset=0
+              modprobe nvidia
+              modprobe nvidia-uvm
+              modprobe nvidia-modeset
+
+              # Verify installation
+              ./bin/nvidia-smi
+
+              touch /tmp/nvidia_driver_install_complete
+
+          resources:
+            requests:
+              cpu: 0.15
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: boot
+              mountPath: /boot
+            - name: dev
+              mountPath: /dev
+            - name: root-mount
+              mountPath: /root
+
+        ###
+        # Remove taint and update node label when finished.
+        ###
+        - name: node-init
+          image: gcr.io/cloud-builders/kubectl:latest
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              # Create symlinks to NVIDIA device to support GPU sharing.
+              OLD_DEV=/dev/nvidia0
+              if [[ -c "${OLD_DEV}" ]]; then
+                for i in $(seq 1 $(($NVIDIA_0_SHARE - 1))); do
+                  NEW_DEV=/dev/nvidia${i}
+                  echo "Linking $OLD_DEV -> $NEW_DEV"
+                  ln -sf $OLD_DEV $NEW_DEV
+                done
+              else
+                echo "Missing ${OLD_DEV}, skipping symlink creation"
+              fi
+
+              # remove taint
+              kubectl taint node "${MY_NODE_NAME}" cloud.google.com/gke-accelerator-init:NoSchedule- || true
+
+              # update node label to unschedule self
+              kubectl label node "${MY_NODE_NAME}" --overwrite cloud.google.com/gke-accelerator-initialized=true
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+          env:
+            - name: NVIDIA_0_SHARE
+              value: "48"
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+      containers:
+        - image: "gcr.io/google-containers/pause:2.0"
+          name: pause

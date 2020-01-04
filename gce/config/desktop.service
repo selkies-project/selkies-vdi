@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+
+[Service]
+Environment=RESOLUTION=1920x1080
+Environment=PULSE_SERVER=127.0.0.1
+ExecStart=%h/bin/start_desktop.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

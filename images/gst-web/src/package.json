@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint --fix ."
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "eslint-plugin-vue": "^5.2.3"
+  }
+}

@@ -1,0 +1,33 @@
+# Copyright 2019 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+namespace: kube-system
+
+commonLabels:
+  app.kubernetes.io/name: vdi
+
+resources:
+  # GPU driver daemonset
+  - gpu-driver-cos-config.yaml
+  - gpu-driver-cos.yaml
+  - gpu-driver-ubuntu.yaml
+
+  # Node init daemonset that pulls images and builds runtime libraries.
+  - gpu-node-init.yaml
+
+  # Enable GPU sharing with daemonset that creates symlinks
+  - gpu-sharing.yaml
+  # Device plugin to allow non-privileged containers to use /dev/uinput
+  # Required for virtual mouse (capture) and gamepad support.
+  #- uinput-device-plugin.yaml

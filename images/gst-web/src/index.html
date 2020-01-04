@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vuetify/1.5.14/vuetify.min.css" rel="stylesheet" />
+  <style>
+    html {
+      font-family: Roboto, Arial, sans;
+    }
+
+    .scrolly textarea {
+      min-height: 300px;
+      white-space: pre;
+      overflow: scroll;
+    }
+
+    .fab-container {
+      top: 50%;
+      right: -25px;
+    }
+
+    .video-container {
+      background-color: black;
+      width: 100%;
+      height: 100%;
+    }
+
+    .video-container video {
+      object-fit: cover;
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      text-align: center;
+      color: #E0E0E0;
+    }
+
+    .loading-text {
+      margin-top: 1em;
+    }
+
+    canvas {
+      background: black;
+    }
+  </style>
+  <title>WebRTC</title>
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <v-navigation-drawer v-model="showDrawer" app fixed right temporary width="600">
+        <v-container fluid grid-list-lg>
+          <v-layout row wrap>
+            <v-flex xs12>
+              <p>
+                <v-toolbar>
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4"
+                        :value="videoBitRate === 0 ? 0 : (connectionVideoBitrate / (videoBitRate / 1000))*100"
+                        color="teal">
+                        {{ connectionVideoBitrate }}
+                      </v-progress-circular>
+                    </template>
+                    <span>Current video bit rate in mbps vs selected bit rate {{ (videoBitRate / 1000).toFixed(0) }}
+                      mbps</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="(connectionFrameRate / 60)*100" color="blue-grey">
+                        {{ connectionFrameRate }}
+                      </v-progress-circular>
+                    </template>
+                    <span>Current FPS vs 60 FPS</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="(connectionLatency / 1000)*100" color="red">
+                        {{ connectionLatency }}
+                      </v-progress-circular>
+                    </template>
+                    <span>Current max(video, audio) latency in milliseconds</span>
+                  </v-tooltip>
+
+                  <v-divider class="mr-1" vertical></v-divider>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="gpuLoad" color="blue">
+                        {{ gpuLoad }}
+                      </v-progress-circular>
+                    </template>
+                    <span>Current GPU load</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="gpuMemoryTotal === 0 ? 0 : (gpuMemoryUsed / gpuMemoryTotal) * 100"
+                        color="blue-grey">
+                        {{ (gpuMemoryUsed / 1024).toFixed(2) }}
+                      </v-progress-circular>
+                    </template>
+                    <span>Current GPU memory GB used of the {{ (gpuMemoryTotal / 1024).toFixed(0) }}GB available</span>
+                  </v-tooltip>
+
+                  <v-divider class="mr-1" vertical></v-divider>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-btn icon v-on:click="enterFullscreen()">
+                        <v-icon color="black" v-on="on">fullscreen</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Enter fullscreen mode (CTRL+SHIFT+F)</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-btn icon href="/">
+                        <v-icon color="black" v-on="on">home</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Return to launcher</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom v-if="gamepadState === 'connected'">
+                    <template v-slot:activator="{ on }">
+                      <v-icon color="black" v-on="on">videogame_asset</v-icon>
+                    </template>
+                    <span>Gamepad connected: {{ gamepadName }}</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom v-else>
+                    <template v-slot:activator="{ on }">
+                      <v-icon color="grey" v-on="on">videogame_asset</v-icon>
+                    </template>
+                    <span>Gamepad disconnected</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-icon class="ml-2" color="black" v-on="on">account_circle</v-icon>
+                    </template>
+                    <span>Logged in as {{ getUsername() }} </span>
+                  </v-tooltip>
+                </v-toolbar>
+              </p>
+              <p>
+                <v-select :items="videoBitRateOptions" label="Video bit rate" menu-props="left" v-model="videoBitRate"
+                  hint="Dynamic bit rate selection for hardware encoder on server" persistent-hint></v-select>
+              </p>
+              <p>
+                <v-select :items="audioBitRateOptions" label="Audio bit rate" menu-props="left" v-model="audioBitRate"
+                  hint="Dynamic bit rate selection for audio encoder on server" persistent-hint></v-select>
+              </p>
+              <p>
+                <ul>
+                  <li>Peer connection state: <b>{{ status }}</b></li>
+                  <li>Peer connection type: <b>{{ connectionStatType }}</b></li>
+                  <li>Packets received: <b>{{ connectionPacketsReceived }}</b></li>
+                  <li>Packets lost: <b>{{ connectionPacketsLost }}</b></li>
+                </ul>
+                Bandwidth Stats:
+                <ul>
+                  <li>Video receive rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
+                  <li>Available receive bandwith: <b>{{ connectionAvailableBandwidth }}</b></li>
+                </ul>
+                Video Stats
+                <ul>
+                  <li>Latency: <b>{{ connectionVideoLatency }} ms</b></li>
+                  <li>Video: <b>{{ connectionCodec }} {{ connectionResolution }}</b></li>
+                  <li>Video decoder: <b>{{ connectionVideoDecoder }}</b></li>
+                  <li>Frame rate: <b>{{ connectionFrameRate }} fps</b></li>
+                  <li>Bit rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
+                </ul>
+                Audio Stats
+                <ul>
+                  <li>Latency: <b>{{ connectionAudioLatency }} ms</b></li>
+                  <li>Codec: <b>{{ connectionAudioCodecName }}</b></li>
+                  <li>Bit rate: <b>{{ connectionAudioBitrate }} kbps</b></li>
+                </ul>
+              </p>
+              <hr />
+              <v-textarea bottom class="scrolly" label="Status Logs" readonly :value="logEntries.join('\n\n')">
+              </v-textarea>
+              <v-textarea bottom class="scrolly" label="Debug Logs" readonly :value="debugEntries.join('\n\n')">
+              </v-textarea>
+              <p>
+                Debugging
+                <v-switch v-model="debug" :label="`Debug logs: ${debug.toString()}`"></v-switch>
+                <v-switch v-model="turnSwitch" :label="`Force relay connection: ${turnSwitch.toString()}`"></v-switch>
+              </p>
+            </v-flex>
+          </v-layout>
+        </v-container>
+      </v-navigation-drawer>
+
+      <div id="video_container" class="video-container">
+        <video id="stream" preload="none" playsinline>
+          Your browser doesn't support video
+        </video>
+      </div>
+
+      <canvas id="capture"></canvas>
+
+      <v-btn class="fab-container" v-on:click="showDrawer=!showDrawer" color="grey" fab dark fixed right>
+        <v-icon>chevron_left</v-icon>
+      </v-btn>
+
+      <div class="loading">
+        <div v-if="status === 'failed'">
+          <v-btn v-on:click="location.reload()" color="#E0E0E0">
+            reload</v-btn>
+          <div class="loading-text">Connection failed.</div>
+        </div>
+        <div v-else>
+          <scale-loader size="200px" :loading="(status !== 'connected')" color="#E0E0E0"></scale-loader>
+          <div v-if="(status !== 'connected')" class="loading-text">{{ loadingText }}</div>
+          <v-btn v-if="(status === 'connected' && showStart)" v-on:click="playVideo()" color="#E0E0E0">
+            start</v-btn>
+        </div>
+      </div>
+    </v-app>
+  </div>
+</body>
+
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apache-guacamole-client@0.9.14/dist/guacamole.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.9/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vuetify/1.5.14/vuetify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-spinner@1.0.3/dist/vue-spinner.min.js"></script>
+<script src="gamepad.js"></script>
+<script src="input.js"></script>
+<script src="signalling.js"></script>
+<script src="webrtc.js"></script>
+<script src="app.js"></script>
+
+</html>

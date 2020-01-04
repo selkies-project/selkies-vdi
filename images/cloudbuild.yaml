@@ -1,0 +1,378 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 3600s
+options:
+  machineType: "N1_HIGHCPU_32"
+  diskSizeGb: "512"
+
+substitutions:
+  _USE_CACHE: "true"
+  _IMAGE_PREFIX: webrtc-gpu-streaming
+  _IMAGE_TAG: latest
+
+###
+# Images to be pushed
+###
+images: [
+    # gst-base
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:latest',
+    # gst-webrtc-app
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest',
+    # gst-web
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:latest',
+    # signaling
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:latest',
+    # chromoting
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:latest',
+    # desktop
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest',
+    # novnc
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:latest',
+    # xserver
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest',
+    # pulseaudio
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest',
+    # app-streaming
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest',
+    # nvidia-gpu-device-plugin
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
+]
+
+steps:
+###
+# Gstreamer base image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-base-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-base
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:latest',
+            'gst-base'
+        ]
+  waitFor:
+    - gst-base-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-base-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:latest',
+        ]
+  waitFor:
+    - gst-base
+
+###
+# WebRTC app image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-webrtc-app-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-webrtc-app
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest',
+            '--build-arg', 'BASE_IMAGE=gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-base:${_IMAGE_TAG}',
+            'gst-webrtc-app'
+        ]
+  waitFor:
+    - gst-webrtc-app-pull
+    - gst-base
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-webrtc-app-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest',
+        ]
+  waitFor:
+    - gst-webrtc-app
+
+###
+# WebRTC web app image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-web-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-web
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:latest',
+            'gst-web'
+        ]
+  waitFor:
+    - gst-web-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: gst-web-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-web:latest',
+        ]
+  waitFor:
+    - gst-web
+
+###
+# WebRTC signaling image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: signaling-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: signaling
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:latest',
+            'signaling'
+        ]
+  waitFor:
+    - signaling-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: signaling-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-signaling:latest',
+        ]
+  waitFor:
+    - signaling
+
+###
+# Chrome remote desktop image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: chromoting-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: chromoting
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:latest',
+            'chromoting'
+        ]
+  waitFor:
+    - chromoting-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: chromoting-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-chromoting:latest',
+        ]
+  waitFor:
+    - chromoting
+
+###
+# Base desktop image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: desktop-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: desktop
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest',
+            'desktop'
+        ]
+  waitFor:
+    - desktop-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: desktop-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest',
+        ]
+  waitFor:
+    - desktop
+
+###
+# NoVNC image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: novnc-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: novnc
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:latest',
+            'novnc'
+        ]
+  waitFor:
+    - novnc-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: novnc-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:latest',
+        ]
+  waitFor:
+    - novnc
+
+###
+# XServer image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: xserver-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: xserver
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest',
+            'xserver'
+        ]
+  waitFor:
+    - xserver-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: xserver-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest',
+        ]
+  waitFor:
+    - xserver
+
+###
+# Pulseaudio image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: pulseaudio-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: pulseaudio
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest',
+            'pulseaudio'
+        ]
+  waitFor:
+    - pulseaudio-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: pulseaudio-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest',
+        ]
+  waitFor:
+    - pulseaudio
+
+###
+# App streaming image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: app-streaming-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: app-streaming
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest',
+            'app-streaming'
+        ]
+  waitFor:
+    - app-streaming-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: app-streaming-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest',
+        ]
+  waitFor:
+    - app-streaming
+
+###
+# NVIDIA device plugin image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: nvidia-gpu-device-plugin-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: gcr.io/cloud-builders/git
+  id: nvidia-gpu-device-plugin-clone
+  args: ['clone', 'https://github.com/danisla/container-engine-accelerators', '-b', 'add-modeset-device']
+  waitFor:
+    - nvidia-gpu-device-plugin-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: nvidia-gpu-device-plugin-build
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
+            'container-engine-accelerators'
+        ]
+  waitFor:
+    - nvidia-gpu-device-plugin-clone
+- name: 'gcr.io/cloud-builders/docker'
+  id: nvidia-gpu-device-plugin-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
+        ]
+  waitFor:
+    - nvidia-gpu-device-plugin-build

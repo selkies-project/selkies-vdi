@@ -1,0 +1,18 @@
+# Generated resources
+**/generated/
+kubernetes/manifests/production-*
+kubernetes/manifests/staging-*
+kubernetes/manifests/testing-*
+
+# Terraform stuff
+**/.terraform*
+**/terraform.tfstate*
+**/terraform.tfvars
+
+# Misc
+my-images/
+**/NOTES.md
+deploy-*.sh
+
+# Python stuff
+**/__pycache__
