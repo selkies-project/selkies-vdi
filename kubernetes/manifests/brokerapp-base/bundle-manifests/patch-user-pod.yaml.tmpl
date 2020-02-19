@@ -95,6 +95,13 @@ spec:
       - name: desktop
         # Replace image with user provided image from broker.
         image: {{.ImageRepo}}:{{.ImageTag}}
+        # Allow entrypoint command override from app config spec.
+        {{- if .AppParams.command}}
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            {{ .AppParams.command}}
+        {{- end}}
         {{- if .UserParams.compat32 }}
         {{- if eq .UserParams.compat32 "true"}}
         resources:
