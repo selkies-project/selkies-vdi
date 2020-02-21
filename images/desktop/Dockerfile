@@ -25,10 +25,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         vim \
         emacs \
         curl \
-        gdebi-core
+        gdebi-core \
+        gnupg2
 
 # Install Chrome browser
-RUN curl -sfLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
+    curl -sfLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     gdebi -n google-chrome-stable_current_amd64.deb
 
 # Install desktop environment and terminal
