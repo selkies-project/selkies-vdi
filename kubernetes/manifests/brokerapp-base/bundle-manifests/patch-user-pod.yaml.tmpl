@@ -102,8 +102,8 @@ spec:
           - |
             {{ .AppParams.command}}
         {{- end}}
-        {{- if .UserParams.compat32 }}
-        {{- if eq .UserParams.compat32 "true"}}
+        {{- if .UserParams.enableJoystick }}
+        {{- if eq .UserParams.enableJoystick "true"}}
         resources:
           limits:
             # hotplug support for uinput devices.
@@ -152,6 +152,10 @@ spec:
         {{- if eq .UserParams.compat32 "true"}}
         - name: UINPUT_MOUSE_SOCKET
           value: "/var/run/appconfig/mouse0ctl"
+        {{- end}}
+        {{- end}}
+        {{- if .UserParams.enableJoystick }}
+        {{- if eq .UserParams.enableJoystick "true"}}
         - name: UINPUT_JS_SOCKET
           value: "/var/run/appconfig/js0ctl"
         {{- end}}

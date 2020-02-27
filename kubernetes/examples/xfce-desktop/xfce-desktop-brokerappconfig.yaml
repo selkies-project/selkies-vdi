@@ -66,6 +66,10 @@ spec:
       displayName: "Audio"
       type: bool
       default: "false"
+    - name: enableJoystick
+      displayName: "Enable Gamepad"
+      type: bool
+      default: "false"
     - name: idleShutdown
       displayName: "Idle Shutdown"
       type: bool

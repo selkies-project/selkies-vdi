@@ -99,12 +99,6 @@ spec:
           hostPath:
             path: /var/run/docker.sock
             type: File
-        ###
-        # Root filesystem from host
-        ###
-        - name: root-mount
-          hostPath:
-            path: /
       initContainers:
         ###
         # Patch the nvidia-gpu-device-plugin pod with the new image
@@ -144,26 +138,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-        ###
-        # Load the uinput kernel module.
-        ###
-        - name: uinput-modprobe
-          image: "debian:buster"
-          resources:
-            requests:
-              cpu: 0.15
-          securityContext:
-            privileged: true
-          command: ["/bin/bash"]
-          args:
-            - -exc
-            - |
-              apt-get update
-              apt-get install -y kmod
-              chroot /root modprobe uinput
-          volumeMounts:
-            - name: root-mount
-              mountPath: /root
         ###
         # Remove taint and update node label when finished.
         ###

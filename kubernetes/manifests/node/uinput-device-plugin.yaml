@@ -43,9 +43,6 @@ spec:
               - matchExpressions:
                   - key: cloud.google.com/gke-accelerator
                     operator: Exists
-                  - key: gke.accel.vdi/node-init
-                    operator: In
-                    values: ["true"]
       tolerations:
         - effect: NoExecute
           operator: Exists
@@ -68,7 +65,30 @@ spec:
           hostPath:
             path: /sys
             type: Directory
+        - name: root-mount
+          hostPath:
+            path: /
       initContainers:
+        ###
+        # Load the uinput kernel module.
+        ###
+        - name: uinput-modprobe
+          image: "debian:buster"
+          resources:
+            requests:
+              cpu: 0.15
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              apt-get update
+              apt-get install -y kmod
+              chroot /root modprobe uinput
+          volumeMounts:
+            - name: root-mount
+              mountPath: /root
         - name: copy-helper
           image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           command: ["/bin/bash"]
@@ -291,7 +311,6 @@ spec:
         ###
         - name: monitor-uinput-device-plugin
           image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
-          imagePullPolicy: Always
           securityContext:
             privileged: true
           command: ["/bin/bash"]
