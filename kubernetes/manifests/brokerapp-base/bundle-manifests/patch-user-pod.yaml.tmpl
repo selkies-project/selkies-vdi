@@ -123,19 +123,10 @@ spec:
         env:
         - name: VDI_USER
           value: "{{.User}}"
-        # User params are arbitrary data that can be passed
-        # from the broker at launch time to the environment.
-        {{- if .UserParams.UserParam1}}
-        - name: VDI_USER_PARAM_1
-          value: "{{.UserParams.UserParam1}}"
-        {{- end}}
-        {{- if .UserParams.UserParam2}}
-        - name: VDI_USER_PARAM_2
-          value: "{{.UserParams.UserParam2}}"
-        {{- end}}
-        {{- if .UserParams.UserParam3}}
-        - name: VDI_USER_PARAM_3
-          value: "{{.UserParams.UserParam3}}"
+        # Add the userParams to the env prefixed with VDI_
+        {{- range $key, $value := .UserParams }}
+        - name: VDI_{{ $key }}
+          value: "{{ $value }}" 
         {{- end}}
       #- name: chromoting
       #  env:
