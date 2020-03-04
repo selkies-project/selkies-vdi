@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+substitutions:
+  _REGION: us-west1
+
 steps:
   ###
-  # Deploy manifests to us-west1 cluster.
+  # Deploy manifests to cluster.
   ###
   - name: "gcr.io/cloud-builders/kubectl"
-    id: deploy-manifests-us-west1
+    id: deploy-manifests
     entrypoint: "bash"
     args:
       - "-exc"
@@ -27,5 +30,5 @@ steps:
     env:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
-      - "CLOUDSDK_COMPUTE_REGION=us-west1"
-      - "CLOUDSDK_CONTAINER_CLUSTER=broker-us-west1"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

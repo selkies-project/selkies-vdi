@@ -18,7 +18,7 @@ substitutions:
 
 steps:
   ###
-  # Deploy manifests to us-west1 cluster.
+  # Deploy manifests to cluster.
   ###
   - name: "gcr.io/${PROJECT_ID}/broker-installer"
     id: deploy-manifests
