@@ -94,6 +94,9 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64
 # Set the DISPLAY variable.
 ENV DISPLAY :0
 
+# Set SDL audio driver to use pulseaudio
+ENV SDL_AUDIODRIVER pulse
+
 # Set the PATH
 ENV PATH ${PATH}:/usr/local/nvidia/bin
 

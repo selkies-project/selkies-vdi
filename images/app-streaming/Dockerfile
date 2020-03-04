@@ -39,6 +39,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         vainfo \
         vdpauinfo \
         pulseaudio \
+        pavucontrol \
         socat \
         jstest-gtk \
         dbus-x11 \
@@ -56,6 +57,7 @@ RUN mkdir -p /usr/share/glvnd/egl_vendor.d
 COPY 10_nvidia.json /usr/share/glvnd/egl_vendor.d/
 
 ENV DISPLAY :0
+ENV SDL_AUDIODRIVER pulse
 
 RUN groupadd --gid 1000 app && \
     adduser --uid 1000 --gid 1000 --disabled-password --gecos '' app
