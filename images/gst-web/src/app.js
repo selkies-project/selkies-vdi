@@ -64,6 +64,7 @@ var app = new Vue({
             debugEntries: [],
             status: 'connecting',
             loadingText: '',
+            clipboardStatus: 'disabled',
             gamepadState: 'disconnected',
             gamepadName: 'none',
             audioEnabled: false,
@@ -100,6 +101,16 @@ var app = new Vue({
         playVideo() {
             webrtc.playVideo();
             this.showStart = false;
+        },
+        enableClipboard() {
+            navigator.clipboard.readText()
+                .then(text => {
+                    webrtc._setStatus("clipboard enabled");
+                    webrtc.sendDataChannelMessage("cr");
+                })
+                .catch(err => {
+                    webrtc._setError('Failed to read clipboard contents: ' + err);
+                });
         }
     },
 
@@ -275,6 +286,41 @@ webrtc.input.onfullscreenhotkey = () => {
 webrtc.onplayvideorequired = () => {
     app.showStart = true;
 }
+
+// Actions to take whenever window changes focus
+window.addEventListener('focus', () => {
+    // reset keyboard to avoid stuck keys.
+    webrtc.sendDataChannelMessage("kr");
+
+    // Send clipboard contents.
+    navigator.clipboard.readText()
+        .then(text => {
+            webrtc.sendDataChannelMessage("cw," + btoa(text))
+        })
+        .catch(err => {
+            app._setError('Failed to read clipboard contents: ' + err);
+        });
+});
+window.addEventListener('blur', () => {
+    // reset keyboard to avoid stuck keys.
+    webrtc.sendDataChannelMessage("kr");
+});
+
+navigator.permissions.query({
+    name: 'clipboard-read'
+}).then(permissionStatus => {
+    // Will be 'granted', 'denied' or 'prompt':
+    if (permissionStatus.state === 'granted') {
+        app.clipboardStatus = 'enabled';
+    }
+
+    // Listen for changes to the permission state
+    permissionStatus.onchange = () => {
+        if (permissionStatus.state === 'granted') {
+            app.clipboardStatus = 'enabled';
+        }
+    };
+});
 
 // Fetch RTC configuration containing STUN/TURN servers.
 fetch("/turn/")

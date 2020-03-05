@@ -13,11 +13,15 @@
 # limitations under the License.
 
 from Xlib import X, XK, display, ext
+import base64
 import pynput
 import uinput
 import os
 import msgpack
+import subprocess
+from subprocess import Popen, PIPE, STDOUT
 import socket
+import time
 
 import logging
 logger = logging.getLogger("webrtc_input")
@@ -83,6 +87,7 @@ class WebRTCInput:
     def __init__(self, uinput_mouse_socket_path="", uinput_js_socket_path=""):
         """Initializes WebRTC input instance
         """
+        self.clipboard_running = False
         self.uinput_mouse_socket_path = uinput_mouse_socket_path
         self.uinput_mouse_socket = None
 
@@ -100,6 +105,8 @@ class WebRTCInput:
             'unhandled on_audio_encoder_bit_rate')
         self.on_mouse_pointer_visible = lambda visible: logger.warn(
             'unhandled on_mouse_pointer_visible')
+        self.on_clipboard_read = lambda data: logger.warn(
+            'unhandled on_clipboard_read')
         self.on_client_fps = lambda fps: logger.warn(
             'unhandled on_client_fps')
         self.on_client_latency = lambda latency: logger.warn(
@@ -312,6 +319,36 @@ class WebRTCInput:
         if not relative:
             self.xdisplay.sync()
 
+    def read_clipboard(self):
+        stdoutdata = subprocess.getoutput("xclip -out")
+        toks = stdoutdata.split()
+        if toks:
+            return toks[0]
+        else:
+            return ""
+
+    def write_clipboard(self, data):
+        cmd = ['xclip', '-selection', 'clipboard', '-in']
+        p = Popen(cmd, stdin=PIPE)
+        p.communicate(input=data.encode())
+        p.wait()
+
+    def start_clipboard(self):
+        logger.info("starting clipboard monitor")
+        self.clipboard_running = True
+        last_data = ""
+        while self.clipboard_running:
+            curr_data = self.read_clipboard()
+            if curr_data and curr_data != last_data:
+                logger.info("sending clipboard content, length: %d" % len(curr_data))
+                self.on_clipboard_read(curr_data)
+                last_data = curr_data
+            time.sleep(0.5)
+
+    def stop_clipboard(self):
+        logger.info("stopping clipboard monitor")
+        self.clipboard_running = False
+
     def on_message(self, msg):
         """Handles incoming input messages
 
@@ -386,6 +423,19 @@ class WebRTCInput:
                 self.__js_emit((uinput.ABS_X[0], axis_num), axis_val)
             else:
                 logger.warning('unhandled joystick command: %s' % toks[1])
+        elif toks[0] == "cr":
+            # Clipboard read
+            data = self.read_clipboard()
+            if data:
+                logger.info("read clipboard content, length: %d" % len(data))
+                self.on_clipboard_read(data)
+            else:
+                logger.warning("no clipboard content to send")
+        elif toks[0] == "cw":
+            # Clipboard write
+            data = base64.b64decode(toks[1]).decode()
+            self.write_clipboard(data)
+            logger.info("set clipboard content, length: %d" % len(data))
         elif toks[0] == "_f":
             # Reported FPS from client.
             fps = int(toks[1])

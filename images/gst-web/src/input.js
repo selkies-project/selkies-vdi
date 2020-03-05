@@ -421,10 +421,6 @@ class Input {
             this.send("ku," + keysym);
         };
 
-        // Reset keyboard whenever keyboard changes focus
-        window.addEventListener('focus', () => { this.send("kr") });
-        window.addEventListener('blur', () => { this.send("kr") });
-
         this._windowMath();
     }
 

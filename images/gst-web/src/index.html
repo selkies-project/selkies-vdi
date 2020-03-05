@@ -130,6 +130,24 @@
                     <span>Enter fullscreen mode (CTRL+SHIFT+F)</span>
                   </v-tooltip>
 
+                  <v-tooltip bottom v-if="clipboardStatus === 'enabled'">
+                    <template v-slot:activator="{ on }">
+                      <v-btn block icon>
+                        <v-icon color="black" v-on="on">file_copy</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Clipboard status: {{ clipboardStatus }}</span>
+                  </v-tooltip>
+
+                  <v-tooltip bottom v-else>
+                    <template v-slot:activator="{ on }">
+                      <v-btn block icon v-on:click="enableClipboard()">
+                        <v-icon color="blue" v-on="on">file_copy</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Enable clipboard access</span>
+                  </v-tooltip>
+
                   <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
                       <v-btn icon href="/">

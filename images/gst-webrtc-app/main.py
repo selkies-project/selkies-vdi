@@ -217,6 +217,9 @@ if __name__ == '__main__':
     webrtc_input.on_mouse_pointer_visible = lambda visible: app.set_pointer_visible(
         visible)
 
+    # Send clipboard contents when requested
+    webrtc_input.on_clipboard_read = lambda data: app.send_clipboard_data(data)
+
     # Send client FPS to metrics
     webrtc_input.on_client_fps = lambda fps: metrics.set_fps(fps)
 
@@ -238,6 +241,7 @@ if __name__ == '__main__':
     try:
         metrics.start()
         loop.run_until_complete(webrtc_input.connect())
+        loop.run_in_executor(None, lambda: webrtc_input.start_clipboard())
         loop.run_in_executor(None, lambda: gpu_mon.start())
         loop.run_until_complete(signalling.connect())
         loop.run_until_complete(signalling.start())
@@ -245,6 +249,7 @@ if __name__ == '__main__':
         logging.error("Caught exception: %s" % e)
         sys.exit(1)
     finally:
+        webrtc_input.stop_clipboard()
         webrtc_input.disconnect()
         gpu_mon.stop()
         sys.exit(0)

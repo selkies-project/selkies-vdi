@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import base64
 import json
 import logging
 
@@ -503,6 +504,10 @@ class GSTWebRTCApp:
         element.set_property("show-pointer", visible)
         self.__send_data_channel_message(
             "pipeline", {"status": "Set pointer visibility to: %d" % visible})
+
+    def send_clipboard_data(self, data):
+        self.__send_data_channel_message(
+            "clipboard", {"content": base64.b64encode(data.encode()).decode("utf-8")})
 
     def send_gpu_stats(self, load, memory_total, memory_used):
         """Sends GPU stats to the data channel

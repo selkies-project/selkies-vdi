@@ -20,7 +20,9 @@ RUN \
     pip3 install websockets xlib gputil python-uinput prometheus_client msgpack pynput
 
 RUN \
-    apt-get update && apt-get install -y udev
+    apt-get update && apt-get install -y \
+        udev \
+        xclip
 
 # Build app
 WORKDIR /opt/app

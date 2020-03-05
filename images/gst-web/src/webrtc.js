@@ -317,6 +317,16 @@ class WebRTCDemo {
             if (this.ongpustats !== null) {
                 this.ongpustats(msg.data);
             }
+        } else if (msg.type === 'clipboard') {
+            if (msg.data !== null) {
+                var content = atob(msg.data.content);
+                this._setDebug("received clipboard contents, length: " + content.length);
+
+                navigator.clipboard.writeText(content)
+                    .catch(err => {
+                        this._setDebug('Could not copy text to clipboard: ' + err);
+                    });
+            }
         } else {
             this._setError("Unhandled message recevied: " + msg.type);
         }
