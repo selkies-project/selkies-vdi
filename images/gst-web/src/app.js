@@ -306,6 +306,15 @@ window.addEventListener('blur', () => {
     webrtc.sendDataChannelMessage("kr");
 });
 
+webrtc.onclipboardcontent = (content) => {
+    if (app.clipboardStatus === 'enabled') {
+        navigator.clipboard.writeText(content)
+            .catch(err => {
+                app._setDebug('Could not copy text to clipboard: ' + err);
+            });
+    }
+}
+
 navigator.permissions.query({
     name: 'clipboard-read'
 }).then(permissionStatus => {

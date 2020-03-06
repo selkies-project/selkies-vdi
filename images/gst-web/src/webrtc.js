@@ -27,6 +27,7 @@
  * @property {function} ondatachannelclose - Callback fired when data channel is closed.
  * @property {function} ondatachannelopen - Callback fired when data channel is opened.
  * @property {function} onplayvideorequired - Callback fired when user interaction is required before playing video.
+ * @property {function} onclipboardcontent - Callback fired when clipboard content from the remote host is received.
  * @property {function} getConnectionStats - Returns promise that resolves with connection stats.
  * @property {Objet} rtcPeerConfig - RTC configuration containing ICE servers and other connection properties.
  * @property {boolean} forceTurn - Force use of TURN server.
@@ -118,6 +119,11 @@ class WebRTCDemo {
          * @type {function}
          */
         this.onplayvideorequired = null;
+
+        /**
+         * @type {function}
+         */
+        this.onclipboardcontent = null;
 
         // Bind signalling server callbacks.
         this.signalling.onsdp = this._onSDP.bind(this);
@@ -322,10 +328,9 @@ class WebRTCDemo {
                 var content = atob(msg.data.content);
                 this._setDebug("received clipboard contents, length: " + content.length);
 
-                navigator.clipboard.writeText(content)
-                    .catch(err => {
-                        this._setDebug('Could not copy text to clipboard: ' + err);
-                    });
+                if (this.onclipboardcontent !== null) {
+                    this.onclipboardcontent(content);
+                }
             }
         } else {
             this._setError("Unhandled message recevied: " + msg.type);
