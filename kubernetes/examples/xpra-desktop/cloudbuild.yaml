@@ -12,9 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
+substitutions:
+  _REGION: us-west1
 
-bases:
-  - webrtc-bundle-manifests/
-  - xpra-bundle-manifests/
+steps:
+  ###
+  # Deploy manifests to cluster.
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: deploy-manifests
+    entrypoint: "bash"
+    args:
+      - "-exc"
+      - |
+        sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' *-brokerappconfig.yaml | \
+          /builder/kubectl.bash apply -f -
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

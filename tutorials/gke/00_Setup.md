@@ -48,11 +48,7 @@ gcloud services enable compute.googleapis.com
 1. Build the images using Cloud Build:
 
 ```bash
-cd ~/webrtc-gpu-streaming/images
-```
-
-```bash
-gcloud builds submit
+(cd ~/webrtc-gpu-streaming/images && gcloud builds submit)
 ```
 
 > NOTE: this step will take 15-20 minutes to complete.

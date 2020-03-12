@@ -1,0 +1,77 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: gcp.solutions/v1
+kind: BrokerAppConfig
+metadata:
+  name: xpra-desktop
+spec:
+  version: 1.0.0
+  name: xpra-desktop
+  displayName: Xpra Desktop
+  description: Xpra HTML5 Remote Display
+  icon: http://xpra.org/icons/xpra-logo.png
+  bundle:
+    configMapRef:
+      name: xpra-gpu-streaming-manifests-1.0.0
+  serviceName: vdi
+  defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+  defaultTag: "latest"
+  appParams:
+    - name: command
+      default: |
+        set +x
+        echo "Waiting for X server"
+        until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+        echo "X server is ready"
+        set -x
+        sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
+        xfce4-terminal
+  images:
+    desktop:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+      newTag: latest
+    xserver:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xserver
+      newTag: latest
+    xpra:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
+      newTag: latest
+    pulseaudio:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-pulseaudio
+      newTag: latest
+  userParams:
+    - name: enableAudio
+      displayName: "Audio"
+      type: bool
+      default: "false"
+    - name: enableJoystick
+      displayName: "Enable Gamepad"
+      type: bool
+      default: "false"
+    - name: enablePersistence
+      displayName: "Persistent Home"
+      type: bool
+      default: "false"
+  defaultTier: gpu
+  nodeTiers:
+    - name: gpu
+      nodeLabel: gpu-cos
+      resources:
+        requests:
+          cpu: 2

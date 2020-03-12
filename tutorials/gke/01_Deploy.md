@@ -9,7 +9,21 @@ This tutorial will walk you through the following:
 - Deploy the WebRTC streaming stack base manifests.
 - Deploy example XFCE desktop streaming app.
 
-## Deploy manifests GitOps pipeline
+## (Option 1) Deploy manifests manually
+
+1. Deploy manifests using cloud build:
+
+```bash
+cd ~/webrtc-gpu-streaming/kubernetes/manifests
+```
+
+```bash
+gcloud builds submit --substitutions=_REGION=us-west1
+```
+
+> NOTE: change the value of _REGION to target a different region.
+
+## (Option 2) Deploy manifests GitOps pipeline
 
 1. Run script to configure GitOps pipeline for base manifests with Cloud Source Repositories and Cloud Build:
 
@@ -43,7 +57,36 @@ kubectl -n kube-system wait pod -l app=gpu-node-init --for=condition=Ready --tim
 kubectl -n kube-system wait pod -l app=gpu-sharing --for=condition=Ready --timeout=600s
 ```
 
-## Deploy the XFCE Desktop app GitOps pipeline
+4. Verify that GPU sharing is enabled:
+
+```bash
+kubectl describe node -l cloud.google.com/gke-accelerator-initialized=true | grep nvidia.com/gpu
+```
+
+Example output:
+
+```
+ nvidia.com/gpu:             48
+ nvidia.com/gpu:             48
+```
+
+> Verify that the number of availble GPUs is greater than 1.
+
+## (Option 1) Deploy the XFCE Desktop app manually
+
+1. Deploy manifests using cloud build:
+
+```bash
+cd ~/webrtc-gpu-streaming/kubernetes/examples/xfce-desktop
+```
+
+```bash
+gcloud builds submit --substitutions=_REGION=us-west1
+```
+
+> NOTE: change the value of _REGION to target a different region.
+
+## (Option 2) Deploy the XFCE Desktop app GitOps pipeline
 
 1. Run script to configure GitOps pipeline for XFCE Desktop with Cloud Source Repositories and Cloud Build:
 
@@ -57,10 +100,12 @@ cd ~/webrtc-gpu-streaming/kubernetes/examples/xfce-desktop
 
 2. Wait for cloud build to complete.
 
-3. Verify that the initial image pull on the GPU nodes has completed:
+## Verify example app deployment
+
+1. Verify that the initial image pull on the GPU nodes has completed:
 
 ```bash
-POD=$(kubectl get pod -l app=pod-broker-image-puller -o name | tail -1)
+POD=$(kubectl -n default get pod -l app=pod-broker-image-puller -o name | tail -1)
 ```
 
 ```bash

@@ -100,7 +100,7 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            {{ .AppParams.command}}
+{{.AppParams.command | nindent 12}}
         {{- end}}
         {{- if .UserParams.enableJoystick }}
         {{- if eq .UserParams.enableJoystick "true"}}
