@@ -320,12 +320,7 @@ class WebRTCInput:
             self.xdisplay.sync()
 
     def read_clipboard(self):
-        stdoutdata = subprocess.getoutput("xclip -out")
-        toks = stdoutdata.split()
-        if toks:
-            return toks[0]
-        else:
-            return ""
+        return subprocess.getoutput("xclip -out")
 
     def write_clipboard(self, data):
         cmd = ['xclip', '-selection', 'clipboard', '-in']
