@@ -92,3 +92,8 @@ spec:
       resources:
         requests:
           cpu: 2
+    - name: ubuntu
+      nodeLabel: gpu-ubuntu
+      resources:
+        requests:
+          cpu: 2
