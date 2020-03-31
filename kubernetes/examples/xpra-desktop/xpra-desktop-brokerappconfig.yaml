@@ -21,7 +21,7 @@ spec:
   name: xpra-desktop
   displayName: Xpra Desktop
   description: Xpra HTML5 Remote Display
-  icon: http://xpra.org/icons/xpra-logo.png
+  icon: https://xpra.org/icons/xpra-logo.png
   bundle:
     configMapRef:
       name: xpra-gpu-streaming-manifests-1.2.0
