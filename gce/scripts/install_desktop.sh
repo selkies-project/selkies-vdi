@@ -62,4 +62,6 @@ systemctl --user enable desktop.service
 rm -Rf /home/${USR}/.config/xfce4
 
 # Allow systemd units for user to start at boot
-sudo loginctl enable-linger webrtc
+#sudo loginctl enable-linger webrtc
+sudo mkdir -p /var/lib/systemd/linger
+sudo touch /var/lib/systemd/linger/$USER

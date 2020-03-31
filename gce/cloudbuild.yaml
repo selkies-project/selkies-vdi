@@ -16,6 +16,7 @@ substitutions:
   _APPNAME: gpu-accel-webrtc
   _USERNAME: webrtc
   _PROVISION_ZONE: us-central1-f
+  _SOURCE_IMAGE_FAMILY: ubuntu-1910
 steps:
   - name: ubuntu
     id: "create_image_spec"
@@ -33,7 +34,7 @@ steps:
             "zone": "${_PROVISION_ZONE}",
             "machine_type": "n1-standard-8",
             "disk_size": "50",
-            "source_image_family": "ubuntu-1904",
+            "source_image_family": "${_SOURCE_IMAGE_FAMILY}",
             "image_name": "${_APPNAME}-{{timestamp}}",
             "image_family": "${_APPNAME}",
             "ssh_username": "${_USERNAME}",

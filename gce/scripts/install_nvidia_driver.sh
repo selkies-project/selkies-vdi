@@ -19,5 +19,5 @@ set -x
 
 sudo dpkg --add-architecture i386
 sudo apt update
-sudo apt install -y nvidia-driver-418 libnvidia-gl-418 libnvidia-gl-418:i386 nvidia-cuda-dev
+sudo apt install -y nvidia-driver-430 libnvidia-gl-430 libnvidia-gl-430:i386 nvidia-cuda-dev
 sudo apt install -y libvulkan1 libvulkan1:i386 vulkan-utils

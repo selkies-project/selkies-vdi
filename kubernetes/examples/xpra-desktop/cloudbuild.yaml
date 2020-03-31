@@ -14,6 +14,8 @@
 
 substitutions:
   _REGION: us-west1
+  _NAMESPACE: pod-broker-system
+
 
 steps:
   ###
@@ -26,7 +28,7 @@ steps:
       - "-exc"
       - |
         sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' *-brokerappconfig.yaml | \
-          /builder/kubectl.bash apply -f -
+          /builder/kubectl.bash apply -n ${_NAMESPACE} -f -
     env:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"

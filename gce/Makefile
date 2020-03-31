@@ -25,8 +25,7 @@ image: cloudbuild.yaml packer-gcb
         --config $<
 
 enable-cloudbuild:
-	gcloud services enable --project $(PROJECT) compute.googleapis.com
-	gcloud services enable --project $(PROJECT) cloudbuild.googleapis.com
+	gcloud services enable --project $(PROJECT) compute.googleapis.com cloudbuild.googleapis.com
 
 packer-gcb-image:
 	$(eval GCB_IMAGE := $(shell gcloud container images list --project $(PROJECT) --filter name=gcr.io/$(PROJECT)/packer --format='value(name)'))

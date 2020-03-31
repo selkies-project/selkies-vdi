@@ -196,7 +196,7 @@ spec:
             - name: "COTURN_AUTH_HEADER_NAME"
               value: "x-goog-authenticated-user-email"
             - name: COTURN_WEB_URI
-              value: "http://turn/"
+              value: "http://turn.pod-broker-system.svc.cluster.local/"
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -308,7 +308,7 @@ spec:
             - name: WATCHDOG_TIMEOUT
               value: "3600"
             - name: POD_BROKER_SVC
-              value: "http://pod-broker:8080"
+              value: "http://pod-broker.pod-broker-system.svc.cluster.local:8080"
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix

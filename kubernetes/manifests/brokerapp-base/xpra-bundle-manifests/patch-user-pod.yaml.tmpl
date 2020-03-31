@@ -38,6 +38,7 @@ spec:
       annotations:
         gke.accel.vdi/user: "{{.User}}"
     spec:
+      enableServiceLinks: false
       nodeSelector:
         app.broker/initialized: "true"
         app.broker/tier: {{ .NodeTier.NodeLabel }}
