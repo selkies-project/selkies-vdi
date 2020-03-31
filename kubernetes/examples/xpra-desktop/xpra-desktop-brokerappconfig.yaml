@@ -24,7 +24,7 @@ spec:
   icon: http://xpra.org/icons/xpra-logo.png
   bundle:
     configMapRef:
-      name: xpra-gpu-streaming-manifests-1.0.0
+      name: xpra-gpu-streaming-manifests-1.2.0
   serviceName: vdi
   defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
   defaultTag: "latest"

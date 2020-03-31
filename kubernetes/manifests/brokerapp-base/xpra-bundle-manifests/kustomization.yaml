@@ -23,7 +23,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-  - name: xpra-gpu-streaming-manifests-1.0.0
+  - name: xpra-gpu-streaming-manifests-1.2.0
     files:
       - patch-user-pod.yaml.tmpl
       - resource-vdi-deploy.yaml
