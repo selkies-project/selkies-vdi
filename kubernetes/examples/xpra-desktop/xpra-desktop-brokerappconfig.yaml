@@ -68,10 +68,10 @@ spec:
       displayName: "Persistent Home"
       type: bool
       default: "false"
-  defaultTier: gpu
+  defaultTier: tier1
   nodeTiers:
-    - name: gpu
-      nodeLabel: gpu-cos
+    - name: tier1
+      nodeLabel: tier1
       resources:
         requests:
           cpu: 2
