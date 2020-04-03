@@ -85,6 +85,8 @@ spec:
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
+    - name: enableClipboard
+      default: "true"
   defaultTier: gpu
   nodeTiers:
     - name: gpu

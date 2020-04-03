@@ -84,7 +84,7 @@ class WebRTCInputError(Exception):
 
 
 class WebRTCInput:
-    def __init__(self, uinput_mouse_socket_path="", uinput_js_socket_path=""):
+    def __init__(self, uinput_mouse_socket_path="", uinput_js_socket_path="", enable_clipboard=""):
         """Initializes WebRTC input instance
         """
         self.clipboard_running = False
@@ -93,6 +93,8 @@ class WebRTCInput:
 
         self.uinput_js_socket_path = uinput_js_socket_path
         self.uinput_js_socket = None
+
+        self.enable_clipboard = enable_clipboard
 
         self.mouse = None
         self.joystick = None
@@ -329,16 +331,19 @@ class WebRTCInput:
         p.wait()
 
     def start_clipboard(self):
-        logger.info("starting clipboard monitor")
-        self.clipboard_running = True
-        last_data = ""
-        while self.clipboard_running:
-            curr_data = self.read_clipboard()
-            if curr_data and curr_data != last_data:
-                logger.info("sending clipboard content, length: %d" % len(curr_data))
-                self.on_clipboard_read(curr_data)
-                last_data = curr_data
-            time.sleep(0.5)
+        if self.enable_clipboard in ["true", "out"]:
+            logger.info("starting clipboard monitor")
+            self.clipboard_running = True
+            last_data = ""
+            while self.clipboard_running:
+                curr_data = self.read_clipboard()
+                if curr_data and curr_data != last_data:
+                    logger.info("sending clipboard content, length: %d" % len(curr_data))
+                    self.on_clipboard_read(curr_data)
+                    last_data = curr_data
+                time.sleep(0.5)
+        else:
+            logger.info("skipping outbound clipboard service.")
 
     def stop_clipboard(self):
         logger.info("stopping clipboard monitor")
@@ -420,17 +425,23 @@ class WebRTCInput:
                 logger.warning('unhandled joystick command: %s' % toks[1])
         elif toks[0] == "cr":
             # Clipboard read
-            data = self.read_clipboard()
-            if data:
-                logger.info("read clipboard content, length: %d" % len(data))
-                self.on_clipboard_read(data)
+            if self.enable_clipboard in ["true", "out"]:
+                data = self.read_clipboard()
+                if data:
+                    logger.info("read clipboard content, length: %d" % len(data))
+                    self.on_clipboard_read(data)
+                else:
+                    logger.warning("no clipboard content to send")
             else:
-                logger.warning("no clipboard content to send")
+                logger.warning("rejecting clipboard read because outbound clipboard is disabled.")
         elif toks[0] == "cw":
             # Clipboard write
-            data = base64.b64decode(toks[1]).decode()
-            self.write_clipboard(data)
-            logger.info("set clipboard content, length: %d" % len(data))
+            if self.enable_clipboard in ["true", "in"]:
+                data = base64.b64decode(toks[1]).decode()
+                self.write_clipboard(data)
+                logger.info("set clipboard content, length: %d" % len(data))
+            else:
+                logger.warning("rejecting clipboard write because inbound clipboard is disabled.")
         elif toks[0] == "_f":
             # Reported FPS from client.
             fps = int(toks[1])

@@ -124,7 +124,10 @@ if __name__ == '__main__':
                         help='path to uinput joystick socket provided by uinput-device-plugin, if not provided, uinput is used directly.')
     parser.add_argument('--enable_audio',
                         default=os.environ.get('ENABLE_AUDIO', 'true'),
-                        help='enable ord disable audio stream')
+                        help='enable or disable audio stream')
+    parser.add_argument('--enable_clipboard',
+                        default=os.environ.get('ENABLE_CLIPBOARD', 'true'),
+                        help='enable or disable the clipboard features, supported values: true, false, in, out')
     parser.add_argument('--app_auto_init',
                         default=os.environ.get('APP_AUTO_INIT', 'true'),
                         help='if true, skips wait for APP_READY_FILE to exist before starting stream.')
@@ -196,7 +199,7 @@ if __name__ == '__main__':
     signalling.on_session = app.start_pipeline
 
     # Initialize the Xinput instance
-    webrtc_input = WebRTCInput(args.uinput_mouse_socket, args.uinput_js_socket)
+    webrtc_input = WebRTCInput(args.uinput_mouse_socket, args.uinput_js_socket, args.enable_clipboard.lower())
 
     # Log message when data channel is open
     app.on_data_open = lambda: logging.info(

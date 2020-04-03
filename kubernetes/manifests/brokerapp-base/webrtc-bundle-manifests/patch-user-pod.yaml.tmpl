@@ -149,6 +149,10 @@ spec:
           value: "{{.UserParams.appAutoInit}}"
         - name: ENABLE_AUDIO
           value: "{{.UserParams.enableAudio}}"
+        {{- if .AppParams.enableClipboard }}
+        - name: ENABLE_CLIPBOARD
+          value: "{{.AppParams.enableClipboard}}"
+        {{- end}}
         {{- if .UserParams.compat32 }}
         {{- if eq .UserParams.compat32 "true"}}
         - name: UINPUT_MOUSE_SOCKET
