@@ -73,7 +73,8 @@ RUN apt-get install -y \
 COPY --from=jetbrains /tmp/appimage /opt/jetbrains-toolbox
 RUN \
     sudo mkdir -p /etc/skel/Desktop && printf "[Desktop Entry]\nVersion=1.0\nType=Application\nExec=env APPDIR=/opt/jetbrains-toolbox /opt/jetbrains-toolbox/AppRun\nPath=/opt/jetbrains-toolbox\nName=Jetbrains Toolbox\nIcon=/opt/jetbrains-toolbox/jetbrains-toolbox.svg\nTerminal=false\n" | sudo tee /etc/skel/Desktop/Jetbrains.desktop && \
-    sudo chmod +x /etc/skel/Desktop/Jetbrains.desktop
+    sudo chmod +x /etc/skel/Desktop/Jetbrains.desktop && \
+    sudo chown 1000:1000 /etc/skel/Desktop/Jetbrains.desktop
 
 # Install VS Code
 RUN \
@@ -82,7 +83,8 @@ RUN \
     sudo apt update && sudo apt install -y code
 RUN \
     sudo mkdir -p /etc/skel/Desktop && sudo cp /usr/share/applications/code.desktop /etc/skel/Desktop/ && \
-    sudo chmod +x /etc/skel/Desktop/code.desktop
+    sudo chmod +x /etc/skel/Desktop/code.desktop && \
+    sudo chown 1000:1000 /etc/skel/Desktop/code.desktop
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
