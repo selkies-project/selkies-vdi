@@ -1,0 +1,94 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: gcp.solutions/v1
+kind: BrokerAppConfig
+metadata:
+  name: cloudshell-desktop
+spec:
+  version: 1.0.0
+  name: cloudshell-desktop
+  displayName: Cloud Shell Desktop
+  description: XFCE Desktop Cloud Shell environment
+  icon: https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Antu_distributor-logo-debian.svg/200px-Antu_distributor-logo-debian.svg.png
+  bundle:
+    configMapRef:
+      name: webrtc-gpu-streaming-manifests-1.2.0
+  serviceName: vdi
+  defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-cloudshell-desktop
+  defaultTag: "latest"
+  images:
+    xserver:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xserver
+      newTag: latest
+    desktop:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+      newTag: latest
+    pulseaudio:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-pulseaudio
+      newTag: latest
+    novnc:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-novnc
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-novnc
+      newTag: latest
+    gst-webrtc-app:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app
+      newTag: latest
+    signaling:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-signaling
+      newTag: latest
+    gst-web:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
+      newTag: latest
+    chromoting:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-chromoting
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-chromoting
+      newTag: latest
+  userParams:
+    - name: enableAudio
+      displayName: "Audio"
+      type: bool
+      default: "false"
+    - name: enableJoystick
+      displayName: "Enable Gamepad"
+      type: bool
+      default: "false"
+    - name: idleShutdown
+      displayName: "Idle Shutdown"
+      type: bool
+      default: "true"
+    - name: enablePersistence
+      displayName: "Persistent Home"
+      type: bool
+      default: "true"
+    - name: appAutoInit
+      displayName: "Skip wait for app"
+      type: bool
+      default: "true"
+  appParams:
+    - name: idleShutdownTimeout
+      default: "600" # seconds
+  defaultTier: gpu
+  nodeTiers:
+    - name: gpu
+      nodeLabel: gpu-cos
+      resources:
+        requests:
+          cpu: 2
