@@ -37,7 +37,7 @@ spec:
     - to:
         # Squid Proxy VM internal IP
         - ipBlock:
-            cidr: {{.AppParams.egressProxyCIDR}}/32
+            cidr: {{.AppParams.egressProxyCIDR}}
     # TURN pod host IPs
     {{- range $ip := .NetworkPolicyData.TURNIPs}}
     - to:

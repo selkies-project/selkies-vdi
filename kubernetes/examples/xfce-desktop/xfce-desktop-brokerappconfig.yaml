@@ -81,6 +81,14 @@ spec:
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
+    #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
+    #  default: "${EGRESS_PROXY}/32"
+  appEnv:
+    # proxy env, use with appParams.egressProxyCIDR
+    #- name: http_proxy
+    #  value: "${EGRESS_PROXY}:3128"
+    #- name: https_proxy
+    #  value: "${EGRESS_PROXY}:3128"
   defaultTier: gpu
   nodeTiers:
     - name: gpu
