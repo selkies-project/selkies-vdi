@@ -20,11 +20,11 @@ spec:
   version: 1.0.0
   name: xpra-desktop
   displayName: Xpra Desktop
-  description: Xpra HTML5 Remote Display
+  description: Xpra HTML5 Cloud Shell desktop environment
   icon: https://xpra.org/icons/xpra-logo.png
   bundle:
     configMapRef:
-      name: xpra-gpu-streaming-manifests-1.2.0
+      name: xpra-gpu-streaming-manifests-1.3.0
   serviceName: vdi
   defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
   defaultTag: "latest"
@@ -37,7 +37,7 @@ spec:
         echo "X server is ready"
         set -x
         sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
-        xfce4-terminal
+        terminator
   images:
     desktop:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop
@@ -68,10 +68,10 @@ spec:
       displayName: "Persistent Home"
       type: bool
       default: "false"
-  defaultTier: tier1
+  defaultTier: gpu
   nodeTiers:
-    - name: tier1
-      nodeLabel: tier1
+    - name: gpu
+      nodeLabel: gpu-cos
       resources:
         requests:
           cpu: 2

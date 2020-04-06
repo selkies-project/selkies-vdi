@@ -23,8 +23,8 @@ set -x
 # Forward js input control socket to shared pod volume.
 if [[ -S /tmp/.uinput/js0ctl ]]; then
     echo "Forwarding socket /tmp/.uinput/js0ctl to /var/run/appconfig/js0ctl"
-    sudo chown root:app /tmp/.uinput/js*ctl
-    sudo chown root:app /dev/input/js* /dev/input/event* /dev/input/evdev/js*
+    sudo chown root:1000 /tmp/.uinput/js*ctl
+    sudo chown root:1000 /dev/input/js* /dev/input/event* /dev/input/evdev/js*
     nohup sudo socat UNIX-RECV:/var/run/appconfig/js0ctl,reuseaddr UNIX-CLIENT:/tmp/.uinput/js0ctl &
 fi
 
@@ -35,7 +35,7 @@ sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
 # Start dbus
 dbus-uuidgen | sudo tee /var/lib/dbus/machine-id
 sudo mkdir -p /var/run/dbus
-sudo dbus-daemon --system --print-address --nosyslog
+sudo dbus-daemon --system
 
 echo "Setting resolution"
 RESOLUTION=${RESOLUTION:-1920x1080}

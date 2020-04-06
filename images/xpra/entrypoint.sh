@@ -23,8 +23,8 @@ set -x
 # Forward js input control socket to shared pod volume.
 if [[ -S /tmp/.uinput/js0ctl ]]; then
     echo "Forwarding socket /tmp/.uinput/js0ctl to /var/run/appconfig/js0ctl"
-    sudo chown root:app /tmp/.uinput/js*ctl
-    sudo chown root:app /dev/input/js* /dev/input/event* /dev/input/evdev/js*
+    sudo chown root:1000 /tmp/.uinput/js*ctl
+    sudo chown root:1000 /dev/input/js* /dev/input/event* /dev/input/evdev/js*
     nohup sudo socat UNIX-RECV:/var/run/appconfig/js0ctl,reuseaddr UNIX-CLIENT:/tmp/.uinput/js0ctl &
 fi
 
@@ -41,5 +41,9 @@ xpra start :0 \
     --html=on \
     --daemon=no \
     --no-pulseaudio \
+    --clipboard=yes \
+    --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
+    --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
+    --open-files=${XPRA_OPEN_FILES:-"on"} \
     --video-encoders=nvenc ${XPRA_ARGS}
 sleep 2

@@ -129,6 +129,11 @@ spec:
         - name: VDI_{{ $key }}
           value: "{{ $value }}" 
         {{- end}}
+        # Add environment vars from brokerappconfig spec.
+        {{- range $item := .AppSpec.AppEnv }}
+        - name: {{$item.Name}}
+          value: "{{$item.Value}}"
+        {{- end}}
       - name: xpra
         env:
         - name: VDI_USER
@@ -136,6 +141,11 @@ spec:
         {{- if .AppParams.xpra_args}}
         - name: XPRA_ARGS
           value: "{{ .AppParams.xpra_args }}"
+        {{- end}}
+        # Add environment vars from brokerappconfig spec.
+        {{- range $item := .AppSpec.AppEnv }}
+        - name: {{$item.Name}}
+          value: "{{$item.Value}}"
         {{- end}}
         {{- if .UserParams.enableJoystick }}
         {{- if eq .UserParams.enableJoystick "true"}}

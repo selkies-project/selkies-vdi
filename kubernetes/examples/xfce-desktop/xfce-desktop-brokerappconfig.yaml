@@ -20,11 +20,11 @@ spec:
   version: 1.0.0
   name: xfce-desktop
   displayName: XFCE Desktop
-  description: GPU accelerated XFCE desktop environment
+  description: XFCE Cloud Shell desktop environment
   icon: https://upload.wikimedia.org/wikipedia/commons/5/5b/Xfce_logo.svg
   bundle:
     configMapRef:
-      name: webrtc-gpu-streaming-manifests-1.2.0
+      name: webrtc-gpu-streaming-manifests-1.3.0
   serviceName: vdi
   defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
   defaultTag: "latest"
@@ -77,25 +77,14 @@ spec:
     - name: enablePersistence
       displayName: "Persistent Home"
       type: bool
-      default: "false"
-    - name: appAutoInit
-      displayName: "Skip wait for app"
-      type: bool
       default: "true"
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
-    - name: enableClipboard
-      default: "true"
   defaultTier: gpu
   nodeTiers:
     - name: gpu
       nodeLabel: gpu-cos
-      resources:
-        requests:
-          cpu: 2
-    - name: ubuntu
-      nodeLabel: gpu-ubuntu
       resources:
         requests:
           cpu: 2

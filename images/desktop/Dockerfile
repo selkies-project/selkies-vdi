@@ -12,21 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+# Download Jetbrains Toolbox and extract appimage
+FROM ubuntu:16.04 as jetbrains
+WORKDIR /tmp
+ADD https://data.services.jetbrains.com/products/download?platform=linux&code=TBA ./jetbrains-toolbox.tar.gz
+RUN tar --strip-components=1 -zxvf jetbrains-toolbox.tar.gz
 
-# Use GCE apt servers
-ARG GCE_ZONE=us-west1
-RUN cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
-    sed -i "s/archive.ubuntu.com/${GCE_ZONE}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
+# Extract the AppImage, output will be in /tmp/appimage
+RUN chmod +x jetbrains-toolbox && \
+    "./jetbrains-toolbox" --appimage-extract && \
+    find squashfs-root -type d -exec chmod ugo+rx {} \; && \
+    chown -R 1000:1000 squashfs-root && \
+    mv squashfs-root appimage
+
+# Build cloudshell image with Desktop environment
+FROM gcr.io/cloudshell-images/cloudshell:latest
+
+# Copy shared config files
+WORKDIR /usr/share/cloudshell
+COPY config/* ./
 
 # Install base dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        sudo \
-        vim \
-        emacs \
-        curl \
+        bsdtar \
         gdebi-core \
         gnupg2
+
+# Download git-prompt to use as default prompt.
+RUN curl -sfL -o /usr/share/cloudshell/git-prompt.sh \
+	https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 
 # Install Chrome browser
 RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
@@ -35,7 +49,7 @@ RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key a
 
 # Install desktop environment and terminal
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        xubuntu-desktop \
+        xfce4 \
         terminator
 
 # Install Vulkan, OpenGL-ES and GLX libraries.
@@ -50,16 +64,27 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         vainfo \
         vdpauinfo
 
-# Remove extra packages
-RUN apt-get remove -y \
-    update-notifier \
-    pulseaudio-module-bluetooth \
-    blueman
-
 # Install socat for uinput control socket forwarding
 RUN apt-get install -y \
     jstest-gtk \
     socat
+
+# Install Jetbrains Toolbox and desktop shortcut
+COPY --from=jetbrains /tmp/appimage /opt/jetbrains-toolbox
+RUN \
+    sudo mkdir -p /etc/skel/Desktop && printf "[Desktop Entry]\nVersion=1.0\nType=Application\nExec=env APPDIR=/opt/jetbrains-toolbox /opt/jetbrains-toolbox/AppRun\nPath=/opt/jetbrains-toolbox\nName=Jetbrains Toolbox\nIcon=/opt/jetbrains-toolbox/jetbrains-toolbox.svg\nTerminal=false\n" | sudo tee /etc/skel/Desktop/Jetbrains.desktop && \
+    sudo chmod +x /etc/skel/Desktop/Jetbrains.desktop && \
+    sudo chown 1000:1000 /etc/skel/Desktop/Jetbrains.desktop
+
+# Install VS Code
+RUN \
+    wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add - && \
+    sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" && \
+    sudo apt update && sudo apt install -y code
+RUN \
+    sudo mkdir -p /etc/skel/Desktop && sudo cp /usr/share/applications/code.desktop /etc/skel/Desktop/ && \
+    sudo chmod +x /etc/skel/Desktop/code.desktop && \
+    sudo chown 1000:1000 /etc/skel/Desktop/code.desktop
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
@@ -69,24 +94,21 @@ RUN mkdir -p /usr/share/glvnd/egl_vendor.d
 COPY 10_nvidia.json /usr/share/glvnd/egl_vendor.d/
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Create app user
-RUN groupadd -g 1000 app && \
-    useradd -g 1000 -u 1000 app -s /bin/bash && \
-    passwd -d app && \
-    mkdir -p /home/app && \
-    mkdir -p /home/app/.vnc && \
-    echo "xsetroot -solid grey" > /home/app/.vnc/xstartup && \
-    chmod +x /home/app/.vnc/xstartup && \
-    chown 1000:1000 -R /home/app > /dev/null 2>&1 || true
+# Add user and grant sudo
+RUN adduser --gecos '' --disabled-password --shell /bin/bash coder && \
+	echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
-# Grant sudo to user for vulkan init workaround
-RUN adduser app sudo
+WORKDIR /home/coder/project
 
-RUN echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
+# Prevent zombie python processes whenever gcloud is run.
+RUN gcloud config set disable_usage_reporting true
 
-USER app
+# Use bash as default shell
+ENV SHELL /bin/bash
+ENV USER coder
+ENV PATH ${PATH}:/usr/local/nvidia/bin:/home/coder/bin
 
 # Export library path for NVIDIA libs
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64
@@ -96,8 +118,5 @@ ENV DISPLAY :0
 
 # Set SDL audio driver to use pulseaudio
 ENV SDL_AUDIODRIVER pulse
-
-# Set the PATH
-ENV PATH ${PATH}:/usr/local/nvidia/bin
 
 ENTRYPOINT ["/entrypoint.sh"]

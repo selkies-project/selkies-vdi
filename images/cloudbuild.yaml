@@ -44,9 +44,6 @@ images: [
     # desktop
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest',
-    # cloudshell-desktop
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:${_IMAGE_TAG}',
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:latest',
     # novnc
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-novnc:latest',
@@ -211,7 +208,7 @@ steps:
     - chromoting
 
 ###
-# Base desktop image
+# Desktop image with debian Cloud Shell image as base.
 ###
 - name: 'gcr.io/cloud-builders/docker'
   id: desktop-pull
@@ -237,34 +234,6 @@ steps:
         ]
   waitFor:
     - desktop
-
-###
-# Desktop image with debian Cloud Shell image as base.
-###
-- name: 'gcr.io/cloud-builders/docker'
-  id: cloudshell-desktop-pull
-  entrypoint: 'bash'
-  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:latest || exit 0); fi"]
-  waitFor: ["-"]
-- name: 'gcr.io/cloud-builders/docker'
-  id: cloudshell-desktop
-  args: [
-            'build',
-            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:${_IMAGE_TAG}',
-            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:latest',
-            'cloudshell-desktop'
-        ]
-  waitFor:
-    - cloudshell-desktop-pull
-- name: 'gcr.io/cloud-builders/docker'
-  id: cloudshell-desktop-tags
-  args: [
-            'tag',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:${_IMAGE_TAG}',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-cloudshell-desktop:latest',
-        ]
-  waitFor:
-    - cloudshell-desktop
 
 ###
 # NoVNC image

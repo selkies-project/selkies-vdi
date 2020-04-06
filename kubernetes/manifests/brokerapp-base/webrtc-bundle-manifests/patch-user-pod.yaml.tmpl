@@ -129,6 +129,11 @@ spec:
         - name: VDI_{{ $key }}
           value: "{{ $value }}" 
         {{- end}}
+        # Add environment vars from brokerappconfig spec.
+        {{- range $item := .AppSpec.AppEnv }}
+        - name: {{$item.Name}}
+          value: "{{$item.Value}}"
+        {{- end}}
       #- name: chromoting
       #  env:
       #  {{- if .UserParams.crdRedirectURL}}
@@ -146,7 +151,7 @@ spec:
       - name: webrtc
         env:
         - name: APP_AUTO_INIT
-          value: "{{.UserParams.appAutoInit}}"
+          value: "{{default "true" .AppParams.appAutoInit}}"
         - name: ENABLE_AUDIO
           value: "{{.UserParams.enableAudio}}"
         {{- if .AppParams.enableClipboard }}
