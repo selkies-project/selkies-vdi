@@ -19,8 +19,11 @@ export XDG_RUNTIME_DIR=/tmp/runtime-$USER
 mkdir -p "${XDG_RUNTIME_DIR}"
 chmod 0700 "${XDG_RUNTIME_DIR}"
 
-mkdir -p ${HOME}/bin
-mkdir -p ${HOME}/.local/bin
+if [[ ! -d ${HOME}/.local/share/JetBrains ]]; then
+    # First run installs to home dir.
+    cd ${APPDIR}
+    ./AppRun
+fi
 
 cd ${APPDIR}
-exec ./AppRun
+exec ./AppRun $@
