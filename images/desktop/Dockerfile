@@ -28,19 +28,11 @@ RUN chmod +x jetbrains-toolbox && \
 # Build cloudshell image with Desktop environment
 FROM gcr.io/cloudshell-images/cloudshell:latest
 
-# Copy shared config files
-WORKDIR /usr/share/cloudshell
-COPY config/* ./
-
 # Install base dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         bsdtar \
         gdebi-core \
         gnupg2
-
-# Download git-prompt to use as default prompt.
-RUN curl -sfL -o /usr/share/cloudshell/git-prompt.sh \
-	https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 
 # Install Chrome browser
 RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
@@ -51,6 +43,11 @@ RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key a
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xfce4 \
         terminator
+
+# Disable screen locking and screensaver
+RUN \
+    mv /etc/xdg/autostart/light-locker.desktop /etc/xdg/autostart/light-locker.desktop.bak && \
+    mv /etc/xdg/autostart/xscreensaver.desktop /etc/xdg/autostart/xscreensaver.desktop.bak
 
 # Install Vulkan, OpenGL-ES and GLX libraries.
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -85,6 +82,18 @@ RUN \
     sudo mkdir -p /etc/skel/Desktop && sudo cp /usr/share/applications/code.desktop /etc/skel/Desktop/ && \
     sudo chmod +x /etc/skel/Desktop/code.desktop && \
     sudo chown 1000:1000 /etc/skel/Desktop/code.desktop
+
+# Copy shared config files
+WORKDIR /usr/share/cloudshell
+COPY config/* ./
+
+RUN \
+    cp /usr/share/cloudshell/jetbrains-toolbox /usr/bin/jetbrains-toolbox && \
+    chmod +x /usr/bin/jetbrains-toolbox
+
+# Download git-prompt to use as default prompt.
+RUN curl -sfL -o /usr/share/cloudshell/git-prompt.sh \
+	https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
