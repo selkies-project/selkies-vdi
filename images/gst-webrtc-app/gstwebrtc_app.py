@@ -33,7 +33,7 @@ class GSTWebRTCAppError(Exception):
 
 
 class GSTWebRTCApp:
-    def __init__(self, stun_server=None, turn_server=None, audio=True):
+    def __init__(self, stun_server=None, turn_server=None, audio=True, framerate=60):
         """Initialize gstreamer webrtc app.
 
         Initializes GObjects and checks for required plugins.
@@ -51,6 +51,8 @@ class GSTWebRTCApp:
         self.pipeline = None
         self.webrtcbin = None
         self.data_channel = None
+
+        self.framerate = framerate
 
         # WebRTC ICE and SDP events
         self.on_ice = lambda mlineindex, candidate: logger.warn(
@@ -160,7 +162,7 @@ class GSTWebRTCApp:
         # The higher the FPS, the lower the latency so this parameter is one
         # way to set the overall target latency of the pipeline though keep in
         # mind that the pipeline may not always perfom at the full 60 FPS.
-        videoconvert_caps.set_value("framerate", Gst.Fraction(60, 1))
+        videoconvert_caps.set_value("framerate", Gst.Fraction(self.framerate, 1))
 
         # Create a capability filter for the videoconvert_caps
         videoconvert_capsfilter = Gst.ElementFactory.make("capsfilter")

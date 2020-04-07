@@ -100,6 +100,10 @@ def wait_for_app_ready(ready_file, app_auto_init = True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--json_config',
+                        default=os.environ.get(
+                            'JSON_CONFIG', '/var/run/appconfig/streaming_args.json'),
+                        help='Path to JSON file containing argument key-value pairs that are overlayed with cli args/env.')
     parser.add_argument('--server',
                         default=os.environ.get(
                             'SIGNALLING_SERVER', 'ws://127.0.0.1:8080'),
@@ -134,12 +138,28 @@ if __name__ == '__main__':
     parser.add_argument('--app_ready_file',
                         default=os.environ.get('APP_READY_FILE', '/var/run/appconfig/appready'),
                         help='file set by sidecar used to indicate that app is initialized and ready')
+    parser.add_argument('--framerate',
+                        default=os.environ.get('WEBRTC_FRAMERATE', '60'),
+                        help='framerate of streaming pipeline')
     parser.add_argument('--metrics_port',
                         default=os.environ.get('METRICS_PORT', '8000'),
                         help='port to start metrics server on')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debug logging')
     args = parser.parse_args()
+
+    if os.path.exists(args.json_config):
+        # Read and overlay args from json file
+        # Note that these are explicit overrides only.
+        try:
+            json_args = json.load(open(args.json_config))
+            for k, v in json_args.items():
+                if k == "framerate":
+                    args.framerate = int(v)
+                if k == "enable_audio":
+                    args.enable_audio = str((str(v).lower() == 'true')).lower()
+        except Exception as e:
+            logging.error("failed to load json config from %s: %s" % (args.json_config, str(e)))
 
     # Set log level
     if args.debug:
@@ -179,7 +199,7 @@ if __name__ == '__main__':
         args.coturn_web_uri, args.coturn_web_username, args.coturn_auth_header_name)
 
     # Create instance of app
-    app = GSTWebRTCApp(stun_server, turn_server, args.enable_audio == "true")
+    app = GSTWebRTCApp(stun_server, turn_server, args.enable_audio == "true", int(args.framerate))
 
     # [END main_setup]
 
