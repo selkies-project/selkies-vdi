@@ -90,8 +90,6 @@ spec:
               value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
             - name: PULSE_SERVER
               value: "127.0.0.1:4713"
-            - name: VDI_STREAMING_STACK
-              value: "xpra"
           volumeMounts:
             # Shared pod mount at host for intra-container and cross-pod sharing.
             - name: x11

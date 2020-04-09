@@ -28,7 +28,7 @@ spec:
       name: signalling
       targetPort: 8080
     - port: 8081
-      name: vnc
+      name: xpra
       targetPort: 8081
 ---
 apiVersion: apps/v1
@@ -124,8 +124,6 @@ spec:
               value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
             - name: PULSE_SERVER
               value: "127.0.0.1:4713"
-            - name: VDI_STREAMING_STACK
-              value: "webrtc"
           volumeMounts:
             # Shared pod mount at host for intra-container and cross-pod sharing.
             - name: x11
@@ -155,31 +153,13 @@ spec:
               protocol: TCP
 
         ###
-        # NoVNC container
-        ###
-        #- name: novnc
-        #  image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-novnc:latest
-        #  imagePullPolicy: IfNotPresent
-        #  ports:
-        #    - name: novnc
-        #      containerPort: 8081
-        #      protocol: TCP
-        #  readinessProbe:
-        #    httpGet:
-        #      path: /
-        #      port: novnc
-        #  resources:
-        #    requests:
-        #      cpu: 100m
-
-        ###
         # webrtc container
         ###
         - name: webrtc
           image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
           imagePullPolicy: IfNotPresent
           securityContext:
-            privileged: true
+            privileged: false
           # tty required to gather gpu stats using nvidia-smi and GPUtil python module.
           tty: true
           env:
@@ -271,20 +251,6 @@ spec:
           resources:
             requests:
               cpu: 100m
-
-        ###
-        # Chrome remote desktop container
-        ###
-        #- name: chromoting
-        #  image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-chromoting:latest
-        #  imagePullPolicy: IfNotPresent
-        #  env:
-        #    - name: DISPLAY
-        #      value: ":0"
-        #  volumeMounts:
-        #    # Shared mount for X11 socket.
-        #    - name: x11
-        #      mountPath: /tmp/.X11-unix
 
         ###
         # Watchdog container

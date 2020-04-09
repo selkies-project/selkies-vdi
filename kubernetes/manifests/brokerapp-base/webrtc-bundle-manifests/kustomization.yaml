@@ -29,3 +29,4 @@ configMapGenerator:
       - resource-vdi-deploy.yaml
       - resource-vdi-virtual-service.yaml.tmpl
       - resource-vdi-egress-network-policy.yaml.tmpl
+      - jsonpatch-deploy-xpra.yaml.tmpl

@@ -41,10 +41,6 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-pulseaudio
       newTag: latest
-    novnc:
-      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-novnc
-      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-novnc
-      newTag: latest
     gst-webrtc-app:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app
@@ -57,9 +53,9 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
       newTag: latest
-    chromoting:
-      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-chromoting
-      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-chromoting
+    xpra:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
       newTag: latest
   userParams:
     - name: enableAudio
@@ -78,6 +74,10 @@ spec:
       displayName: "Persistent Home"
       type: bool
       default: "true"
+    - name: enableXpra
+      displayName: "Use Xpra"
+      type: bool
+      default: "false"
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds

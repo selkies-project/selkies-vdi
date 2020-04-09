@@ -1,0 +1,81 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if .UserParams.enableXpra }}
+{{- if eq .UserParams.enableXpra "true"}}
+- op: remove
+  # webrtc
+  path: "/spec/template/spec/containers/3"
+- op: remove
+  # webrtc signaling
+  path: "/spec/template/spec/containers/3"
+- op: remove
+  # webrtc web
+  path: "/spec/template/spec/containers/3"
+
+# Change entrypoint of desktop container.
+- op: replace
+  path: "/spec/template/spec/containers/1/command"
+  value: ["/bin/bash", "-c"]
+
+- op: replace
+  path: "/spec/template/spec/containers/1/args"
+  value:
+    - |
+      set +x
+      echo "Waiting for X server"
+      until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+      echo "X server is ready"
+      set -x
+      sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
+      terminator
+
+# Add xpra container
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: xpra
+    image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra:latest
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: false
+      runAsUser: 1000
+    # tty required to gather gpu stats using nvidia-smi and GPUtil python module.
+    tty: true
+    env:
+      - name: LD_LIBRARY_PATH
+        value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
+      - name: DISPLAY
+        value: ":0"
+      - name: PULSE_SERVER
+        value: "127.0.0.1:4713"
+      - name: XPRA_PORT
+        value: "8082"
+      - name: XPRA
+        value: "tcp://127.0.0.1:8082"
+    volumeMounts:
+      - name: x11
+        mountPath: /tmp/.X11-unix
+      - name: config
+        mountPath: /var/run/appconfig
+    ports:
+      - name: web
+        containerPort: 8082
+    resources:
+      requests:
+        cpu: 500m
+      limits:
+        nvidia.com/gpu: 1
+{{- end}}
+{{- end}}

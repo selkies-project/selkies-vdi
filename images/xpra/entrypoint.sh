@@ -34,10 +34,11 @@ sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
 
 echo "Starting xpra"
 xhost +
+
 xpra start :0 \
     --use-display=yes \
     --user=app \
-    --bind-tcp=0.0.0.0:8080 \
+    --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
     --html=on \
     --daemon=no \
     --no-pulseaudio \
@@ -46,4 +47,5 @@ xpra start :0 \
     --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
     --open-files=${XPRA_OPEN_FILES:-"on"} \
     --video-encoders=nvenc ${XPRA_ARGS}
+
 sleep 2

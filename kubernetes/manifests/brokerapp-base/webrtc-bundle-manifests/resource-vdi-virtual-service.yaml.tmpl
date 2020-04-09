@@ -41,11 +41,11 @@ spec:
               number: 8080
       websocketUpgrade: true
     ###
-    # rule for vnc
+    # rule for xpra
     ###
     - match:
         - uri:
-            prefix: /{{.App}}/vnc/
+            prefix: /{{.App}}/xpra/
           headers:
             cookie:
               regex: ".*broker_{{.App}}={{.CookieValue}}.*"
