@@ -125,6 +125,11 @@ class WebRTCDemo {
          */
         this.onclipboardcontent = null;
 
+        /**
+         * @type {function}
+         */
+        this.onsystemaction = null;
+
         // Bind signalling server callbacks.
         this.signalling.onsdp = this._onSDP.bind(this);
         this.signalling.onice = this._onSignallingICE.bind(this);
@@ -317,6 +322,8 @@ class WebRTCDemo {
             return;
         }
 
+        this._setDebug("data channel message: " + event.data);
+
         if (msg.type === 'pipeline') {
             this._setStatus(msg.data.status);
         } else if (msg.type === 'gpu_stats') {
@@ -330,6 +337,14 @@ class WebRTCDemo {
 
                 if (this.onclipboardcontent !== null) {
                     this.onclipboardcontent(content);
+                }
+            }
+        } else if (msg.type === 'system') {
+            if (msg.action !== null) {
+                this._setDebug("received system msg, action: " + msg.data.action);
+                var action = msg.data.action;
+                if (this.onsystemaction !== null) {
+                    this.onsystemaction(action);
                 }
             }
         } else {

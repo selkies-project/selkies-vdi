@@ -50,6 +50,12 @@ var app = new Vue({
                 { text: '150 mbps', value: 150000 },
                 { text: '200 mbps', value: 200000 },
             ],
+            videoFramerate: (parseInt(window.localStorage.getItem("videoFramerate")) || 30),
+            videoFramerateOptions: [
+                { text: '15 fps', value: 15 },
+                { text: '30 fps', value: 30 },
+                { text: '60 fps', value: 60 },
+            ],
             audioBitRate: (parseInt(window.localStorage.getItem("audioBitRate")) || 32000),
             audioBitRateOptions: [
                 { text: '32 kb/s', value: 32000 },
@@ -67,7 +73,7 @@ var app = new Vue({
             clipboardStatus: 'disabled',
             gamepadState: 'disconnected',
             gamepadName: 'none',
-            audioEnabled: false,
+            audioEnabled: null,
             connectionStatType: "unknown",
             connectionLatency: 0,
             connectionVideoLatency: 0,
@@ -118,6 +124,15 @@ var app = new Vue({
         videoBitRate(newValue) {
             webrtc.sendDataChannelMessage('vb,' + newValue);
             window.localStorage.setItem("videoBitRate", newValue.toString());
+        },
+        videoFramerate(newValue) {
+            console.log("video frame rate changed to " + newValue);
+            webrtc.sendDataChannelMessage('_arg_fps,' + newValue);
+            window.localStorage.setItem("videoFramerate", newValue.toString());
+        },
+        audioEnabled(newValue, oldValue) {
+            console.log("audio enabled changed from " + oldValue + " to " + newValue);
+            if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_audio,' + newValue);
         },
         audioBitRate(newValue) {
             webrtc.sendDataChannelMessage('ab,' + newValue);
@@ -195,7 +210,7 @@ webrtc.onconnectionstatechange = (state) => {
         var statsStart = new Date().getTime() / 1000;
         var statsLoop = () => {
             webrtc.getConnectionStats().then((stats) => {
-                app.audioEnabled = (stats.audioCodecName) ? true : false;
+                //app.audioEnabled = (app.state === 'connected' && stats.audioCodecName) ? true : false;
                 if (app.audioEnabled) {
                     app.connectionAudioLatency = parseInt(stats.audioCurrentDelayMs);
                     app.connectionAudioCodecName = stats.audioCodecName;
@@ -298,7 +313,7 @@ window.addEventListener('focus', () => {
             webrtc.sendDataChannelMessage("cw," + btoa(text))
         })
         .catch(err => {
-            app._setError('Failed to read clipboard contents: ' + err);
+            webrtc._setStatus('Failed to read clipboard contents: ' + err);
         });
 });
 window.addEventListener('blur', () => {
@@ -312,6 +327,21 @@ webrtc.onclipboardcontent = (content) => {
             .catch(err => {
                 app._setDebug('Could not copy text to clipboard: ' + err);
             });
+    }
+}
+
+webrtc.onsystemaction = (action) => {
+    webrtc._setStatus("Executing system action: " + action);
+    if (action === 'reload') {
+        setTimeout(() => {
+            document.location.reload();
+        }, 700);
+    } else if (action.startsWith('framerate')) {
+        app.videoFramerate = parseInt(action.split(",")[1]);
+    } else if (action.startsWith('audio')) {
+        app.audioEnabled = (action.split(",")[1].toLowerCase() === 'true');
+    } else {
+        webrtc._setStatus('Unhandled system action: ' + action);
     }
 }
 

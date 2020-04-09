@@ -33,7 +33,7 @@ class GSTWebRTCAppError(Exception):
 
 
 class GSTWebRTCApp:
-    def __init__(self, stun_server=None, turn_server=None, audio=True, framerate=60):
+    def __init__(self, stun_server=None, turn_server=None, audio=True, framerate=30):
         """Initialize gstreamer webrtc app.
 
         Initializes GObjects and checks for required plugins.
@@ -525,6 +525,30 @@ class GSTWebRTCApp:
             "memory_total": memory_total,
             "memory_used": memory_used,
         })
+
+    def send_reload_window(self):
+        """Sends reload window command to the data channel
+        """
+
+        logger.info("sending window reload")
+        self.__send_data_channel_message(
+            "system", {"action": "reload"})
+
+    def send_framerate(self, framerate):
+        """Sends the current frame rate to the data channel
+        """
+
+        logger.info("sending frame rate")
+        self.__send_data_channel_message(
+            "system", {"action": "framerate,"+str(framerate)})
+
+    def send_audio_enabled(self, audio_enabled):
+        """Sends the current audio state
+        """
+
+        logger.info("sending audio enabled")
+        self.__send_data_channel_message(
+            "system", {"action": "audio,"+str(audio_enabled)})
 
     def is_data_channel_ready(self):
         """Checks to see if the data channel is open.

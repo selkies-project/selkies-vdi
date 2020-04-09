@@ -98,6 +98,29 @@ def wait_for_app_ready(ready_file, app_auto_init = True):
     while not (app_auto_init or os.path.exists(ready_file)):
         time.sleep(0.2)
 
+def set_json_app_argument(config_path, key, value):
+    """Writes kv pair to json argument file
+
+    Arguments:
+        config_path {string} -- path to json config file, example: /var/run/appconfig/streaming_args.json
+        key {string} -- the name of the argument to set
+        value {any} -- the value of the argument to set
+    """
+
+    if not os.path.exists(config_path):
+        # Create new file
+        with open(config_path, 'w') as f:
+            json.dump({}, f)
+
+    # Read current config JSON
+    json_data = json.load(open(config_path))
+
+    # Set the new value for the argument.
+    json_data[key] = value
+
+    # Save the json file
+    json.dump(json_data, open(config_path, 'w'))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json_config',
@@ -139,7 +162,7 @@ if __name__ == '__main__':
                         default=os.environ.get('APP_READY_FILE', '/var/run/appconfig/appready'),
                         help='file set by sidecar used to indicate that app is initialized and ready')
     parser.add_argument('--framerate',
-                        default=os.environ.get('WEBRTC_FRAMERATE', '60'),
+                        default=os.environ.get('WEBRTC_FRAMERATE', '30'),
                         help='framerate of streaming pipeline')
     parser.add_argument('--metrics_port',
                         default=os.environ.get('METRICS_PORT', '8000'),
@@ -160,6 +183,8 @@ if __name__ == '__main__':
                     args.enable_audio = str((str(v).lower() == 'true')).lower()
         except Exception as e:
             logging.error("failed to load json config from %s: %s" % (args.json_config, str(e)))
+
+    logging.warn(args)
 
     # Set log level
     if args.debug:
@@ -222,8 +247,14 @@ if __name__ == '__main__':
     webrtc_input = WebRTCInput(args.uinput_mouse_socket, args.uinput_js_socket, args.enable_clipboard.lower())
 
     # Log message when data channel is open
-    app.on_data_open = lambda: logging.info(
-        "opened peer data channel for user input to X11")
+    def data_channel_ready():
+        logging.info(
+            "opened peer data channel for user input to X11")
+
+        app.send_framerate(app.framerate)
+        app.send_audio_enabled(app.audio)
+
+    app.on_data_open = lambda: data_channel_ready()
 
     # Send incomming messages from data channel to input handler
     app.on_data_message = webrtc_input.on_message
@@ -231,7 +262,7 @@ if __name__ == '__main__':
     # Send video bitrate messages to app
     webrtc_input.on_video_encoder_bit_rate = lambda bitrate: app.set_video_bitrate(
         int(bitrate))
-    
+
     # Send audio bitrate messages to app
     webrtc_input.on_audio_encoder_bit_rate = lambda bitrate: app.set_audio_bitrate(
         int(bitrate))
@@ -242,6 +273,12 @@ if __name__ == '__main__':
 
     # Send clipboard contents when requested
     webrtc_input.on_clipboard_read = lambda data: app.send_clipboard_data(data)
+
+    # Write framerate arg to local config and then tell client to reload.
+    webrtc_input.on_set_fps = lambda fps: set_json_app_argument(args.json_config, "framerate", fps) or app.send_reload_window() 
+
+    # Write audio enabled arg to local config and then tell client to reload.
+    webrtc_input.on_set_enable_audio = lambda enabled: set_json_app_argument(args.json_config, "enable_audio", enabled) or app.send_reload_window()
 
     # Send client FPS to metrics
     webrtc_input.on_client_fps = lambda fps: metrics.set_fps(fps)

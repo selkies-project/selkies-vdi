@@ -184,8 +184,15 @@
                   hint="Dynamic bit rate selection for hardware encoder on server" persistent-hint></v-select>
               </p>
               <p>
+                <v-select :items="videoFramerateOptions" label="Video frame rate" menu-props="left"
+                  v-model="videoFramerate" hint="Frame rate selection, will reload window on change" persistent-hint>
+                </v-select>
+              </p>
+              <p>
                 <v-select :items="audioBitRateOptions" label="Audio bit rate" menu-props="left" v-model="audioBitRate"
-                  hint="Dynamic bit rate selection for audio encoder on server" persistent-hint></v-select>
+                  :disabled="!audioEnabled" hint="Dynamic bit rate selection for audio encoder on server"
+                  persistent-hint>
+                </v-select>
               </p>
               <p>
                 <ul>
@@ -219,6 +226,10 @@
               </v-textarea>
               <v-textarea bottom class="scrolly" label="Debug Logs" readonly :value="debugEntries.join('\n\n')">
               </v-textarea>
+              <p>
+                <v-btn color="primary" v-if="!audioEnabled" small v-on:click="audioEnabled=true">Enable Audio</v-btn>
+                <v-btn color="primary" v-else small v-on:click="audioEnabled=false">Disable Audio</v-btn>
+              </p>
               <p>
                 Debugging
                 <v-switch v-model="debug" :label="`Debug logs: ${debug.toString()}`"></v-switch>

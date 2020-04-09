@@ -109,6 +109,10 @@ class WebRTCInput:
             'unhandled on_mouse_pointer_visible')
         self.on_clipboard_read = lambda data: logger.warn(
             'unhandled on_clipboard_read')
+        self.on_set_fps = lambda fps: logger.warn(
+            'unhandled on_set_fps')
+        self.on_set_enable_audio = lambda enable_audio: logger.warn(
+            'unhandled on_set_enable_audio')
         self.on_client_fps = lambda fps: logger.warn(
             'unhandled on_client_fps')
         self.on_client_latency = lambda latency: logger.warn(
@@ -442,6 +446,16 @@ class WebRTCInput:
                 logger.info("set clipboard content, length: %d" % len(data))
             else:
                 logger.warning("rejecting clipboard write because inbound clipboard is disabled.")
+        elif toks[0] == "_arg_fps":
+            # Set framerate
+            fps = int(toks[1])
+            logger.info("Setting framerate to: %d" % fps)
+            self.on_set_fps(fps)
+        elif toks[0] == "_arg_audio":
+            # Set audio enabled
+            enabled = toks[1].lower() == "true"
+            logger.info("Setting enable_audio to: %s" % str(enabled))
+            self.on_set_enable_audio(enabled)
         elif toks[0] == "_f":
             # Reported FPS from client.
             fps = int(toks[1])
@@ -451,4 +465,4 @@ class WebRTCInput:
             latencty_ms = int(toks[1])
             self.on_client_latency(latencty_ms)
         else:
-                logger.info('unknown data channel message: %s' % msg)
+            logger.info('unknown data channel message: %s' % msg)
