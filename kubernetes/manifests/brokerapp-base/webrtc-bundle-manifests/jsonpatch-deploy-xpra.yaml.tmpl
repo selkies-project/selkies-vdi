@@ -41,6 +41,20 @@
       sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
       terminator
 
+# Add shared volume for xpra uploads
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: xpra-uploads
+    emptyDir: {}
+
+# Add shared volume for xpra uploads to desktop container
+- op: add
+  path: "/spec/template/spec/containers/1/volumeMounts/-"
+  value:
+    name: xpra-uploads
+    mountPath: /mnt/uploads
+
 # Add xpra container
 - op: add
   path: "/spec/template/spec/containers/-"
@@ -64,11 +78,18 @@
         value: "8082"
       - name: XPRA
         value: "tcp://127.0.0.1:8082"
+      # Add environment vars from brokerappconfig spec.
+      {{- range $item := .AppSpec.AppEnv }}
+      - name: {{$item.Name}}
+        value: "{{$item.Value}}"
+      {{- end}}
     volumeMounts:
       - name: x11
         mountPath: /tmp/.X11-unix
       - name: config
         mountPath: /var/run/appconfig
+      - name: xpra-uploads
+        mountPath: /home/app
     ports:
       - name: web
         containerPort: 8082
