@@ -78,6 +78,8 @@ spec:
               echo "Done"
           env:
             - name: NVIDIA_0_SHARE
+              # Should be: # of gpus per pod * num users per node
+              # So 3 gpu per pod and 16 users would be 48.
               value: "48"
           volumeMounts:
             - name: dev

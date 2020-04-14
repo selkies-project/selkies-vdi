@@ -19,4 +19,3 @@ namespace: pod-broker-system
 
 bases:
   - webrtc-bundle-manifests/
-  - xpra-bundle-manifests/
