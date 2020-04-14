@@ -42,25 +42,8 @@ spec:
       nodeSelector:
         app.broker/initialized: "true"
         app.broker/tier: {{ .NodeTier.NodeLabel }}
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: app.broker/initialized
-                    operator: Exists
-                  - key: app.broker/tier
-                    operator: In
-                    values: ["{{ .NodeTier.NodeLabel }}"]
-                  - key: cloud.google.com/gke-accelerator
-                    operator: Exists
-                  {{- if .UserParams.compat32 }}
-                  {{- if eq .UserParams.compat32 "true"}}
-                  - key: cloud.google.com/gke-os-distribution
-                    operator: In
-                    values: ["ubuntu"]
-                  {{- end }}
-                  {{- end }}
+        cloud.google.com/gke-accelerator-initialized: "true"
+        cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
       tolerations:
         - key: "app.broker/tier"
           effect: "NoSchedule"
@@ -69,6 +52,9 @@ spec:
           effect: "NoSchedule"
           operator: "Exists"
         - key: "nvidia.com/gpu"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "cloud.google.com/gke-accelerator-init"
           effect: "NoSchedule"
           operator: "Exists"
       {{- if .UserParams.enablePersistence}}
@@ -134,20 +120,6 @@ spec:
         - name: {{$item.Name}}
           value: "{{$item.Value}}"
         {{- end}}
-      #- name: chromoting
-      #  env:
-      #  {{- if .UserParams.crdRedirectURL}}
-      #  - name: CRD_REDIRECT_URL
-      #    value: "{{.UserParams.crdRedirectURL}}"
-      #  {{- end}}
-      #  {{- if .UserParams.crdCode}}
-      #  - name: CRD_CODE
-      #    value: "{{.UserParams.crdCode}}"
-      #  {{- end}}
-      #  {{- if .UserParams.crdPIN}}
-      #  - name: CRD_PIN
-      #    value: "{{.UserParams.crdPIN}}"
-      #  {{- end}}
       - name: webrtc
         env:
         - name: APP_AUTO_INIT
