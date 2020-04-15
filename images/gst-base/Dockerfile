@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:19.04 as nvidia
+FROM ubuntu:19.10 as nvidia
 
 # Use GCE apt servers
-RUN sed -i 's/archive.ubuntu.com/us-west1.gce.archive.ubuntu.com/g' /etc/apt/sources.list
+ARG GCE_ZONE=us-west1
+RUN cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
+    sed -i "s/archive.ubuntu.com/${GCE_ZONE}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
 
 # Install essentials
 RUN \
@@ -101,7 +103,7 @@ RUN \
         libsrtp2-dev
 
 # Install usrsctp from source
-ARG USRSCTP_VERSION=37a8a0a1f9c4b1eb6c00c0043b9eb455facdcad9
+ARG USRSCTP_VERSION=6ce0f8fe7455e566a6833684ec5983547658856d
 RUN \
     git clone https://github.com/sctplab/usrsctp.git && \
     cd usrsctp && git checkout ${USRSCTP_VERSION} && \
