@@ -14,6 +14,7 @@
 
 timeout: 300s
 substitutions:
+  _NAME: broker
   _REGION: us-west1
 
 steps:
@@ -33,4 +34,4 @@ steps:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
       - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
-      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
