@@ -1,0 +1,107 @@
+# Copyright 2017 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Pre-requisites to running with cloud build
+# gcloud services enable \
+#     compute.googleapis.com \
+#     container.googleapis.com \
+#     cloudbuild.googleapis.com
+
+timeout: 3600s
+substitutions:
+  _NAME: broker
+  _REGION:
+
+steps:
+  ###
+  # Build images
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "build-images"
+    dir: "images"
+    args:
+      - "builds"
+      - "submit"
+    waitFor: ["-"]
+  ###
+  # Deploy autoscale gpu trigger job to ensure at least 1 node is active for the next hour
+  ###
+  - name: "gcr.io/${PROJECT_ID}/broker-installer"
+    id: ensure-gpu-node
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
+
+        kubectl apply -f kubernetes/manifests/node/gpu-node-pool-autoscaler-job.yaml
+
+        kubectl -n kube-system wait pod \
+          -l job-name=gpu-node-pool-autoscaler \
+          --for=condition=Ready \
+          --timeout=900s
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
+    waitFor: ["-"]
+  ###
+  # Deploy manifests
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "deploy-manifests"
+    dir: "kubernetes/manifests"
+    args:
+      - "builds"
+      - "submit"
+      - "--substitutions=_NAME=${_NAME},_REGION=${_REGION}"
+    waitFor: ["build-images"]
+  ###
+  # Wait for deployment
+  ###
+  - name: "gcr.io/${PROJECT_ID}/broker-installer"
+    id: wait-for-deployment
+    entrypoint: "bash"
+    args:
+      - "-exc"
+      - |
+        gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
+
+        kubectl -n kube-system wait pod \
+          -l k8s-app=nvidia-driver-installer \
+          --for=condition=Ready \
+          --timeout=600s
+
+        kubectl -n kube-system wait pod \
+          -l app=gpu-node-init \
+          --for=condition=Ready \
+          --timeout=600s
+
+        kubectl -n kube-system wait pod \
+          -l app=gpu-sharing \
+          --for=condition=Ready \
+          --timeout=600s
+
+        kubectl describe node -l \
+          cloud.google.com/gke-accelerator-initialized=true \
+          | grep nvidia.com/gpu
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
+    waitFor:
+      - ensure-gpu-node
+      - deploy-manifests
