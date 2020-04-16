@@ -106,18 +106,18 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Add user and grant sudo
-RUN adduser --gecos '' --disabled-password --shell /bin/bash coder && \
-	echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
+RUN adduser --gecos '' --disabled-password --shell /bin/bash app && \
+	echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
-WORKDIR /home/coder/project
+WORKDIR /home/app/project
 
 # Prevent zombie python processes whenever gcloud is run.
 RUN gcloud config set disable_usage_reporting true
 
 # Use bash as default shell
 ENV SHELL /bin/bash
-ENV USER coder
-ENV PATH ${PATH}:/usr/local/nvidia/bin:/home/coder/bin
+ENV USER app
+ENV PATH ${PATH}:/usr/local/nvidia/bin:/home/app/bin
 
 # Export library path for NVIDIA libs
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64
