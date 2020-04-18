@@ -14,6 +14,7 @@
 
 timeout: 300s
 substitutions:
+  _ACTION: apply
   _NAME: broker
   _REGION: us-west1
 
@@ -27,8 +28,10 @@ steps:
     args:
       - -exc
       - |
-        kubectl kustomize . | sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' | \
-          /builder/kubectl.bash apply -f -
+        kubectl kustomize . | sed \
+          -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \
+          -e 's/$${REGION}/'${_REGION}'/g' \
+          | /builder/kubectl.bash ${_ACTION} -f -
     env:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
