@@ -81,6 +81,8 @@ spec:
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
+    - name: enableRecording
+      default: "false"
     #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
     #  default: "${EGRESS_PROXY}/32"
   #appEnv:

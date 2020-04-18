@@ -1,4 +1,4 @@
-# Copyright 2019 Google Inc.
+# Google LLC 2019
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-bases:
-  - node/
-  - cnrm-system/
-  - brokerapp-base/
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMServiceAccount
+metadata:
+  name: vdi-recording-exporter
+spec:
+  displayName: VDI Recording Exporter Service Account
+---
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicyMember
+metadata:
+  name: vdi-recording-exporter-storage
+spec:
+  member: serviceAccount:vdi-recording-exporter@${PROJECT_ID}.iam.gserviceaccount.com
+  role: roles/storage.admin
+  resourceRef:
+    kind: Project

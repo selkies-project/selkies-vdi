@@ -1,0 +1,98 @@
+# Google LLC 2019
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if .AppParams.enableRecording }}
+{{- if eq .AppParams.enableRecording "true"}}
+
+# Stable timestamp for recording directory
+
+# Add shared hostpath volume
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: recording
+    hostPath:
+      path: "/tmp/webrtc_recordings/{{.User}}/{{.Timestamp}}"
+      type: DirectoryOrCreate
+
+# Add recording container
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: recording
+    image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: false
+    workingDir: /tmp/recording
+    command: ["/bin/bash"]
+    args:
+      - "-c"
+      - |
+        SECONDS_PER_FILE=${SECONDS_PER_FILE:-60}
+        # Convert to ns
+        ((max_size_time=SECONDS_PER_FILE*1000000000))
+
+        READY_FILE=/tmp/recording/ready
+        echo "INFO: Waiting for ready file: $READY_FILE"
+        while [[ ! -f "$READY_FILE" ]]; do
+          sleep 2
+        done
+        echo "INFO: Dest dir is ready. Starting recording."
+
+        MAX_FILES=${MAX_FILES:-0}
+        RECORDING_TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
+        DEST_DIR=/tmp/recording/data/${RECORDING_TIMESTAMP}
+        mkdir -p "$DEST_DIR"
+        
+        exec gst-launch-1.0 \
+          ximagesrc show-pointer=1 remote=1 blocksize=16384 use-damage=0 \
+          ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
+          ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
+          ! h264parse \
+          ! splitmuxsink muxer=mp4mux max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_%02d.mp4
+    env:
+      - name: GST_DEBUG
+        value: "*:2"
+      - name: LD_LIBRARY_PATH
+        value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
+      - name: DISPLAY
+        value: ":0"
+      # Add environment vars from brokerappconfig spec.
+      {{- range $item := .AppSpec.AppEnv }}
+      - name: {{$item.Name}}
+        value: "{{$item.Value}}"
+      {{- end}}
+    volumeMounts:
+      - name: x11
+        mountPath: /tmp/.X11-unix
+      - name: config
+        mountPath: /var/run/appconfig
+      - name: recording
+        mountPath: /tmp/recording
+    resources:
+      requests:
+        cpu: 100m
+      limits:
+        nvidia.com/gpu: 1
+    # Remove recording data from disk when pod shuts down.
+    lifecycle:
+      preStop:
+        exec:
+          command:
+            - /bin/bash
+            - -c
+            - rm -rf /tmp/recording/*
+{{- end}}
+{{- end}}

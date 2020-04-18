@@ -21,15 +21,14 @@ steps:
   ###
   # Deploy manifests to cluster.
   ###
-  - name: "gcr.io/${PROJECT_ID}/broker-installer"
+  - name: "gcr.io/cloud-builders/kubectl"
     id: deploy-manifests
-    entrypoint: "bash"
+    entrypoint: bash
     args:
-      - "-exc"
+      - -exc
       - |
-        gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
-
-        kubectl apply -k .
+        kubectl kustomize . | sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' | \
+          /builder/kubectl.bash apply -f -
     env:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
