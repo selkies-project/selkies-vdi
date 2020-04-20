@@ -42,8 +42,10 @@
       terminator
 
 # Add shared volume for xpra uploads
+# Inserting as first element to deconflict other patches that append.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
 - op: add
-  path: "/spec/template/spec/volumes/-"
+  path: "/spec/template/spec/volumes/0"
   value:
     name: xpra-uploads
     emptyDir: {}
@@ -56,8 +58,10 @@
     mountPath: /mnt/uploads
 
 # Add xpra container
+# Inserting as first element to deconflict other patches that append.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
 - op: add
-  path: "/spec/template/spec/containers/-"
+  path: "/spec/template/spec/containers/0"
   value:
     name: xpra
     image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra:latest
