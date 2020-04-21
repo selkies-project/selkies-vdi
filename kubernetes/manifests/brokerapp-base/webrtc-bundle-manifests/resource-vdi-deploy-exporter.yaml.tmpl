@@ -124,12 +124,6 @@ spec:
                 fi
                 sleep 5
               done
-          env:
-            # Add environment vars from brokerappconfig spec.
-            {{- range $item := .AppSpec.AppEnv }}
-            - name: {{$item.Name}}
-              value: "{{$item.Value}}"
-            {{- end}}
           volumeMounts:
             - name: recording
               mountPath: /tmp/recording

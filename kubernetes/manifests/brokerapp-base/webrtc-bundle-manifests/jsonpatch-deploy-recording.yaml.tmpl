@@ -69,11 +69,6 @@
         value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
       - name: DISPLAY
         value: ":0"
-      # Add environment vars from brokerappconfig spec.
-      {{- range $item := .AppSpec.AppEnv }}
-      - name: {{$item.Name}}
-        value: "{{$item.Value}}"
-      {{- end}}
     volumeMounts:
       - name: x11
         mountPath: /tmp/.X11-unix
