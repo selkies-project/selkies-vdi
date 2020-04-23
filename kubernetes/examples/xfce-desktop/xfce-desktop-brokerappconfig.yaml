@@ -91,6 +91,10 @@ spec:
   #  value: "${EGRESS_PROXY}:3128"
   #- name: https_proxy
   #  value: "${EGRESS_PROXY}:3128"
+  #- name: XPRA_START
+  #  value: "start-desktop"
+  #- name: XPRA_ENTRYPOINT
+  #  value: "terminator"
   #- name: XPRA_CLIPBOARD_DIRECTION
   #  value: "both"
   #- name: XPRA_FILE_TRANSFER

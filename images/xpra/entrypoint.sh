@@ -35,7 +35,7 @@ sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
 echo "Starting xpra"
 xhost +
 
-xpra start :0 \
+xpra ${XPRA_START:-"start"} :0 \
     --use-display=yes \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \

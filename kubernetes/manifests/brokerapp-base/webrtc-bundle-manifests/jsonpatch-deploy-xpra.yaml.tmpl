@@ -39,7 +39,7 @@
       echo "X server is ready"
       set -x
       sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
-      terminator
+      ${XPRA_ENTRYPOINT:-"terminator"}
 
 # Add shared volume for xpra uploads
 # Inserting as first element to deconflict other patches that append.
