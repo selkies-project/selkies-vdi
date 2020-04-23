@@ -1,0 +1,99 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vdi-recording-exporter
+  labels:
+    app: vdi-recording-exporter
+  annotations:
+    iam.gke.io/gcp-service-account: vdi-recording-exporter@${PROJECT_ID}.iam.gserviceaccount.com
+---
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicyMember
+metadata:
+  name: vdi-recording-exporter-wi
+spec:
+  resourceRef:
+    apiVersion: iam.cnrm.cloud.google.com/v1beta1
+    kind: IAMServiceAccount
+    name: vdi-recording-exporter
+  member: serviceAccount:${PROJECT_ID}.svc.id.goog[pod-broker-system/vdi-recording-exporter]
+  role: roles/iam.workloadIdentityUser
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vdi-recording-exporter
+  namespace: kube-system
+  labels:
+    app: vdi-recording-exporter
+spec:
+  selector:
+    matchLabels:
+      app: vdi-recording-exporter
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: vdi-recording-exporter
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator-initialized: "true"
+      tolerations:
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "nvidia.com/gpu"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "cloud.google.com/gke-accelerator-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+      terminationGracePeriodSeconds: 10
+      serviceAccount: vdi-recording-exporter
+      volumes:
+        - name: recording
+          hostPath:
+            path: "/tmp/webrtc_recordings"
+            type: DirectoryOrCreate
+      containers:
+        - name: exporter
+          image: google/cloud-sdk:alpine
+          imagePullPolicy: IfNotPresent
+          workingDir: /tmp/recording
+          command: ["/bin/bash"]
+          args:
+            - "-c"
+            - |
+              echo "INFO: waiting for workload identity"
+              while true; do
+                gcloud -q auth list --format='value(account)' 2>/dev/null
+                [[ $? -eq 0 ]] && break
+                sleep 2
+              done
+              echo "INFO: workload identity is ready"
+
+              while true; do
+                find /tmp/recording/*/*/data/ -prune | xargs -r -P4 -I {} gsutil -m rsync -C -r {} gs://${PROJECT_ID}-vdi-recordings/
+                sleep 5
+              done
+          volumeMounts:
+            - name: recording
+              mountPath: /tmp/recording
