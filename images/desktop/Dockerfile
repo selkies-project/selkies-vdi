@@ -71,7 +71,7 @@ RUN apt-get install -y \
 # Install Jetbrains Toolbox and desktop shortcut
 COPY --from=jetbrains /tmp/appimage /opt/jetbrains-toolbox
 RUN \
-    sudo mkdir -p /etc/skel/Desktop && printf "[Desktop Entry]\nVersion=1.0\nType=Application\nExec=/usr/bin/jetbrains-toolbox\nPath=/opt/jetbrains-toolbox\nName=Jetbrains Toolbox\nIcon=/opt/jetbrains-toolbox/jetbrains-toolbox.svg\nTerminal=false\n" | sudo tee /etc/skel/Desktop/Jetbrains.desktop && \
+    sudo mkdir -p /etc/skel/Desktop && printf "[Desktop Entry]\nVersion=1.0\nType=Application\nExec=/usr/bin/jetbrains-toolbox\nPath=/opt/jetbrains-toolbox\nName=Jetbrains Toolbox\nIcon=/opt/jetbrains-toolbox/toolbox-tray-color.png\nTerminal=false\n" | sudo tee /etc/skel/Desktop/Jetbrains.desktop && \
     sudo chmod +x /etc/skel/Desktop/Jetbrains.desktop && \
     sudo chown 1000:1000 /etc/skel/Desktop/Jetbrains.desktop
 
