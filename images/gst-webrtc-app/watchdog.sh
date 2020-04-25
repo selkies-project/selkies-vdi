@@ -17,7 +17,11 @@
 # This script is called by a watchdog trigger to shutdown the user pod
 # by calling the DELETE method on the pod broker.
 
-set -e
+set +x
+echo "Waiting for X server"
+until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+[[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
+echo "X server is ready"
 set -x
 
 echo "INFO: Shutting down ${APP_NAME} pod for user ${POD_USER} through pod broker" >&2

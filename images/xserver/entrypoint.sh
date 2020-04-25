@@ -38,9 +38,6 @@ echo "Waiting for X11 startup"
 until xhost + >/dev/null 2>&1; do sleep 1; done
 echo "X11 startup complete"
 
-# Start x11vnc on port 5901 in background
-x11vnc -xkb -noxrecord -noxfixes -noxdamage -nopw -rfbport 5901 -display :0 -shared -forever -o /var/log/x11vnc.log -bg
-
 # Notify sidecar containers
 touch /var/run/appconfig/xserver_ready
 

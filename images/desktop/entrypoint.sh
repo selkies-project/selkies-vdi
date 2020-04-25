@@ -17,6 +17,7 @@
 set +x
 echo "Waiting for X server"
 until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+[[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
 echo "X server is ready"
 set -x
 

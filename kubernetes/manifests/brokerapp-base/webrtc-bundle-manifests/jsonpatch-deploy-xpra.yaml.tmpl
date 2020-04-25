@@ -15,30 +15,33 @@
 {{- if .UserParams.enableXpra }}
 {{- if eq .UserParams.enableXpra "true"}}
 - op: remove
+  # xserver
+  path: "/spec/template/spec/containers/0"
+- op: remove
   # webrtc
-  path: "/spec/template/spec/containers/3"
+  path: "/spec/template/spec/containers/2"
 - op: remove
   # webrtc signaling
-  path: "/spec/template/spec/containers/3"
+  path: "/spec/template/spec/containers/2"
 - op: remove
   # webrtc web
-  path: "/spec/template/spec/containers/3"
+  path: "/spec/template/spec/containers/2"
 
 # Change entrypoint of desktop container.
 - op: replace
-  path: "/spec/template/spec/containers/1/command"
+  path: "/spec/template/spec/containers/0/command"
   value: ["/bin/bash", "-c"]
 
+# Change args to desktop container.
 - op: replace
-  path: "/spec/template/spec/containers/1/args"
+  path: "/spec/template/spec/containers/0/args"
   value:
     - |
-      set +x
       echo "Waiting for X server"
       until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+      [[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
       echo "X server is ready"
-      set -x
-      sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
+
       ${XPRA_ENTRYPOINT:-"terminator"}
 
 # Add shared volume for xpra uploads
@@ -52,7 +55,7 @@
 
 # Add shared volume for xpra uploads to desktop container
 - op: add
-  path: "/spec/template/spec/containers/1/volumeMounts/-"
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
   value:
     name: xpra-uploads
     mountPath: /mnt/uploads

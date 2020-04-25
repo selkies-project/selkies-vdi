@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=gcr.io/cloud-solutions-images/gce-accel-webrtc-gst-base:latest
+ARG BASE_IMAGE=gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-base:latest
 
 FROM ${BASE_IMAGE}
 
@@ -22,7 +22,10 @@ RUN \
 RUN \
     apt-get update && apt-get install -y \
         udev \
-        xclip
+        xclip \
+        x11-utils \
+        xdotool \
+        x11-xserver-utils
 
 # Build app
 WORKDIR /opt/app
@@ -31,7 +34,7 @@ COPY *.py watchdog.sh debug.sh /opt/app/
 ENV PATH=/usr/local/nvidia/bin:${PATH}
 
 # Add entrypoint script
-COPY entrypoint.sh /
+COPY entrypoint.sh record.sh /
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

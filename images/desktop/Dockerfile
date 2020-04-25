@@ -32,7 +32,8 @@ FROM gcr.io/cloudshell-images/cloudshell:latest
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         bsdtar \
         gdebi-core \
-        gnupg2
+        gnupg2 \
+        libxcb-keysyms1
 
 # Install Chrome browser
 RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
@@ -42,6 +43,7 @@ RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key a
 # Install desktop environment and terminal
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xfce4 \
+        xfce4-terminal \
         terminator
 
 # Disable screen locking and screensaver

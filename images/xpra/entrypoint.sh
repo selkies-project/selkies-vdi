@@ -14,29 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set +x
-echo "Waiting for X server"
-until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
-echo "X server is ready"
-set -x
-
-# Forward js input control socket to shared pod volume.
-if [[ -S /tmp/.uinput/js0ctl ]]; then
-    echo "Forwarding socket /tmp/.uinput/js0ctl to /var/run/appconfig/js0ctl"
-    sudo chown root:1000 /tmp/.uinput/js*ctl
-    sudo chown root:1000 /dev/input/js* /dev/input/event* /dev/input/evdev/js*
-    nohup sudo socat UNIX-RECV:/var/run/appconfig/js0ctl,reuseaddr UNIX-CLIENT:/tmp/.uinput/js0ctl &
-fi
-
-# Workaround for vulkan initialization
-# https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
-sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
-
 echo "Starting xpra"
-xhost +
-
 xpra ${XPRA_START:-"start"} :0 \
-    --use-display=yes \
+    --use-display=no \
+    --resize-display=no \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
     --html=on \
@@ -46,6 +27,33 @@ xpra ${XPRA_START:-"start"} :0 \
     --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
     --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
     --open-files=${XPRA_OPEN_FILES:-"on"} \
-    --video-encoders=nvenc ${XPRA_ARGS}
+    ${XPRA_ARGS} &
+PID=$!
+
+set +x
+echo "Waiting for X server"
+until [[ -S /tmp/.X11-unix/X0 ]]; do sleep 1; done
+echo "X server is ready"
+set -x
+xhost +
+xrandr -s 8192x4096
+
+cp ${HOME}/.Xauthority /var/run/appconfig/
+
+# Wait for Xpra client
+set +x
+echo "Waiting for Xpra client"
+until xpra info $XPRA 2>&1 >/dev/null; do sleep 1; done
+clients=0
+while [[ $clients -lt 1 ]]; do
+    clients=$(xpra info $XPRA | grep clients= | cut -d'=' -f2)
+    sleep 1
+done
+echo "Xpra is ready"
+set -x
+
+touch /var/run/appconfig/xserver_ready
+
+wait $PID
 
 sleep 2

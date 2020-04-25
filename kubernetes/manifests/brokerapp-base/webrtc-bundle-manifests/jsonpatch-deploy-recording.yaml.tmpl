@@ -36,25 +36,7 @@
     securityContext:
       privileged: false
     workingDir: /tmp/recording
-    command: ["/bin/bash"]
-    args:
-      - "-c"
-      - |
-        SECONDS_PER_FILE=${SECONDS_PER_FILE:-60}
-        # Convert to ns
-        ((max_size_time=SECONDS_PER_FILE*1000000000))
-
-        MAX_FILES=${MAX_FILES:-0}
-        RECORDING_TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
-        DEST_DIR=/tmp/recording/data/${VDI_USER}/${VDI_APP}/${RECORDING_TIMESTAMP}
-        mkdir -p "$DEST_DIR"
-        
-        exec gst-launch-1.0 \
-          ximagesrc show-pointer=1 remote=1 blocksize=16384 use-damage=0 \
-          ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
-          ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
-          ! h264parse \
-          ! splitmuxsink muxer=mp4mux max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_%02d.mp4
+    command: ["/record.sh"] 
     env:
       - name: GST_DEBUG
         value: "*:2"
@@ -66,6 +48,11 @@
         value: "{{.User}}"
       - name: VDI_APP
         value: "{{.App}}"
+      # Add the userParams to the env prefixed with VDI_
+      {{- range $key, $value := .UserParams }}
+      - name: VDI_{{ $key }}
+        value: "{{ $value }}" 
+      {{- end}}
     volumeMounts:
       - name: x11
         mountPath: /tmp/.X11-unix
