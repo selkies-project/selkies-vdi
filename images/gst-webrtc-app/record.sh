@@ -19,7 +19,7 @@ until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
 [[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
 echo "X server is ready"
 
-SECONDS_PER_FILE=${SECONDS_PER_FILE:-600}
+SECONDS_PER_FILE=${SECONDS_PER_FILE:-60}
 # Convert to ns
 ((max_size_time=SECONDS_PER_FILE*1000000000))
 
