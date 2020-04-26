@@ -53,7 +53,7 @@ def fetch_coturn(uri, user, auth_header_name):
         auth_header_name: user
     }
 
-    conn.request("GET", "/", headers=auth_headers)
+    conn.request("GET", parsed_uri.path, headers=auth_headers)
     resp = conn.getresponse()
     if resp.status >= 400:
         raise Exception(resp.reason)
