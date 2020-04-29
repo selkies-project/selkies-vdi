@@ -27,11 +27,11 @@ fi
 
 # Start xorg in background
 # The MIT-SHM extension here is important to achieve full frame rates
-nohup Xorg :0 -novtswitch -sharevts -nolisten tcp +extension MIT-SHM vt7 &
+nohup Xorg ${DISPLAY} -novtswitch -sharevts -nolisten tcp +extension MIT-SHM vt7 &
 
 # Wait for X11 to start
 echo "Waiting for X socket"
-until [[ -S /tmp/.X11-unix/X0 ]]; do sleep 1; done
+until [[ -S /tmp/.X11-unix/X${DISPLAY/:/} ]]; do sleep 1; done
 echo "X socket is ready"
 
 echo "Waiting for X11 startup"
@@ -43,4 +43,4 @@ touch /var/run/appconfig/xserver_ready
 
 # Foreground process, tail logs
 touch /var/log/x11vnc.log
-tail -F /var/log/Xorg.0.log /var/log/x11vnc.log
+tail -F /var/log/Xorg.${DISPLAY/:/}.log /var/log/x11vnc.log

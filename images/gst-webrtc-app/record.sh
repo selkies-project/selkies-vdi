@@ -31,8 +31,11 @@ mkdir -p "$DEST_DIR"
 # Set the max window size.
 # If window size being recorded is larger than this, gstreamer will crash.
 # Setting the limits here will force the window into these dimensions before starting the recording.
-MAX_WINDOW_WIDTH=3840
-MAX_WINDOW_HEIGHT=2160
+IFS='x' read -ra maxres <<< $(xrandr | head | grep -o "maximum.*" | sed 's/maximum//' | tr -d ' ')
+MAX_WINDOW_WIDTH=${maxres[0]}
+MAX_WINDOW_HEIGHT=${maxres[1]}
+
+echo "INFO: Maximum capture resolution: ${MAX_WINDOW_WIDTH}x${MAX_WINDOW_HEIGHT}, larger windows will be resized to fit."
 
 if [[ "${VDI_enableXpra}" == "true" ]]; then
     # Capture every window into separate files.

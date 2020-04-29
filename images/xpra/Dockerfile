@@ -50,7 +50,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         vim \
         xfwm4 \
         xfce4-terminal \
-        gdebi-core && \
+        gdebi-core \
+        xserver-xephyr && \
     rm -rf /var/lib/apt/lists/*
 
 # Install ffmpeg-xpra

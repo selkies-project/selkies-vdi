@@ -38,6 +38,7 @@ spec:
       annotations:
         gke.accel.vdi/user: "{{.User}}"
     spec:
+      #serviceAccount: {{.Namespace}}
       enableServiceLinks: false
       nodeSelector:
         app.broker/initialized: "true"
@@ -62,6 +63,7 @@ spec:
       initContainers:
       - name: persist-init
         image: busybox:latest
+        imagePullPolicy: IfNotPresent
         command: ["/bin/chown", "1000:1000", "/home/app"]
         volumeMounts:
         - name: persist
@@ -89,9 +91,11 @@ spec:
           - |
 {{.AppParams.command | nindent 12}}
         {{- end}}
+        resources:
+          requests:
+            cpu: {{ default "500m" .AppParams.cpuPerUser }}
         {{- if .UserParams.enableJoystick }}
         {{- if eq .UserParams.enableJoystick "true"}}
-        resources:
           limits:
             # hotplug support for uinput devices.
             # note: does not work with X11 HAL
@@ -142,16 +146,16 @@ spec:
           value: "/var/run/appconfig/js0ctl"
         {{- end}}
         {{- end}}
-      - name: watchdog
-        env:
-        - name: POD_USER
-          value: "{{.User}}"
-        - name: APP_NAME
-          value: "{{.App}}"
-        {{- if .UserParams.idleShutdown}}
-        - name: WATCHDOG_TIMEOUT
-          value: "{{.AppParams.idleShutdownTimeout}}"
-        {{- end}}
+      #- name: watchdog
+      #  env:
+      #  - name: POD_USER
+      #    value: "{{.User}}"
+      #  - name: APP_NAME
+      #    value: "{{.App}}"
+      #  {{- if .UserParams.idleShutdown}}
+      #  - name: WATCHDOG_TIMEOUT
+      #    value: "{{.AppParams.idleShutdownTimeout}}"
+      #  {{- end}}
       {{- if .UserParams.appDev}}
       {{- if eq .UserParams.appDev "true"}}
       - name: appdev

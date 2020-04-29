@@ -21,10 +21,12 @@ RUN \
 
 RUN \
     apt-get update && apt-get install -y \
+        sudo \
         udev \
         xclip \
         x11-utils \
         xdotool \
+        wmctrl \
         x11-xserver-utils
 
 # Build app

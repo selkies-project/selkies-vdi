@@ -79,6 +79,8 @@ spec:
       type: bool
       default: "false"
   appParams:
+    - name: cpuPerUser
+      default: "500m"
     - name: idleShutdownTimeout
       default: "600" # seconds
     - name: enableRecording

@@ -104,8 +104,6 @@ spec:
               exec:
                 command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
           resources:
-            requests:
-              cpu: 500m
             limits:
               # shared GPU
               nvidia.com/gpu: 1
@@ -135,8 +133,6 @@ spec:
             - name: dshm
               mountPath: /dev/shm
           resources:
-            requests:
-              cpu: 2
             limits:
               # shared GPU
               nvidia.com/gpu: 1
@@ -183,8 +179,6 @@ spec:
             - name: config
               mountPath: /var/run/appconfig
           resources:
-            requests:
-              cpu: 500m
             limits:
               nvidia.com/gpu: 1
 
@@ -222,9 +216,6 @@ spec:
           readinessProbe:
             tcpSocket:
               port: signalling
-          resources:
-            requests:
-              cpu: 100m
 
         ###
         # web container
@@ -248,33 +239,29 @@ spec:
             httpGet:
               path: /
               port: web
-          resources:
-            requests:
-              cpu: 100m
-
         ###
         # Watchdog container
         ###
-        - name: watchdog
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
-          imagePullPolicy: IfNotPresent
-          command:
-            [
-              "/usr/bin/python3",
-              "/opt/app/xserver_watchdog.py",
-              "--on_timeout=/opt/app/watchdog.sh",
-            ]
-          env:
-            - name: DISPLAY
-              value: ":0"
-            - name: POD_USER
-              value: vdi
-            - name: APP_NAME
-              value: desktop
-            - name: WATCHDOG_TIMEOUT
-              value: "3600"
-            - name: POD_BROKER_SVC
-              value: "http://pod-broker.pod-broker-system.svc.cluster.local:8080"
-          volumeMounts:
-            - name: x11
-              mountPath: /tmp/.X11-unix
+        #- name: watchdog
+        #  image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+        #  imagePullPolicy: IfNotPresent
+        #  command: ["/bin/bash", "-c", "while true; do sleep 86400; done"]
+        #  #command: [
+        #  #    "/usr/bin/python3",
+        #  #    "/opt/app/xserver_watchdog.py",
+        #  #    "--on_timeout=/opt/app/watchdog.sh",
+        #  #  ]
+        #  env:
+        #    - name: DISPLAY
+        #      value: ":0"
+        #    - name: POD_USER
+        #      value: vdi
+        #    - name: APP_NAME
+        #      value: desktop
+        #    - name: WATCHDOG_TIMEOUT
+        #      value: "3600"
+        #    - name: POD_BROKER_SVC
+        #      value: "http://pod-broker.pod-broker-system.svc.cluster.local:8080"
+        #  volumeMounts:
+        #    - name: x11
+        #      mountPath: /tmp/.X11-unix

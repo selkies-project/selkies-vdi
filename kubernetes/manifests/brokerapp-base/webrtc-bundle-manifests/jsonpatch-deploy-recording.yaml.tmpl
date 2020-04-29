@@ -32,7 +32,6 @@
   value:
     name: recording
     image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
-    imagePullPolicy: IfNotPresent
     securityContext:
       privileged: false
     workingDir: /tmp/recording
@@ -61,8 +60,6 @@
       - name: recording
         mountPath: /tmp/recording
     resources:
-      requests:
-        cpu: 100m
       limits:
         nvidia.com/gpu: 1
     # Remove recording data from disk when pod shuts down.

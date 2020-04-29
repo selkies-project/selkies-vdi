@@ -14,9 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set +x
+echo "Waiting for host X server at ${DISPLAY}"
+until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+echo "Host X server is ready"
+
+[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null)
+
 echo "Starting xpra"
-xpra ${XPRA_START:-"start"} :0 \
-    --use-display=no \
+xpra ${XPRA_START:-"start"} ${DISPLAY} \
+    --use-display=yes \
     --resize-display=no \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
@@ -30,16 +37,6 @@ xpra ${XPRA_START:-"start"} :0 \
     ${XPRA_ARGS} &
 PID=$!
 
-set +x
-echo "Waiting for X server"
-until [[ -S /tmp/.X11-unix/X0 ]]; do sleep 1; done
-echo "X server is ready"
-set -x
-xhost +
-xrandr -s 8192x4096
-
-cp ${HOME}/.Xauthority /var/run/appconfig/
-
 # Wait for Xpra client
 set +x
 echo "Waiting for Xpra client"
@@ -52,7 +49,7 @@ done
 echo "Xpra is ready"
 set -x
 
-touch /var/run/appconfig/xserver_ready
+touch /var/run/appconfig/xpra_ready
 
 wait $PID
 
