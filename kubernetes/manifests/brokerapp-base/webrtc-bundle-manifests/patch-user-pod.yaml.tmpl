@@ -38,7 +38,7 @@ spec:
       annotations:
         gke.accel.vdi/user: "{{.User}}"
     spec:
-      #serviceAccount: {{.Namespace}}
+      serviceAccount: {{.Namespace}}
       enableServiceLinks: false
       nodeSelector:
         app.broker/initialized: "true"
@@ -146,16 +146,23 @@ spec:
           value: "/var/run/appconfig/js0ctl"
         {{- end}}
         {{- end}}
-      #- name: watchdog
-      #  env:
-      #  - name: POD_USER
-      #    value: "{{.User}}"
-      #  - name: APP_NAME
-      #    value: "{{.App}}"
-      #  {{- if .UserParams.idleShutdown}}
-      #  - name: WATCHDOG_TIMEOUT
-      #    value: "{{.AppParams.idleShutdownTimeout}}"
-      #  {{- end}}
+      ###
+      # Patch the watchdog container
+      ###
+      - name: watchdog
+        env:
+        - name: BROKER_COOKIE
+          value: "broker_{{.App}}={{.CookieValue}}"
+        - name: BROKER_ENDPOINT
+          value: "https://{{.SysParams.Domain}}/broker"
+        - name: CLIENT_ID
+          value: "{{.ClientID}}"
+        - name: POD_USER
+          value: "{{.User}}"
+        - name: APP_NAME
+          value: "{{.App}}"
+        - name: WATCHDOG_TIMEOUT
+          value: "{{default 600 .AppParams.idleShutdownTimeout}}"
       {{- if .UserParams.appDev}}
       {{- if eq .UserParams.appDev "true"}}
       - name: appdev

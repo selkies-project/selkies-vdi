@@ -23,7 +23,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-  - name: webrtc-gpu-streaming-manifests-1.3.0
+  - name: webrtc-gpu-streaming-manifests-1.4.0
     files:
       - patch-user-pod.yaml.tmpl
       - resource-vdi-deploy.yaml

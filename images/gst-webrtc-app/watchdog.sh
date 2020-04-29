@@ -24,6 +24,8 @@ until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
 echo "X server is ready"
 set -x
 
-echo "INFO: Shutting down ${APP_NAME} pod for user ${POD_USER} through pod broker" >&2
+echo "INFO: Shutting down ${APP_NAME?} pod for user ${POD_USER?} through pod broker" >&2
 
-curl -fSL -H "x-forwarded-user: ${POD_USER}" -X DELETE ${POD_BROKER_SVC}/${APP_NAME}/
+ID_TOKEN=$(curl -s -f -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience=${CLIENT_ID?}&format=full")
+
+curl -s -f -H "Cookie: ${BROKER_COOKIE?}" -H "Authorization: Bearer ${ID_TOKEN}" -X DELETE ${BROKER_ENDPOINT?}/${APP_NAME?}/
