@@ -92,8 +92,22 @@ spec:
 {{.AppParams.command | nindent 12}}
         {{- end}}
         resources:
+          {{- if .NodeTier.Resources.Requests }}
           requests:
-            cpu: {{ default "500m" .AppParams.cpuPerUser }}
+            cpu: {{default "500m" .NodeTier.Resources.Requests.CPU}}
+            {{- if .NodeTier.Resources.Requests.Memory }}
+            memory: {{.NodeTier.Resources.Requests.Memory}}
+            {{- end}}
+          {{- end}}
+          {{- if .NodeTier.Resources.Limits }}
+          limits:
+            {{- if .NodeTier.Resources.Limits.CPU }}
+            cpu: {{.NodeTier.Resources.Limits.CPU}}
+            {{- end}}
+            {{- if .NodeTier.Resources.Limits.Memory }}
+            memory: {{.NodeTier.Resources.Limits.Memory}}
+            {{- end}}
+          {{- end}}
         {{- if .UserParams.enableJoystick }}
         {{- if eq .UserParams.enableJoystick "true"}}
           limits:
