@@ -19,7 +19,9 @@ echo "Waiting for host X server at ${DISPLAY}"
 until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
 echo "Host X server is ready"
 
-[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null)
+# Workaround for vulkan initialization
+# https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
+[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \

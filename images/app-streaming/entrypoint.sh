@@ -30,7 +30,7 @@ fi
 
 # Workaround for vulkan initialization
 # https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
-sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null
+[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
 echo "Setting resolution"
 RESOLUTION=${RESOLUTION:-1920x1080}

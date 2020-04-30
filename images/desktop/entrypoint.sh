@@ -31,7 +31,7 @@ fi
 
 # Workaround for vulkan initialization
 # https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
-(cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} vulkaninfo >/dev/null)
+[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
 # Start dbus
 dbus-uuidgen | sudo tee /var/lib/dbus/machine-id
