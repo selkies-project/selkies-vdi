@@ -41,6 +41,14 @@
 
       [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null)
 
+      # Create default desktop shortcuts.
+      mkdir -p ${HOME}/Desktop
+      find /etc/skel/Desktop -name "*.desktop" -exec ln -sf {} ${HOME}/Desktop/ \; || true
+
+      # Copy autostart shortcuts
+      mkdir -p ${HOME}/.config/autostart
+      find /etc/skel/Autostart -name "*.desktop" -exec ln -sf {} ${HOME}/.config/autostart/ \; || true
+
       ${XPRA_ENTRYPOINT:-"terminator"}
 
 # Add shared volume for xpra uploads
