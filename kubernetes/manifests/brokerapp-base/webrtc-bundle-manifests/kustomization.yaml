@@ -31,3 +31,4 @@ configMapGenerator:
       - resource-vdi-egress-network-policy.yaml.tmpl
       - jsonpatch-deploy-xpra.yaml.tmpl
       - jsonpatch-deploy-recording.yaml.tmpl
+      - jsonpatch-deploy-user-pod-gpu.yaml.tmpl

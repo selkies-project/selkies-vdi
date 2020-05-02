@@ -14,10 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set +x
-echo "Waiting for host X server at ${DISPLAY}"
-until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
-echo "Host X server is ready"
+if [[ "${XPRA_ARGS}" =~ use-display=yes ]]; then
+    set +x
+    echo "Waiting for host X server at ${DISPLAY}"
+    until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+    echo "Host X server is ready"
+fi
 
 # Workaround for vulkan initialization
 # https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
@@ -25,7 +27,6 @@ echo "Host X server is ready"
 
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \
-    --use-display=yes \
     --resize-display=no \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
@@ -51,8 +52,17 @@ done
 echo "Xpra is ready"
 set -x
 
+xhost +
+touch /var/run/appconfig/xserver_ready
 touch /var/run/appconfig/xpra_ready
 
+# Start script to force the window size of full desktop environments like xfdesktop
+# to match the client window size.
+/desktop_resizer.sh &
+DRPID=$!
+
 wait $PID
+
+kill -9 $DRPID
 
 sleep 2

@@ -87,10 +87,8 @@ spec:
   #  value: "${EGRESS_PROXY}:3128"
   #- name: https_proxy
   #  value: "${EGRESS_PROXY}:3128"
-  #- name: XPRA_START
-  #  value: "start-desktop"
   #- name: XPRA_ENTRYPOINT
-  #  value: "terminator"
+  #  value: "xfdesktop --sm-client-disable -A"
   #- name: XPRA_CLIPBOARD_DIRECTION
   #  value: "both"
   #- name: XPRA_FILE_TRANSFER
@@ -101,6 +99,11 @@ spec:
   nodeTiers:
     - name: gpu
       nodeLabel: gpu-cos
+      resources:
+        requests:
+          cpu: 500m
+    - name: standard
+      nodeLabel: tier1
       resources:
         requests:
           cpu: 500m

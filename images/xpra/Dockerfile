@@ -30,7 +30,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         libxcb-keysyms1 \
         libopenal1 \
         mesa-utils \
+        x11-utils \
         x11-xserver-utils \
+        xdotool \
         curl \
         ca-certificates \
         lsb-release \
@@ -82,7 +84,6 @@ RUN groupadd --gid 1000 app && \
 RUN adduser app sudo
 RUN echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh desktop_resizer.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]

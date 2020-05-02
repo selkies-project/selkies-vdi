@@ -54,12 +54,6 @@ spec:
       terminationGracePeriodSeconds: 5
       volumes:
         ###
-        # NVIDIA bins and libs from host
-        ###
-        - name: nvidia
-          hostPath:
-            path: /home/kubernetes/bin/nvidia
-        ###
         # shared x11 socket volume
         ###
         - name: x11
@@ -132,11 +126,6 @@ spec:
             # increased shared memory mount
             - name: dshm
               mountPath: /dev/shm
-          resources:
-            limits:
-              # shared GPU
-              nvidia.com/gpu: 1
-
         ###
         # Pulse audio container
         ###
@@ -245,12 +234,14 @@ spec:
         - name: watchdog
           image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
           imagePullPolicy: IfNotPresent
-          command:
-            [
-              "/usr/bin/python3",
-              "/opt/app/xserver_watchdog.py",
-              "--on_timeout=/opt/app/watchdog.sh",
-            ]
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "Waiting for host X server at ${DISPLAY}"
+              until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+              echo "Host X server is ready"
+              exec /usr/bin/python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
           env:
             - name: DISPLAY
               value: ":0"
@@ -258,8 +249,6 @@ spec:
               value: vdi
             - name: APP_NAME
               value: desktop
-            - name: POD_BROKER_SVC
-              value: "http://pod-broker.pod-broker-system.svc.cluster.local:8080"
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
