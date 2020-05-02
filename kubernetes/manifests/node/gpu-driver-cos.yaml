@@ -148,10 +148,10 @@ spec:
               mountPath: /entrypoint.sh
               subPath: entrypoint.sh
         ###
-        # Install CUDA package
+        # Install CUDA runtime
         # Required for GStreamer cuda elements
         ###
-        - name: cuda-install
+        - name: cuda-nvrtc-install
           image: "cos-nvidia-installer:fixed"
           imagePullPolicy: Never
           securityContext:
@@ -160,28 +160,24 @@ spec:
             - name: root-mount
               mountPath: /usr/local/nvidia
               subPath: home/kubernetes/bin/nvidia
-          env:
-            - name: LD_LIBRARY_PATH
-              value: "/usr/local/nvidia/lib64"
           command: ["/bin/bash"]
           args:
             - -exc
             - |
+              # Install CUDA libraries
+              # NOTE the cuda package version must match the cuda driver version from the nvidia-smi output.
               apt-get update
-              apt-get install -y curl libxml2
+              apt-get install -y gnupg
+              apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub
+              curl -LO http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
+              dpkg -i cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
+              apt-get update
+              apt-get install -y cuda-nvrtc-dev-10-1
 
-              cd /tmp
-              curl -LO http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda_10.1.243_418.87.00_linux.run
+              CUDA_LIB_DIR=/usr/local/nvidia/cuda/lib64
+              mkdir -p ${CUDA_LIB_DIR}
 
-              mkdir -p /usr/local/nvidia/cuda
-
-              sh cuda_10.1.243_418.87.00_linux.run \
-                --silent \
-                --toolkit \
-                --no-man-page \
-                --no-drm \
-                --no-opengl-libs \
-                --installpath=/usr/local/nvidia/cuda
+              rsync -ra /usr/local/cuda-10.1/lib64/* ${CUDA_LIB_DIR}
 
               touch /tmp/cuda_install_complete
 
