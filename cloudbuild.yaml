@@ -45,7 +45,7 @@ steps:
       - |
         gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
 
-        kubectl apply -f kubernetes/manifests/node/gpu-node-pool-autoscaler-job.yaml
+        kubectl apply -f manifests/node/gpu-node-pool-autoscaler-job.yaml
 
         kubectl -n kube-system wait pod \
           -l job-name=gpu-node-pool-autoscaler \
@@ -62,7 +62,7 @@ steps:
   ###
   - name: "gcr.io/cloud-builders/gcloud"
     id: "deploy-manifests"
-    dir: "kubernetes/manifests"
+    dir: "manifests"
     args:
       - "builds"
       - "submit"

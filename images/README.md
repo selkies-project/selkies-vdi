@@ -35,20 +35,6 @@ WORKDIR /opt/app/q2rtx
 ENV EXEC_CMD /opt/app/q2rtx/q2rtx.sh
 ```
 
-### chromoting
-
-[Chrome Remote Destkop headless](https://remotedesktop.google.com/headless) build with patch to connect to existing X11 session and pulse audio stream.
-
-Connects to X server using shared X11 socket runnnig in the xserver pod container.
-
-Uses pamon to stream audio from TCP pulseaudio server running in desktop container to FIFO that Chrome Remote Desktop process streams from.
-
-## coturn
-
-STUN/TURN server powered by OSS [coturn](https://github.com/coturn/coturn/wiki/turnserver) and custom golang based RTC config JSON generator service.
-
-Intended for deployment to separate node pool, requires hostNetworking on the pod.
-
 ### desktop
 
 Full desktop environment image that user works in with all graphics libraries installed.
@@ -69,15 +55,13 @@ Runs hardware accelerated [NvEnc encoder](https://gitlab.freedesktop.org/gstream
 
 Web interface for WebRTC streaming demo.
 
-### novnc
+### signaling
 
-NoVNC container for comparing with other technologies like WebRTC and Chromoting.
+[Singaling service](https://github.com/centricular/gstwebrtc-demos/tree/master/signalling) for WebRTC pipeline.
 
-Connects to X11VNC process running in the xserver container over port 5901, provides websocket and web interface.
+### xpra
 
-### webrtc-signalling
-
-[Singalling service](https://github.com/centricular/gstwebrtc-demos/tree/master/signalling) for WebRTC pipeline.
+[Xpra](http://xpra.org/) image for hybrid streaming and CPU-only streaming.
 
 ### xserver
 

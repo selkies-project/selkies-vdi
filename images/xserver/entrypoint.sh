@@ -42,5 +42,4 @@ echo "X11 startup complete"
 touch /var/run/appconfig/xserver_ready
 
 # Foreground process, tail logs
-touch /var/log/x11vnc.log
-tail -F /var/log/Xorg.${DISPLAY/:/}.log /var/log/x11vnc.log
+tail -F /var/log/Xorg.${DISPLAY/:/}.log

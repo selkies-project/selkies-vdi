@@ -1,8 +1,8 @@
 # Generated resources
 **/generated/
-kubernetes/manifests/production-*
-kubernetes/manifests/staging-*
-kubernetes/manifests/testing-*
+manifests/production-*
+manifests/staging-*
+manifests/testing-*
 
 # Terraform stuff
 **/.terraform*

@@ -1,1 +1,0 @@
-Contains scripts to deploy WebRTC containers on a new or existing GCE instance.
