@@ -15,9 +15,9 @@
 FROM ubuntu:19.10 as nvidia
 
 # Use GCE apt servers
-ARG GCE_ZONE=us-west1
+ARG GCE_REGION=us-west1
 RUN cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
-    sed -i "s/archive.ubuntu.com/${GCE_ZONE}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
+    sed -i "s/archive.ubuntu.com/${GCE_REGION}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
 
 # Install essentials
 RUN \
