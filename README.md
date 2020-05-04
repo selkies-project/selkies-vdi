@@ -13,6 +13,7 @@ Provides GPU accelerated WebRTC streaming and Xpra VDI support to Selkies.
 - Full desktop streaming with WebRTC (requires GPU).
 - Hybrid streaming with Xpra (no GPU required).
 - App streaming with WebRTC.
+- GPU sharing, multiple users per node sharing the same GPU.
 - Persistent home directories with VolumeClaimTemplates and dynamic resizing.
 - Manual bitrate selection, configurable in real-time.
 - Manual frame rate selection.
