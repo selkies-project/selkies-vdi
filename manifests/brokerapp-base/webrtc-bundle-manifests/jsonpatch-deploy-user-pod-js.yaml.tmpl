@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{ $xpraDisabled := true}}
+
 {{- if .UserParams.enableXpra }}
-{{- if eq .UserParams.enableXpra "false"}}
+  {{- if eq .UserParams.enableXpra "true" }}
+    {{ $xpraDisabled = false }}
+# Joystick is not supported with Xpra.
+
+  {{- end}}
+{{- end }}
+
 {{- if .UserParams.enableJoystick }}
-{{- if eq .UserParams.enableJoystick "true"}}
+{{- if and ($xpraDisabled) (eq .UserParams.enableJoystick "true") }}
 ###
 # Add resource to attach uinput control socket to desktop container.
 # hotplug support for uinput devices.
@@ -41,7 +49,5 @@
   value:
     name: UINPUT_JS_SOCKET
     value: "/var/run/appconfig/js0ctl"
-{{- end}}
-{{- end}}
 {{- end}}
 {{- end}}
