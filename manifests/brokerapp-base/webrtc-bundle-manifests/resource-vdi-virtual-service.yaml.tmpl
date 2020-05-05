@@ -41,22 +41,6 @@ spec:
               number: 8080
       websocketUpgrade: true
     ###
-    # rule for xpra
-    ###
-    - match:
-        - uri:
-            prefix: /{{.App}}/xpra/
-          headers:
-            cookie:
-              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
-      rewrite:
-        uri: /
-      route:
-        - destination:
-            host: {{.FullName}}-{{.ServiceName}}
-            port:
-              number: 8081
-    ###
     # rule for webrtc
     ###
     - match:

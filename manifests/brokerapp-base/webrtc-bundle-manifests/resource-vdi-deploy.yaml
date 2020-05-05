@@ -75,32 +75,11 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 1Gi
+      initContainers: []
       containers:
         ###
         # NOTE: To speed up container startup time, images are pulled locally in the gpu-node-init daemonset, hence the imagePullPolicy=Never
         ###
-
-        ###
-        # Xserver container
-        ###
-        - name: xserver
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver:latest
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: false
-          volumeMounts:
-            - name: x11
-              mountPath: /tmp/.X11-unix
-            - name: config
-              mountPath: /var/run/appconfig
-          lifecycle:
-            preStop:
-              exec:
-                command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
-          resources:
-            limits:
-              # shared GPU
-              nvidia.com/gpu: 1
 
         ###
         # Desktop container
@@ -126,6 +105,31 @@ spec:
             # increased shared memory mount
             - name: dshm
               mountPath: /dev/shm
+          resources:
+            requests: {}
+            limits: {}
+
+        ###
+        # Watchdog container
+        ###
+        - name: watchdog
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "Waiting for host X server at ${DISPLAY}"
+              until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+              echo "Host X server is ready"
+              exec /usr/bin/python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
+          env: []
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+
         ###
         # Pulse audio container
         ###
@@ -136,6 +140,28 @@ spec:
             - name: pulseaudio
               containerPort: 4713
               protocol: TCP
+
+        ###
+        # Xserver container
+        ###
+        - name: xserver
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
+          resources:
+            limits:
+              # shared GPU
+              nvidia.com/gpu: 1
 
         ###
         # webrtc container
@@ -170,28 +196,6 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: 1
-
-        ###
-        # WebRTC metrics exporter container
-        ###
-        #- name: webrtc-metrics
-        #  image: gcr.io/google-containers/prometheus-to-sd:v0.7.2
-        #  command:
-        #    - /monitor
-        #    - --source=:http://localhost:8000
-        #    - --stackdriver-prefix=custom.googleapis.com
-        #    - --pod-id=$(POD_NAME)
-        #    - --namespace-id=$(POD_NAMESPACE)
-        #  env:
-        #    - name: POD_NAME
-        #      valueFrom:
-        #        fieldRef:
-        #          apiVersion: v1
-        #          fieldPath: metadata.name
-        #    - name: POD_NAMESPACE
-        #      valueFrom:
-        #        fieldRef:
-        #          fieldPath: metadata.namespace
 
         ###
         # signalling container
@@ -229,28 +233,24 @@ spec:
               path: /
               port: web
         ###
-        # Watchdog container
+        # WebRTC metrics exporter container
+        # TODO
         ###
-        - name: watchdog
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/bash"]
-          args:
-            - -ec
-            - |
-              echo "Waiting for host X server at ${DISPLAY}"
-              until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
-              echo "Host X server is ready"
-              exec /usr/bin/python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
-          env:
-            - name: DISPLAY
-              value: ":0"
-            - name: POD_USER
-              value: vdi
-            - name: APP_NAME
-              value: desktop
-          volumeMounts:
-            - name: x11
-              mountPath: /tmp/.X11-unix
-            - name: config
-              mountPath: /var/run/appconfig
+        #- name: webrtc-metrics
+        #  image: gcr.io/google-containers/prometheus-to-sd:v0.7.2
+        #  command:
+        #    - /monitor
+        #    - --source=:http://localhost:8000
+        #    - --stackdriver-prefix=custom.googleapis.com
+        #    - --pod-id=$(POD_NAME)
+        #    - --namespace-id=$(POD_NAMESPACE)
+        #  env:
+        #    - name: POD_NAME
+        #      valueFrom:
+        #        fieldRef:
+        #          apiVersion: v1
+        #          fieldPath: metadata.name
+        #    - name: POD_NAMESPACE
+        #      valueFrom:
+        #        fieldRef:
+        #          fieldPath: metadata.namespace

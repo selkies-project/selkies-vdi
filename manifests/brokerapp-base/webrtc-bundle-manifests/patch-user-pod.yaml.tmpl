@@ -19,20 +19,6 @@ metadata:
    annotations:
      gke.accel.vdi/user: "{{.User}}"
 spec:
-  {{- if .UserParams.enablePersistence}}
-  {{- if eq .UserParams.enablePersistence "true"}}
-  volumeClaimTemplates:
-  - metadata:
-      name: persist
-      annotations:
-        gke.accel.vdi/user: "{{.User}}"
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 50Gi
-  {{- end}}
-  {{- end}}
   template:
     metadata:
       annotations:
@@ -59,18 +45,6 @@ spec:
         - key: "app.broker/node-init"
           effect: "NoSchedule"
           operator: "Exists"
-      {{- if .UserParams.enablePersistence}}
-      {{- if eq .UserParams.enablePersistence "true"}}
-      initContainers:
-      - name: persist-init
-        image: busybox:latest
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/chown", "1000:1000", "/home/app"]
-        volumeMounts:
-        - name: persist
-          mountPath: /home/app
-      {{- end}}
-      {{- end}}
       containers:
       {{- if .UserParams.compat32 }}
       {{- if eq .UserParams.compat32 "true"}}
@@ -91,40 +65,6 @@ spec:
         args:
           - |
 {{.AppParams.command | nindent 12}}
-        {{- end}}
-        resources:
-          {{- if .NodeTier.Resources.Requests }}
-          requests:
-            cpu: {{default "500m" .NodeTier.Resources.Requests.CPU}}
-            {{- if .NodeTier.Resources.Requests.Memory }}
-            memory: {{.NodeTier.Resources.Requests.Memory}}
-            {{- end}}
-          {{- end}}
-          {{- if .NodeTier.Resources.Limits }}
-          limits:
-            {{- if .NodeTier.Resources.Limits.CPU }}
-            cpu: {{.NodeTier.Resources.Limits.CPU}}
-            {{- end}}
-            {{- if .NodeTier.Resources.Limits.Memory }}
-            memory: {{.NodeTier.Resources.Limits.Memory}}
-            {{- end}}
-          {{- end}}
-        {{- if .UserParams.enableJoystick }}
-        {{- if eq .UserParams.enableJoystick "true"}}
-          limits:
-            # hotplug support for uinput devices.
-            # note: does not work with X11 HAL
-            uinput.dev/container: 1
-            # Virtual joystick with control socket shared with webrtc container.
-            uinput.dev/js: 1
-        {{- end}}
-        {{- end}}
-        {{- if .UserParams.enablePersistence}}
-        {{- if eq .UserParams.enablePersistence "true"}}
-        volumeMounts:
-        - name: persist
-          mountPath: /home/app
-        {{- end}}
         {{- end}}
         env:
         - name: VDI_USER
@@ -155,26 +95,3 @@ spec:
           value: "/var/run/appconfig/mouse0ctl"
         {{- end}}
         {{- end}}
-        {{- if .UserParams.enableJoystick }}
-        {{- if eq .UserParams.enableJoystick "true"}}
-        - name: UINPUT_JS_SOCKET
-          value: "/var/run/appconfig/js0ctl"
-        {{- end}}
-        {{- end}}
-      ###
-      # Patch the watchdog container
-      ###
-      - name: watchdog
-        env:
-        - name: BROKER_COOKIE
-          value: "broker_{{.App}}={{.CookieValue}}"
-        - name: BROKER_ENDPOINT
-          value: "https://{{.SysParams.Domain}}/broker"
-        - name: CLIENT_ID
-          value: "{{.ClientID}}"
-        - name: POD_USER
-          value: "{{.User}}"
-        - name: APP_NAME
-          value: "{{.App}}"
-        - name: WATCHDOG_TIMEOUT
-          value: "{{default 600 .AppParams.idleShutdownTimeout}}"

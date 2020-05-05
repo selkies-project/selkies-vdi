@@ -28,6 +28,8 @@ RECORDING_TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
 DEST_DIR=/tmp/recording/data/${VDI_USER}/${VDI_APP}/${RECORDING_TIMESTAMP}
 mkdir -p "$DEST_DIR"
 
+echo "INFO: Saving recordings to: ${DEST_DIR}"
+
 # Set the max window size.
 # If window size being recorded is larger than this, gstreamer will crash.
 # Setting the limits here will force the window into these dimensions before starting the recording.
@@ -103,10 +105,9 @@ if [[ "${VDI_enableXpra}" == "true" ]]; then
                 echo "INFO: starting recording for ${wm_class}, xid=${xid}, ts=${ts}, geometry=${WINDOW_SIZE}"
 
                 gst-launch-1.0 \
-                    ximagesrc xid=${xid} show-pointer=1 remote=1 blocksize=16384 use-damage=0 \
-                    ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
-                    ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
-                    ! h264parse \
+                    ximagesrc xid=${xid} show-pointer=1 remote=1 use-damage=0 \
+                    ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
+                    ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
                     ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%02d.mp4 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
             fi                
         done

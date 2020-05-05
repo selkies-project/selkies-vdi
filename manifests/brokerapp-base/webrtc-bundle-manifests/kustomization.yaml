@@ -29,6 +29,10 @@ configMapGenerator:
       - resource-vdi-deploy.yaml
       - resource-vdi-virtual-service.yaml.tmpl
       - resource-vdi-egress-network-policy.yaml.tmpl
+      - jsonpatch-deploy-cpu-memory.yaml.tmpl
+      - jsonpatch-deploy-idle-shutdown.yaml.tmpl
+      - jsonpatch-deploy-persist.yaml.tmpl
       - jsonpatch-deploy-xpra.yaml.tmpl
       - jsonpatch-deploy-recording.yaml.tmpl
       - jsonpatch-deploy-user-pod-gpu.yaml.tmpl
+      - jsonpatch-deploy-user-pod-js.yaml.tmpl

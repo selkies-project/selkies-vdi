@@ -35,12 +35,14 @@
     securityContext:
       privileged: false
     workingDir: /tmp/recording
-    command: ["/record.sh"] 
+    command: ["/record.sh"]
     env:
-      - name: GST_DEBUG
-        value: "*:2"
+      {{- if eq .NodeTier.Name "gpu" }}
       - name: LD_LIBRARY_PATH
         value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
+      {{- end}}
+      - name: GST_DEBUG
+        value: "*:2"
       - name: DISPLAY
         value: ":0"
       - name: VDI_USER
@@ -59,9 +61,11 @@
         mountPath: /var/run/appconfig
       - name: recording
         mountPath: /tmp/recording
+    {{- if eq .NodeTier.Name "gpu" }}
     resources:
       limits:
         nvidia.com/gpu: 1
+    {{- end}}
     # Remove recording data from disk when pod shuts down.
     lifecycle:
       preStop:

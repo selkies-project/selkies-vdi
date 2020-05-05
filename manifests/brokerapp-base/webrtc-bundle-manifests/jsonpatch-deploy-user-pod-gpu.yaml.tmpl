@@ -32,7 +32,6 @@
     effect: "NoSchedule"
     operator: "Exists"
 - op: add
-  path: "/spec/template/spec/containers/1/resources/limits"
-  value:
-      nvidia.com/gpu: 1
+  path: "/spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu"
+  value: 1
 {{- end}}

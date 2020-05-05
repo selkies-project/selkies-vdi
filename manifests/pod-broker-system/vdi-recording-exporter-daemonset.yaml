@@ -52,7 +52,7 @@ spec:
         app: vdi-recording-exporter
     spec:
       nodeSelector:
-        cloud.google.com/gke-accelerator-initialized: "true"
+        app.broker/initialized: "true"
       tolerations:
         - key: "app.broker/tier"
           effect: "NoSchedule"

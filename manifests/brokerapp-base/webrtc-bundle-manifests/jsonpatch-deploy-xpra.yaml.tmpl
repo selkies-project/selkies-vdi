@@ -14,24 +14,16 @@
 
 {{- if .UserParams.enableXpra }}
 {{- if eq .UserParams.enableXpra "true"}}
-- op: remove
-  # xserver
-  path: "/spec/template/spec/containers/0"
-- op: remove
-  # webrtc
-  path: "/spec/template/spec/containers/2"
-- op: remove
-  # webrtc signaling
-  path: "/spec/template/spec/containers/2"
-- op: remove
-  # webrtc web
-  path: "/spec/template/spec/containers/2"
-
+###
 # Change entrypoint of desktop container.
+###
 - op: replace
   path: "/spec/template/spec/containers/0/command"
   value: ["/bin/bash", "-c"]
-# Change args to desktop container.
+
+###
+# Change args to desktop container entrypoint
+###
 - op: replace
   path: "/spec/template/spec/containers/0/args"
   value:
@@ -63,31 +55,36 @@
         sleep 2
       done
 
+###
 # Add shared volume for xpra uploads
 # Inserting as first element to deconflict other patches that append.
 # See also: https://github.com/kubernetes-sigs/kustomize/issues/642
+###
 - op: add
   path: "/spec/template/spec/volumes/0"
   value:
     name: xpra-uploads
     emptyDir: {}
 
-# Add shared volume for xpra uploads to desktop container
+###
+# Add shared volume to desktop container for xpra uploads to desktop container
+# Inserting as first element to deconflict other patches that append.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
+###
 - op: add
-  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  path: "/spec/template/spec/containers/0/volumeMounts/0"
   value:
     name: xpra-uploads
     mountPath: /mnt/uploads
 
-# Add xpra container
-# Inserting as first element to deconflict other patches that append.
-# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
-- op: add
-  path: "/spec/template/spec/containers/0"
+###
+# Replace xserver container with xpra container.
+###
+- op: replace
+  path: "/spec/template/spec/containers/3"
   value:
     name: xpra
     image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra:latest
-    #imagePullPolicy: IfNotPresent
     securityContext:
       privileged: false
       runAsUser: 1000
@@ -115,5 +112,23 @@
     ports:
       - name: web
         containerPort: 8082
+
+###
+# Remove webrtc container
+###
+- op: remove
+  path: "/spec/template/spec/containers/4"
+
+###
+# Remove signaling container
+###
+- op: remove
+  path: "/spec/template/spec/containers/4"
+
+###
+# Remove webrtc web container
+###
+- op: remove
+  path: "/spec/template/spec/containers/4"
 {{- end}}
 {{- end}}

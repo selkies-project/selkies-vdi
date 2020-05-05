@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:19.10 as nvidia
+FROM ubuntu:19.10
 
 # Use GCE apt servers
 ARG GCE_REGION=us-west1
@@ -34,6 +34,7 @@ ARG GSTREAMER_VERSION=d25a88e3a15b9f38a66ae6d2735c625b6f8db476
 ARG GST_PLUGINS_BASE_VERSION=8b92d144a110bc80a9be46b587691123817f63d6
 ARG GST_PLUGINS_GOOD_VERSION=203ad39d534e79ad8233418da42779700dc56e59
 ARG GST_PLUGINS_BAD_VERSION=b5e506d12b2a2e78d30931e5d88cc101fa971574
+ARG GST_PLUGINS_UGLY_VERSION=8fe8ed3dd2bdcf22097d9886ad5242258b64ee44
 ARG GST_PYTHON_VERSION=c04bb945b0b95e0f8686f3b9994a3327ccf74863
 
 # cloner repo for each gstreamer module
@@ -41,6 +42,7 @@ RUN git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git && cd gstre
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-base.git && cd gst-plugins-base && git checkout ${GST_PLUGINS_BASE_VERSION}
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-good && cd gst-plugins-good && git checkout ${GST_PLUGINS_GOOD_VERSION}
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad && cd gst-plugins-bad && git checkout ${GST_PLUGINS_BAD_VERSION}
+RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-ugly && cd gst-plugins-ugly && git checkout ${GST_PLUGINS_UGLY_VERSION}
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-python && cd gst-python && git checkout ${GST_PYTHON_VERSION}
 
 WORKDIR /opt
@@ -151,3 +153,13 @@ RUN \
     git clone --depth 1 https://github.com/RidgeRun/gst-shark -b ${GST_SHARK_VERSION} && \
     cd gst-shark && ./autogen.sh --prefix=/usr && \
         make && make install && make clean
+
+# Build and install gst-plugins-ugly from source
+# This package includes the x264 encoder for non-nvenc accelerated pipelines.
+RUN \
+    apt-get update && apt install -y libx264-155 libx264-dev
+
+RUN \
+    cd /opt/gst-plugins-ugly && \
+    meson build --prefix=/usr && \
+    ninja -C build install
