@@ -378,12 +378,26 @@ class Input {
     }
 
     /**
+     * When fullscreen is entered, request keyboard and pointer lock.
+     */
+    _onFullscreenChange() {
+        if (document.fullscreenElement !== null) {
+            // Enter fullscreen
+            this.requestKeyboardLock();
+            this.element.requestPointerLock();
+        } else {
+            // Exit fullscreen
+        }
+    }
+
+    /**
      * Attaches input event handles to docuemnt, window and element.
      */
     attach() {
         this.listeners.push(addListener(this.element, 'resize', this._windowMath, this));
         this.listeners.push(addListener(this.element, 'mousewheel', this._mouseWheel, this));
         this.listeners.push(addListener(this.element, 'contextmenu', this._contextMenu, this));
+        this.listeners.push(addListener(this.element.parentElement, 'fullscreenchange', this._onFullscreenChange, this));
         this.listeners.push(addListener(document, 'pointerlockchange', this._pointerLock, this));
         this.listeners.push(addListener(window, 'keydown', this._key, this));
         this.listeners.push(addListener(window, 'keyup', this._key, this));
@@ -427,6 +441,28 @@ class Input {
     detach() {
         removeListeners(this.listeners);
         this._exitPointerLock();
+    }
+
+    /**
+     * Request keyboard lock, must be in fullscreen mode to work.
+     */
+    requestKeyboardLock() {
+        // event codes: https://www.w3.org/TR/uievents-code/#key-alphanumeric-writing-system
+        const keys = [
+            "AltLeft",
+            "Tab",
+            "Escape"
+        ];
+        console.log("requesting keyboard lock");
+        navigator.keyboard.lock(keys).then(
+            () => {
+                console.log("keyboard lock success");
+            }
+        ).catch(
+            (e) => {
+                console.log("keyboard lock failed: ", e);
+            }
+        )
     }
 }
 

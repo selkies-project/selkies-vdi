@@ -102,7 +102,8 @@ var app = new Vue({
             return (getCookieValue("broker_" + app.appName) || "webrtc").split("#")[0];
         },
         enterFullscreen() {
-            document.getElementById("video_container").requestFullscreen();
+            // Request full screen mode.
+            webrtc.element.parentElement.requestFullscreen();
         },
         playVideo() {
             webrtc.playVideo();
