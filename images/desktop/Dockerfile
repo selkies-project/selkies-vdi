@@ -113,6 +113,8 @@ RUN adduser --gecos '' --disabled-password --shell /bin/bash app && \
 
 WORKDIR /home/app/project
 
+RUN chown app:app /home/app/project
+
 # Prevent zombie python processes whenever gcloud is run.
 RUN gcloud config set disable_usage_reporting true
 
