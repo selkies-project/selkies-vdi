@@ -385,9 +385,12 @@ class Input {
             // Enter fullscreen
             this.requestKeyboardLock();
             this.element.requestPointerLock();
-        } else {
-            // Exit fullscreen
         }
+        // Reset local keyboard. When holding to exit full-screen the escape key can get stuck.
+        this.keyboard.reset();
+
+        // Reset stuck keys on server side.
+        this.send("kr");
     }
 
     /**
@@ -450,8 +453,12 @@ class Input {
         // event codes: https://www.w3.org/TR/uievents-code/#key-alphanumeric-writing-system
         const keys = [
             "AltLeft",
+            "AltRight",
             "Tab",
-            "Escape"
+            "Escape",
+            "ContextMenu",
+            "MetaLeft",
+            "MetaRight"
         ];
         console.log("requesting keyboard lock");
         navigator.keyboard.lock(keys).then(
