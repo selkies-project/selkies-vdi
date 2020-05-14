@@ -108,7 +108,7 @@ if [[ "${VDI_enableXpra}" == "true" ]]; then
                     ximagesrc xid=${xid} show-pointer=1 remote=1 use-damage=0 \
                     ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
                     ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
-                    ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%02d.mp4 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
+                    ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%04d.mp4 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
             fi                
         done
 
@@ -145,7 +145,7 @@ else
                 ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
                 ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
                 ! h264parse \
-                ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${REC_RES}_%02d.mp4 >/tmp/recording/recording_${ts}.log 2>&1 &
+                ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${REC_RES}_%04d.mp4 >/tmp/recording/recording_${ts}.log 2>&1 &
         fi
 
         sleep 5

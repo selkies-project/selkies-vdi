@@ -49,6 +49,10 @@
         value: "{{.User}}"
       - name: VDI_APP
         value: "{{.App}}"
+      - name: REC_VIDEO_FRAMERATE
+        value: "{{ default "5" .AppParams.recordingFramerate }}"
+      - name: REC_VIDEO_BITRATE
+        value: "{{ default "500" .AppParams.recordingBitrate }}"
       # Add the userParams to the env prefixed with VDI_
       {{- range $key, $value := .UserParams }}
       - name: VDI_{{ $key }}

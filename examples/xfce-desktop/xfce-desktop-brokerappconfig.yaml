@@ -79,6 +79,12 @@ spec:
       default: "600" # seconds
     - name: enableRecording
       default: "false"
+    #- name: recordingFramerate # recording framerate, lower uses less space and CPU.
+    #  default: "15"
+    #- name: recordingBitrate # recording bitrate in kbps
+    #  default: "500"
+    #- name: enableClipboard # enable one-way clipboard.
+    #  default: "in"
     #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
     #  default: "${EGRESS_PROXY}/32"
   #appEnv:
