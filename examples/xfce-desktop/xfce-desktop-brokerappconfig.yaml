@@ -95,7 +95,7 @@ spec:
   #  value: "${EGRESS_PROXY}:3128"
   #- name: XPRA_ENTRYPOINT
   #  value: "xfdesktop --sm-client-disable -A"
-  #- name: XPRA_CLIPBOARD_DIRECTION
+  #- name: XPRA_CLIPBOARD_DIRECTION # Values are to-server|to-client|both
   #  value: "both"
   #- name: XPRA_FILE_TRANSFER
   #  value: "on"
