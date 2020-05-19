@@ -93,6 +93,34 @@ var app = new Vue({
             gpuMemoryUsed: 0,
             debug: (window.localStorage.getItem("debug") === "true"),
             turnSwitch: (window.localStorage.getItem("turnSwitch") === "true"),
+            publishingAllowed: false,
+            publishingIdle: false,
+            publishingError: "",
+            publishingAppName: "",
+            publishingAppDisplayName: "",
+            publishingAppDescription: "",
+            publishingAppIcon: "",
+            publishingValid: false,
+            rules: {
+                required: value => {
+                    if (!value || value.length == 0)
+                        return 'required.';
+                    return true;
+                },
+
+                validname: value => {
+                    if (value.length > 63) {
+                        return 'must be less than 63 characters.';
+                    }
+                    if (!new RegExp('^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$').exec(value)) {
+                        return 'invalid name'
+                    }
+                    if (value === this.appName) {
+                        return 'must be different than current name'
+                    }
+                    return true;
+                },
+            }
         }
     },
 
@@ -117,6 +145,34 @@ var app = new Vue({
                 })
                 .catch(err => {
                     webrtc._setError('Failed to read clipboard contents: ' + err);
+                });
+        },
+        publish() {
+            var data = {
+                name: this.publishingAppName,
+                displayName: this.publishingAppDisplayName,
+                description: this.publishingAppDescription,
+                icon: this.publishingAppIcon,
+            }
+            console.log("Publishing new image", data);
+
+            fetch("/publish/" + app.appName, {
+                method: "POST",
+                headers: {
+                    "content-type": "application/json"
+                },
+                body: JSON.stringify(data),
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then((response) => {
+                    if (response.code === 201) {
+                        this.publishingIdle = false;
+                        checkPublishing();
+                    } else {
+                        this.publishingError = response.status;
+                    }
                 });
         }
     },
@@ -155,6 +211,14 @@ var app = new Vue({
         },
         appName(newValue) {
             document.title = "WebRTC - " + newValue;
+        },
+        showDrawer(newValue) {
+            // Detach inputs when menu is shown.
+            if (newValue === true) {
+                webrtc.input.detach();
+            } else {
+                webrtc.input.attach();
+            }
         },
     },
 
@@ -361,6 +425,27 @@ navigator.permissions.query({
         }
     };
 });
+
+// Check if editing is allowed.
+var checkPublishing = () => {
+    fetch("/publish/" + app.appName)
+        .then((response) => {
+            return response.json();
+        })
+        .then((response) => {
+            if (response.code < 400) {
+                app.publishingAllowed = true;
+                app.publishingIdle = true;
+            }
+            if (response.code === 201) {
+                app.publishingIdle = false;
+                setTimeout(() => {
+                    checkPublishing();
+                }, 1000);
+            }
+        });
+}
+checkPublishing();
 
 // Fetch RTC configuration containing STUN/TURN servers.
 fetch("/turn/")

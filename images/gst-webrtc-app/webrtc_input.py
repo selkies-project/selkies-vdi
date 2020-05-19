@@ -209,9 +209,12 @@ class WebRTCInput:
         keyf = 102
         keyF = 70
 
+        keym = 109
+        keyM = 77
+
         escape = 65307
 
-        for k in [lctrl, lshift, lalt, rctrl, rshift, ralt, lmeta, rmeta, keyf, keyF, escape]:
+        for k in [lctrl, lshift, lalt, rctrl, rshift, ralt, lmeta, rmeta, keyf, keyF, keym, keyM, escape]:
             self.send_x11_keypress(k, down=False)
 
     def send_mouse(self, action, data):

@@ -235,6 +235,35 @@
                 <v-switch v-model="debug" :label="`Debug logs: ${debug.toString()}`"></v-switch>
                 <v-switch v-model="turnSwitch" :label="`Force relay connection: ${turnSwitch.toString()}`"></v-switch>
               </p>
+
+              <p v-if="publishingAllowed">
+                Publishing
+
+                <div v-if="publishingIdle">
+                  <v-form v-model="publishingValid">
+                    <v-text-field label="New app name" :placeholder="`${app.appName}-sandbox`"
+                      :rules="[rules.required, rules.validname]" v-model="publishingAppName">
+                    </v-text-field>
+
+                    <v-text-field label="New app display name" :placeholder="`${app.appName}-sandbox`"
+                      v-model="publishingAppDisplayName">
+                    </v-text-field>
+
+                    <v-text-field label="New app description" :placeholder="`Created from ${app.appName}`"
+                      v-model="publishingAppDescription">
+                    </v-text-field>
+
+                    <v-text-field label="URL to app icon" v-model="publishingAppIcon">
+                    </v-text-field>
+                  </v-form>
+
+                  <v-btn color="primary" small v-on:click="publish()" :disabled="!publishingValid">Publish</v-btn>
+                </div>
+                <div v-else>
+                  <v-progress-circular v-if="publishingAllowed" indeterminate :size="50" :width="4" color="primary">
+                  </v-progress-circular>
+                </div>
+              </p>
             </v-flex>
           </v-layout>
         </v-container>

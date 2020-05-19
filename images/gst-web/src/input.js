@@ -223,7 +223,7 @@ class Input {
      */
     _key(event) {
 
-        //disable problematic browser shortcuts
+        // disable problematic browser shortcuts
         if (event.code === 'F5' && event.ctrlKey ||
             event.code === 'KeyI' && event.ctrlKey && event.shiftKey ||
             event.code === 'F11') {
@@ -233,15 +233,20 @@ class Input {
 
         // capture menu hotkey
         if (event.type === 'keydown' && event.code === 'KeyM' && event.ctrlKey && event.shiftKey) {
-            if (this.onmenuhotkey !== null)
+            if (document.fullscreenElement === null && this.onmenuhotkey !== null) {
                 this.onmenuhotkey();
+                event.preventDefault();
+            }
+
             return;
         }
 
         // capture fullscreen hotkey
         if (event.type === 'keydown' && event.code === 'KeyF' && event.ctrlKey && event.shiftKey) {
-            if (this.onfullscreenhotkey !== null)
+            if (document.fullscreenElement === null && this.onfullscreenhotkey !== null) {
                 this.onfullscreenhotkey();
+                event.preventDefault();
+            }
             return;
         }
     }
@@ -444,6 +449,13 @@ class Input {
     detach() {
         removeListeners(this.listeners);
         this._exitPointerLock();
+        if (this.keyboard) {
+            this.keyboard.onkeydown = null;
+            this.keyboard.onkeyup = null;
+            this.keyboard.reset();
+            delete this.keyboard;
+            this.send("kr");
+        }
     }
 
     /**

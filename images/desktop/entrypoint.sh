@@ -34,6 +34,7 @@ fi
 [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
 # Start dbus
+sudo rm -rf /var/run/dbus
 dbus-uuidgen | sudo tee /var/lib/dbus/machine-id
 sudo mkdir -p /var/run/dbus
 sudo dbus-daemon --system
@@ -53,6 +54,6 @@ while true; do
     mkdir -p ${HOME}/.config/autostart
     find /etc/skel/Autostart -name "*.desktop" -exec ln -sf {} ${HOME}/.config/autostart/ \; || true
     
-    xfce4-session
+    eval ${ENTRYPOINT:-"xfce4-session"}
     sleep 5
 done
