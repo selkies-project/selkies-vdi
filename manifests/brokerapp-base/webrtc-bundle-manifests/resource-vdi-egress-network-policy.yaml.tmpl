@@ -44,4 +44,24 @@ spec:
         - ipBlock:
             cidr: {{$ip}}/32
     {{- end}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{.ServiceName}}-ingressgateway
+spec:
+  podSelector:
+    matchLabels:
+      app: vdi
+      app.kubernetes.io/managed-by: pod-broker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              install.operator.istio.io/owner-kind: IstioControlPlane
+        - podSelector:
+            matchLabels:
+              app: istio-ingressgateway
 {{- end}}

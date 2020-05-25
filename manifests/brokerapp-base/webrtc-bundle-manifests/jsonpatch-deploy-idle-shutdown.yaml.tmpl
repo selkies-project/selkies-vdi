@@ -24,6 +24,10 @@
       value: "broker_{{.App}}={{.CookieValue}}"
     - name: BROKER_ENDPOINT
       value: "https://{{.SysParams.Domain}}/broker"
+    - name: BROKER_HOST
+      value: "{{.SysParams.Domain}}"
+    - name: IN_CLUSTER
+      value: "true"
     - name: CLIENT_ID
       value: "{{.ClientID}}"
     - name: POD_USER
