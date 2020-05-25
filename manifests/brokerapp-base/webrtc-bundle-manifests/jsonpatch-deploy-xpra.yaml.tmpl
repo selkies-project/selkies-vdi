@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- $enableXpra := false }}
 {{- if .UserParams.enableXpra }}
-{{- if eq .UserParams.enableXpra "true"}}
+  {{- if eq .UserParams.enableXpra "true" }}
+    {{- $enableXpra = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $enableXpra }}
 ###
 # Change entrypoint of desktop container.
 ###
@@ -130,5 +136,9 @@
 ###
 - op: remove
   path: "/spec/template/spec/containers/4"
-{{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
 {{- end}}

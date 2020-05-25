@@ -1,0 +1,121 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $persistEnabled := false }}
+{{- if .UserParams.enablePersistence}}
+  {{- if eq .UserParams.enablePersistence "true"}}
+    {{- $persistEnabled = true }}
+  {{- end}}
+{{- end}}
+{{- $dindEnabled := false }}
+{{- if .UserParams.enableDind }}
+  {{- if eq .UserParams.enableDind "true"}}
+    {{- $dindEnabled = true }}
+  {{- end}}
+{{- end}}
+
+{{- if and ($persistEnabled) ($dindEnabled) }}
+###
+# Add shared volume for docker-certs
+# Inserting as first element to deconflict other patches that append.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
+###
+- op: add
+  path: "/spec/template/spec/volumes/0"
+  value:
+    name: docker-certs
+    emptyDir:
+      sizeLimit: 128Mi
+
+###
+# Add volumeMounts to desktop container
+###
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/0"
+  value:
+    name: persist
+    mountPath: /var/lib/docker
+    subPath: var/lib/docker
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/0"
+  value:
+    name: docker-certs
+    mountPath: /var/run/docker-certs
+    subPath: client
+
+###
+# Add docker environment variables to desktop container
+###
+- op: add
+  path: "/spec/template/spec/containers/0/env/-"
+  value:
+    name: DOCKER_TLS
+    value: "true"
+- op: add
+  path: "/spec/template/spec/containers/0/env/-"
+  value:
+    name: DOCKER_CERT_PATH
+    value: "/var/run/docker-certs"
+###
+# NOTE: the cloudshell base image bashrc overrides the DOCKER_HOST variable.
+# This is here for images not based on cloudshell or that bypass the .bashrc
+# For containers based on cloudshell, the persist initContainer adds the DOCKER_HOST variable to the .bashrc
+###
+- op: add
+  path: "/spec/template/spec/containers/0/env/-"
+  value:
+    name: DOCKER_HOST
+    value: "tcp://127.0.0.1:2376"
+
+###
+# Add Docker in Docker container
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: dind
+    securityContext:
+      privileged: true
+    image: docker:19.03.2-dind
+    env:
+      - name: DOCKER_TLS_CERTDIR
+        value: /var/lib/docker-certs
+    ports:
+      - name: docker
+        containerPort: 2375
+        protocol: TCP
+    volumeMounts:
+      - name: docker-certs
+        mountPath: /var/lib/docker-certs
+      - name: persist
+        mountPath: /var/lib/docker
+        subPath: var/lib/docker
+      - name: persist
+        mountPath: /home/coder
+    resources:
+      limits:
+        cpu: 4
+        memory: 8Gi
+        # If user creates too many temporary files, the pod will be evicted.
+        # Available in k8s 1.15+
+        # ephemeral-storage: 50Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}

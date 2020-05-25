@@ -12,15 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- $hasRequests := false }}
+{{- $hasRequestsMemory := false }}
+{{- $hasLimits := false }}
+{{- $hasLimitsCPU := false }}
+{{- $hasLimitsMemory := false }}
+
 {{- if .NodeTier.Resources.Requests }}
+  {{- $hasRequests = true }}
+  {{- if .NodeTier.Resources.Requests.Memory }}{{- $hasRequestsMemory = true }}{{- end}}
+{{- end}}
+
+{{- if .NodeTier.Resources.Limits }}
+  {{- $hasLimits = true }}
+  {{- if .NodeTier.Resources.Limits.CPU }}{{- $hasLimitsCPU = true }}{{- end}}
+  {{- if .NodeTier.Resources.Limits.Memory }}{{- $hasLimitsMemory = true }}{{- end}}
+{{- end}}
+
+{{- if not (and ($hasRequests) ($hasLimits)) }}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
+
+{{- if $hasRequests }}
 ###
 # CPU requests from Node Tier spec, or default.
 ###
 - op: add
   path: "/spec/template/spec/containers/0/resources/requests/cpu"
   value: {{default "500m" .NodeTier.Resources.Requests.CPU}}
+{{- end}}
 
-{{- if .NodeTier.Resources.Requests.Memory }}
+{{- if $hasRequestsMemory }}
 ###
 # Memory requests from Node Tier spec, or none.
 ###
@@ -28,10 +53,8 @@
   path: "/spec/template/spec/containers/0/resources/requests/memory"
   value: {{.NodeTier.Resources.Requests.Memory}}
 {{- end}}
-{{- end}}
 
-{{- if .NodeTier.Resources.Limits }}
-{{- if .NodeTier.Resources.Limits.CPU }}
+{{- if $hasLimitsCPU }}
 ###
 # CPU limits from Node Tier spec, or none
 ###
@@ -40,12 +63,11 @@
   value: {{.NodeTier.Resources.Limits.CPU}}
 {{- end}}
 
-{{- if .NodeTier.Resources.Limits.Memory }}
+{{- if $hasLimitsMemory }}
 ###
 # Memory limits from Node Tier spec, or none
 ###
 - op: add
   path: "/spec/template/spec/containers/0/resources/limits/memory"
   value: {{.NodeTier.Resources.Limits.Memory}}
-{{- end}}
 {{- end}}

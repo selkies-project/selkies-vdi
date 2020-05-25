@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{ $xpraDisabled := true}}
-
+{{- $xpraDisabled := true}}
 {{- if .UserParams.enableXpra }}
   {{- if eq .UserParams.enableXpra "true" }}
-    {{ $xpraDisabled = false }}
+    {{- $xpraDisabled = false }}
 # Joystick is not supported with Xpra.
 
   {{- end}}
 {{- end }}
-
+{{- $enableJoystick := false }}
 {{- if .UserParams.enableJoystick }}
-{{- if and ($xpraDisabled) (eq .UserParams.enableJoystick "true") }}
+  {{- if eq .UserParams.enableJoystick "true" }}
+    {{- $enableJoystick = true }}
+  {{- end}}
+{{- end}}
+
+{{- if and ($xpraDisabled) ($enableJoystick) }}
 ###
 # Add resource to attach uinput control socket to desktop container.
 # hotplug support for uinput devices.
@@ -49,5 +53,9 @@
   value:
     name: UINPUT_JS_SOCKET
     value: "/var/run/appconfig/js0ctl"
-{{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
 {{- end}}

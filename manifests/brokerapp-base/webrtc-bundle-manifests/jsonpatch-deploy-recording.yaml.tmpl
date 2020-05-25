@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- $enableRecording := false }}
 {{- if .AppParams.enableRecording }}
-{{- if eq .AppParams.enableRecording "true"}}
+  {{- if eq .AppParams.enableRecording "true" }}
+    {{- $enableRecording = true }}
+  {{- end}}
+{{- end}}
 
-# Stable timestamp for recording directory
-
+{{- if $enableRecording }}
 # Add shared hostpath volume
 - op: add
   path: "/spec/template/spec/volumes/-"
@@ -78,5 +81,9 @@
             - /bin/bash
             - -c
             - rm -rf /tmp/recording/*
-{{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
 {{- end}}

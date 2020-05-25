@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- if .UserParams.enablePersistence}}
-{{- if eq .UserParams.enablePersistence "true"}}
+{{- $enablePersistence := false }}
+{{- if .UserParams.enablePersistence }}
+  {{- if eq .UserParams.enablePersistence "true" }}
+    {{- $enablePersistence = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $enablePersistence }}
 ###
 # Add volume claim template
 ###
@@ -39,7 +45,12 @@
     name: persist-init
     image: busybox:latest
     imagePullPolicy: IfNotPresent
-    command: ["/bin/chown", "1000:1000", "/home/app"]
+    command: ["/bin/sh"]
+    args:
+      - -c
+      - |
+        /bin/chown 1000:1000 /home/app
+        grep -q DOCKER_HOST /home/app/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /home/app/.bashrc)
     volumeMounts:
       - name: persist
         mountPath: /home/app
@@ -52,5 +63,9 @@
   value:
     name: persist
     mountPath: /home/app
-{{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
 {{- end}}

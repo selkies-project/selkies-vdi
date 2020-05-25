@@ -74,6 +74,10 @@ spec:
       displayName: "Use Xpra"
       type: bool
       default: "false"
+    - name: enableDind
+      displayName: "Enable Docker"
+      type: bool
+      default: "false"
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
