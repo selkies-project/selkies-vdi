@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:stretch
+FROM ubuntu:bionic
 
 # Install desktop environment
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -53,16 +53,15 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         xfwm4 \
         xfce4-terminal \
         gdebi-core \
-        xserver-xephyr && \
-    rm -rf /var/lib/apt/lists/*
+        xserver-xephyr
 
 # Install ffmpeg-xpra
-RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/stretch/main/binary-amd64/ffmpeg-xpra_4.0-1_amd64.deb && \
+RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/bionic/main/binary-amd64/ffmpeg-xpra_4.0-1_amd64.deb && \
     gdebi -n ffmpeg-xpra.deb && \
     rm -f ffmpeg-xpra.deb
 
 # Install xpra
-ADD https://xpra.org/repos/stretch/xpra.list /etc/apt/sources.list.d/xpra-beta.list
+ADD https://xpra.org/repos/bionic/xpra.list /etc/apt/sources.list.d/xpra-beta.list
 RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
     sudo apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xpra
