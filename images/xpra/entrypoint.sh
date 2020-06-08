@@ -25,6 +25,13 @@ fi
 # https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
 [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
+# Write html5 client default settings
+if [[ -n "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
+  echo "INFO: echo writing HTML5 default-settings.txt"
+  sudo rm -f /usr/share/xpra/www/default-settings.txt.*
+  echo "${XPRA_HTML5_DEFAULT_SETTINGS}" | sudo tee /usr/share/xpra/www/default-settings.txt
+fi
+
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \
     --resize-display=no \
@@ -58,7 +65,7 @@ touch /var/run/appconfig/xpra_ready
 
 # Start script to force the window size of full desktop environments like xfdesktop
 # to match the client window size.
-/desktop_resizer.sh &
+/desktop_resizer.sh 2>&1 | tee ${HOME}/desktop-resizer.log >/dev/null &
 DRPID=$!
 
 wait $PID

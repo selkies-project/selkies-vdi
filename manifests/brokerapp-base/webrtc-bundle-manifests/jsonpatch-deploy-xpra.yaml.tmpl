@@ -52,11 +52,12 @@
       while true; do
         eval ${XPRA_ENTRYPOINT:-"xfdesktop --sm-client-disable -A"} &
         PID=$!
-        # Transparent background
-        xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/color-style --create -t int -s 3
-        # No background image
-        xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/image-style --create -t int -s 0
-
+        if [[ "${XPRA_ENTRYPOINT}" =~ xfdesktop ]]; then
+          # Transparent background
+          xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/color-style --create -t int -s 3
+          # No background image
+          xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/image-style --create -t int -s 0
+        fi
         wait $PID
         sleep 2
       done
