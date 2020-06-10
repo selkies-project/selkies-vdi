@@ -112,6 +112,10 @@ spec:
         - name: root-mount
           hostPath:
             path: /
+        - name: host-kubectl
+          hostPath:
+            path: /home/kubernetes/bin/kubectl
+            type: File
       initContainers:
         - image: "ubuntu:19.10"
           name: nvidia-driver-installer-ubuntu
@@ -209,7 +213,8 @@ spec:
         # Remove taint and update node label when finished.
         ###
         - name: node-init
-          image: gcr.io/cloud-builders/kubectl:latest
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
           securityContext:
             privileged: true
           command: ["/bin/bash"]
@@ -236,6 +241,8 @@ spec:
           volumeMounts:
             - name: dev
               mountPath: /dev
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
           env:
             - name: NVIDIA_0_SHARE
               value: "48"
