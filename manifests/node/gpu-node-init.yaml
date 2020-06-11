@@ -99,6 +99,13 @@ spec:
           hostPath:
             path: /var/run/docker.sock
             type: File
+        ###
+        # Kubectl binary from host
+        ###
+        - name: host-kubectl
+          hostPath:
+            path: /home/kubernetes/bin/kubectl
+            type: File
       initContainers:
         ###
         # Patch the nvidia-gpu-device-plugin pod with the new image
@@ -109,7 +116,8 @@ spec:
         # https://github.com/GoogleCloudPlatform/container-engine-accelerators/pull/122
         ###
         - name: gpu-plugin-patch
-          image: gcr.io/cloud-builders/kubectl:latest
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
           resources:
             requests:
               cpu: 0.15
@@ -138,11 +146,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
         ###
         # Remove taint and update node label when finished.
         ###
         - name: node-init
-          image: gcr.io/cloud-builders/kubectl:latest
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
           command: ["/bin/bash"]
           args:
             - -exc
@@ -157,6 +169,9 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
       containers:
         ###
         # pause container

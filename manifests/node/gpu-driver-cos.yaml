@@ -20,40 +20,6 @@
 # allows easier upgrades because GKE can preload the correct image on the
 # node and the daemonset can just use that image.
 
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: nvidia-driver-installer
-  namespace: kube-system
-  labels:
-    app: nvidia-driver-installer
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: nvidia-driver-installer
-  labels:
-    app: nvidia-driver-installer
-subjects:
-  - kind: ServiceAccount
-    name: nvidia-driver-installer
-    namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: nvidia-driver-installer
-  apiGroup: rbac.authorization.k8s.io
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: nvidia-driver-installer
-  labels:
-    app: nvidia-driver-installer
-rules:
-  - apiGroups: [""] # "" indicates the core API group
-    resources: ["nodes"]
-    verbs: ["*"]
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -74,7 +40,7 @@ spec:
         k8s-app: nvidia-driver-installer
     spec:
       # Service account with permissions to modify node when finished.
-      serviceAccountName: nvidia-driver-installer
+      serviceAccountName: pod-broker-node-init
       # [START gpu_driver_scheduling]
       affinity:
         nodeAffinity:
@@ -118,7 +84,40 @@ spec:
           configMap:
             name: gpu-driver-cos
             defaultMode: 0755
+        - name: host-kubectl
+          hostPath:
+            path: /home/kubernetes/bin/kubectl
+            type: File
       initContainers:
+        ###
+        # Attempt to download cached nvidia driver from GCS
+        ###
+        - image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
+          name: nvidia-driver-cache-download
+          resources:
+            requests:
+              cpu: 0.15
+          securityContext:
+            privileged: true
+          command: ["/bin/bash"]
+          args:
+            - -xc
+            - |
+              . /hostfs/etc/os-release
+              PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/project/project-id)
+              TOKEN=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token | tr ',' '\n' | grep access_token | cut -d: -f2 | tr -d '"')
+              URL="https://storage.googleapis.com/${PROJECT_ID}-vdi/drivers/NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}.tar.gz"
+              (cd /usr/local/ && curl -sfL -H "Authorization: Bearer $TOKEN" $URL | tar -zxvf -) || \
+                echo "WARN: Cache driver not found, driver will be built from source and cached afterwards."
+          volumeMounts:
+            - name: root-mount
+              mountPath: /hostfs
+            - name: nvidia-install-dir-host
+              mountPath: /usr/local/nvidia
+        ###
+        # Install NVIDIA driver from cache or build from source
+        ###
         - image: "cos-nvidia-installer:fixed"
           imagePullPolicy: Never
           name: nvidia-driver-installer
@@ -149,6 +148,7 @@ spec:
               subPath: entrypoint.sh
         ###
         # Install CUDA runtime
+        # Skips install if libraries are found in cache.
         # Required for GStreamer cuda elements
         ###
         - name: cuda-nvrtc-install
@@ -166,6 +166,9 @@ spec:
             - |
               # Install CUDA libraries
               # NOTE the cuda package version must match the cuda driver version from the nvidia-smi output.
+              CUDA_LIB_DIR=/usr/local/nvidia/cuda/lib64
+              [[ -d ${CUDA_LIB_DIR} ]] && echo "INFO: CUDA libs already installed." && exit 0
+
               apt-get update
               apt-get install -y gnupg
               apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub
@@ -174,18 +177,17 @@ spec:
               apt-get update
               apt-get install -y cuda-nvrtc-dev-10-1
 
-              CUDA_LIB_DIR=/usr/local/nvidia/cuda/lib64
               mkdir -p ${CUDA_LIB_DIR}
 
               rsync -ra /usr/local/cuda-10.1/lib64/* ${CUDA_LIB_DIR}
 
               touch /tmp/cuda_install_complete
-
         ###
-        # Remove taint and update node label when finished.
+        # Remove taint and update node label.
         ###
         - name: node-init
-          image: gcr.io/cloud-builders/kubectl:latest
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
           command: ["/bin/bash"]
           args:
             - -exc
@@ -193,13 +195,49 @@ spec:
               # remove taint
               kubectl taint node "${MY_NODE_NAME}" cloud.google.com/gke-accelerator-init:NoSchedule- || true
 
-              # update node label to unschedule self
+              # update node label
               kubectl label node "${MY_NODE_NAME}" --overwrite cloud.google.com/gke-accelerator-initialized=true
           env:
             - name: MY_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
+        ###
+        # Upload cached driver to GCS
+        ###
+        - name: nvidia-driver-cache-upload
+          image: google/cloud-sdk:alpine
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              . /hostfs/etc/os-release
+              PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/project/project-id)
+              BUCKET=gs://${PROJECT_ID}-vdi
+              DEST_FILE=NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}.tar.gz
+              DEST_OBJ=${BUCKET}/drivers/${DEST_FILE}
+
+              # Exit if object already exists.
+              if [[ -n $(gsutil ls ${DEST_OBJ}) ]]; then
+                echo "INFO: cache archive already exists."
+                exit 0
+              fi
+
+              # Create bucket (ignore failure if bucket exists)
+              gsutil mb ${BUCKET} || true
+
+              # Create archive of driver contents
+              cd /hostfs/home/kubernetes/bin
+              tar -zcvf /tmp/${DEST_FILE} nvidia
+
+              # Copy archive to GCS
+              gsutil -m cp /tmp/${DEST_FILE} ${DEST_OBJ} || true
+          volumeMounts:
+            - name: root-mount
+              mountPath: /hostfs
       containers:
         - image: "gcr.io/google-containers/pause:2.0"
           name: pause
