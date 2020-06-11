@@ -34,7 +34,7 @@
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 50Gi
+          storage: {{ default "50Gi" .AppParams.persistStorageSize }}
 
 ###
 # Add init container for persistent storage
