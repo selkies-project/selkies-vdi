@@ -85,4 +85,11 @@ RUN echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
 COPY entrypoint.sh desktop_resizer.sh /
 
+# Patch to add full screen keyboard lock
+RUN \
+    sed -i 's|</body>|    <script type="application/javascript" src="js/keyboard-lock.js"></script>|' /usr/share/xpra/www/index.html && \
+    rm -f /usr/share/xpra/www/index.html.*
+
+COPY patch-fullscreen-keyboard-lock.js /usr/share/xpra/www/js/keyboard-lock.js
+
 ENTRYPOINT ["/entrypoint.sh"]
