@@ -12,33 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- $enableSharedStorage := false }}
-{{- if .AppParams.enableSharedStorage }}
-  {{- if eq .AppParams.enableSharedStorage "true" }}
-    {{- $enableSharedStorage = true }}
+{{- $enableSharedStorageNFS := false }}
+{{- if .AppParams.enableSharedStorageNFS }}
+  {{- if eq .AppParams.enableSharedStorageNFS "true" }}
+    {{- $enableSharedStorageNFS = true }}
   {{- end}}
 {{- end}}
 
-{{- $subPath := default "data" .AppParams.sharedStorageSubPath }}
+{{- $subPath := default .App .AppParams.sharedStorageNFSSubPath }}
 
-{{- if $enableSharedStorage }}
+{{- if $enableSharedStorageNFS }}
 ###
-# Add volume claim template
+# Add shared volume to pod spec
 ###
 - op: add
-  path: "/spec/volumeClaimTemplates/-"
+  path: "/spec/template/spec/volumes/-"
   value:
-    metadata:
-      name: shared
-      annotations:
-        gke.accel.vdi/user: "{{.User}}"
-    spec:
-      accessModes: [ "{{ default "ReadWriteMany" .AppParams.sharedVolumeMode }}" ]
-      storageClassName: {{ default "" .AppParams.sharedStorageClass | quote }}
-      volumeName: {{ default "" .AppParams.sharedVolumeName }}
-      resources:
-        requests:
-          storage: {{ default "1Gi" .AppParams.sharedStorageSize }}
+    name: shared
+    persistentVolumeClaim:
+      claimName: shared-{{.ServiceName}}
 
 ###
 # Add init container for mount path
@@ -69,7 +61,7 @@
   path: "/spec/template/spec/containers/0/volumeMounts/-"
   value:
     name: shared
-    mountPath: {{ default "/mnt/shared" .AppParams.sharedStorageMountPath }}
+    mountPath: {{ default "/mnt/shared" .AppParams.sharedStorageNFSMountPath }}
     subPath: {{ $subPath }}
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.

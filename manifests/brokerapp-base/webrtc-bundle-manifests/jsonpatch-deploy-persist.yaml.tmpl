@@ -19,6 +19,22 @@
   {{- end}}
 {{- end}}
 
+{{- if .AppParams.enablePersistence }}
+  {{- if eq .AppParams.enablePersistence "true" }}
+    {{- $enablePersistence = true }}
+  {{- end}}
+{{- end}}
+
+{{- $subPath := default "" .AppParams.persistStorageSubPath }}
+{{- if eq $subPath "USER" }}
+  {{- $subPath = .User }}
+{{- end}}
+
+{{- $storageClass := default "standard" .AppParams.persistStorageClass }}
+{{- if eq $storageClass "NONE" }}
+  {{- $storageClass = "" }}
+{{- end }}
+
 {{- if $enablePersistence }}
 ###
 # Add volume claim template
@@ -31,7 +47,9 @@
       annotations:
         gke.accel.vdi/user: "{{.User}}"
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: [ "{{ default "ReadWriteOnce" .AppParams.persistVolumeMode }}" ]
+      storageClassName: {{ $storageClass | quote }}
+      volumeName: {{ default "" .AppParams.persistVolumeName | quote }}
       resources:
         requests:
           storage: {{ default "50Gi" .AppParams.persistStorageSize }}
@@ -47,13 +65,17 @@
     imagePullPolicy: IfNotPresent
     command: ["/bin/sh"]
     args:
-      - -c
+      - -xc
       - |
-        /bin/chown 1000:1000 /home/app
-        grep -q DOCKER_HOST /home/app/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /home/app/.bashrc)
+        mkdir -p /mnt/persist/${SUBPATH}
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}
+        grep -q DOCKER_HOST /mnt/persist/${SUBPATH}/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /mnt/persist/${SUBPATH}/.bashrc)
+    env:
+      - name: SUBPATH
+        value: "{{ $subPath }}"
     volumeMounts:
       - name: persist
-        mountPath: /home/app
+        mountPath: /mnt/persist
 
 ###
 # Add volumeMount to desktop container
@@ -63,6 +85,7 @@
   value:
     name: persist
     mountPath: /home/app
+    subPath: {{ $subPath }}
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test
