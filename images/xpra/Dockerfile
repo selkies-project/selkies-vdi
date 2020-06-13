@@ -92,4 +92,11 @@ RUN \
 
 COPY patch-fullscreen-keyboard-lock.js /usr/share/xpra/www/js/keyboard-lock.js
 
+# Patch to fix broken minimize action
+RUN \
+    cd /usr/share/xpra/www/js && \
+    sed -i 's|this.wid,True|this.wid,true|g' Window.js && \
+    rm -f Window.js.* && \
+    gzip -c Window.js > Window.js.gz
+
 ENTRYPOINT ["/entrypoint.sh"]
