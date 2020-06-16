@@ -18,6 +18,13 @@
     {{- $enableXpra = true }}
   {{- end}}
 {{- end}}
+{{- if .AppParams.enableXpra }}
+  {{- if eq .AppParams.enableXpra "true" }}
+    {{- $enableXpra = true }}
+  {{- end}}
+{{- end}}
+
+{{- $xpraUploadDir := default "/mnt/uploads" .AppParams.xpraUploadsMountPath }}
 
 {{- if $enableXpra }}
 ###
@@ -82,7 +89,7 @@
   path: "/spec/template/spec/containers/0/volumeMounts/0"
   value:
     name: xpra-uploads
-    mountPath: /mnt/uploads
+    mountPath: {{ $xpraUploadDir }}
 
 ###
 # Replace xserver container with xpra container.
@@ -104,6 +111,8 @@
         value: "8082"
       - name: XPRA
         value: "tcp://127.0.0.1:8082"
+      - name: XPRA_DOWNLOAD_DIR
+        value: "/mnt/downloads"
       # Add environment vars from brokerappconfig spec.
       {{- range $item := .AppSpec.AppEnv }}
       - name: {{$item.Name}}
@@ -115,7 +124,7 @@
       - name: config
         mountPath: /var/run/appconfig
       - name: xpra-uploads
-        mountPath: /home/app
+        mountPath: /mnt/downloads
     ports:
       - name: web
         containerPort: 8082

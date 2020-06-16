@@ -32,6 +32,11 @@ if [[ -n "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
   echo "${XPRA_HTML5_DEFAULT_SETTINGS}" | sudo tee /usr/share/xpra/www/default-settings.txt
 fi
 
+if [[ -n "${XPRA_CONF}" ]]; then
+  echo "INFO: echo writing xpra conf to /etc/xpra/conf.d/99_appconfig.conf"
+  echo "${XPRA_CONF}" | sudo tee /etc/xpra/conf.d/99_appconfig.conf
+fi
+
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \
     --resize-display=no \
@@ -65,7 +70,7 @@ touch /var/run/appconfig/xpra_ready
 
 # Start script to force the window size of full desktop environments like xfdesktop
 # to match the client window size.
-/desktop_resizer.sh 2>&1 | tee ${HOME}/desktop-resizer.log >/dev/null &
+/desktop_resizer.sh 2>&1 | tee /tmp/desktop-resizer.log >/dev/null &
 DRPID=$!
 
 wait $PID

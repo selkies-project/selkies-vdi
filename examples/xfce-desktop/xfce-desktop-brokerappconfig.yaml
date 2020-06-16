@@ -91,6 +91,8 @@ spec:
     #  default: "in"
     #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
     #  default: "${EGRESS_PROXY}/32"
+    #- name: xpraUploadsMountPath
+    #  default: "/mnt/uploads"
   #appEnv:
   # proxy env, use with appParams.egressProxyCIDR
   #- name: http_proxy
