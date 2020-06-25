@@ -85,6 +85,11 @@ RUN echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
 COPY entrypoint.sh desktop_resizer.sh /
 
+# Create empty .menu file for xdg menu.
+RUN \
+    mkdir -p /etc/xdg/menus && \
+    echo "<Menu></Menu>" > /etc/xdg/menus/kde-debian-menu.menu
+
 # Patch to add full screen keyboard lock
 RUN \
     sed -i 's|</body>|    <script type="application/javascript" src="js/keyboard-lock.js"></script>|' /usr/share/xpra/www/index.html && \
