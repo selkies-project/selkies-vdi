@@ -21,10 +21,6 @@ if [[ "${XPRA_ARGS}" =~ use-display=yes ]]; then
     echo "Host X server is ready"
 fi
 
-# Workaround for vulkan initialization
-# https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
-[[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
-
 # Write html5 client default settings
 if [[ -n "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
   echo "INFO: echo writing HTML5 default-settings.txt"

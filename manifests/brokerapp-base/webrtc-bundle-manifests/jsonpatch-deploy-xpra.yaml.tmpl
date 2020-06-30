@@ -28,6 +28,13 @@
 
 {{- if $enableXpra }}
 ###
+# Add istio sidecar injection annotation
+###
+- op: add
+  path: "/spec/template/metadata/annotations/sidecar.istio.io~1inject"
+  value: "true"
+
+###
 # Change entrypoint of desktop container.
 ###
 - op: replace
