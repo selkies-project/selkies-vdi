@@ -102,4 +102,9 @@
       - |-
         iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 80 -j REDIRECT --to-port 3128
         iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 443 -j REDIRECT --to-port 3129
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
 {{- end}}
