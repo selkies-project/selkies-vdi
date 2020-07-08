@@ -36,6 +36,7 @@ configMapGenerator:
       - jsonpatch-deploy-persist.yaml.tmpl
       - jsonpatch-deploy-xpra.yaml.tmpl
       - jsonpatch-deploy-recording.yaml.tmpl
+      - jsonpatch-deploy-squid-proxy.yaml.tmpl
       - jsonpatch-deploy-shared-storage-nfs.yaml.tmpl
       - jsonpatch-deploy-user-pod-gpu.yaml.tmpl
       - jsonpatch-deploy-user-pod-js.yaml.tmpl

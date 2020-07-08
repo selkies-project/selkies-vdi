@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- if .AppParams.egressProxyCIDR}}
+{{- $enableEgressPolicy := false }}
+{{- if .AppParams.enableEgressPolicy }}
+  {{- if eq .AppParams.enableEgressPolicy "true" }}
+    {{- $enableEgressPolicy = true }}
+  {{- end}}
+{{- end}}
+
+# Split allowed CIDR ranges
+{{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
+
+{{- if $enableEgressPolicy}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -34,10 +44,14 @@ spec:
         # KubeDNS
         - ipBlock:
             cidr: {{.NetworkPolicyData.KubeDNSClusterIP}}/32
+
+    # Allowed egress CIDR ranges, split from app param.
+    {{- range $cidr := $egressCIDRRanges }}
     - to:
-        # Squid Proxy VM internal IP
         - ipBlock:
-            cidr: {{.AppParams.egressProxyCIDR}}
+            cidr: {{$cidr}}
+    {{- end}}
+
     # TURN pod host IPs
     {{- range $ip := .NetworkPolicyData.TURNIPs}}
     - to:

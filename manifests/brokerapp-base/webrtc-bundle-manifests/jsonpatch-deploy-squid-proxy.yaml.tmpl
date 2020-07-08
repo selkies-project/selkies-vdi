@@ -1,0 +1,105 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $enableSquidProxy := false }}
+{{- if .AppParams.enableSquidProxy }}
+  {{- if eq .AppParams.enableSquidProxy "true" }}
+    {{- $enableSquidProxy = true }}
+  {{- end}}
+{{- end}}
+
+{{- $squidProxyImage := default .AppParams.squidProxyImage (printf "gcr.io/%s/webrtc-gpu-streaming-squid-proxy:latest" .ProjectID) }}
+
+{{- if $enableSquidProxy }}
+###
+# Add volume for squid conf
+# Inserting as first element to deconflict other patches that append.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/642
+###
+- op: add
+  path: "/spec/template/spec/volumes/0"
+  value:
+    name: squid-conf
+    configMap:
+      name: {{.ServiceName}}-squid-conf
+
+###
+# Add Squid proxy container
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: squid
+    image: {{ $squidProxyImage }}
+    command: ["/bin/bash"]
+    args:
+    - "-exc"
+    - |-
+      # Create squid.conf
+      cat - > /apps/squid.conf.tproxy <<EOF
+      # Quick shutdown
+      shutdown_lifetime 0 seconds
+
+      # Single log that we can tail to stdout
+      logfile_rotate 0
+
+      # Enable transpart proxy with SSL bump
+      http_port 3128 intercept
+      https_port 3129 intercept ssl-bump generate-host-certificates=on cert=/apps/server_crt.pem key=/apps/server_key.pem sslflags=DONT_VERIFY_PEER
+      http_port 3130 ssl-bump generate-host-certificates=on cert=/apps/server_crt.pem key=/apps/server_key.pem sslflags=DONT_VERIFY_PEER
+
+      # Run as specific user
+      cache_effective_user proxy
+      cache_effective_group proxy
+      
+      # Configure SSL Bump for all sites
+      sslcrtd_program /apps/squid/libexec/ssl_crtd -s /apps/squid/var/lib/ssl_db -M 4MB sslcrtd_children 8 startup=1 idle=1  
+      ssl_bump none localhost
+      
+      http_access allow all
+      never_direct allow all
+
+      ${SQUID_EXTRA_CONF}
+      EOF
+
+      # Send logs to stdout
+      touch /apps/squid/var/logs/{cache,access}.log
+      tail -vn 0 -F /apps/squid/var/logs/{cache,access}.log &
+
+      chown proxy:proxy /apps/squid/var/logs -R
+      chown proxy:proxy /apps/squid/var/lib/ssl_db -R
+
+      # Start squid
+      exec /apps/squid/sbin/squid -NsY -f /apps/squid.conf.tproxy
+    env:
+      - name: SQUID_EXTRA_CONF
+        value: {{ default .AppParams.squidExtraConf "" | quote }}
+
+###
+# Add init container to redirect ports for transparent proxy
+###
+- op: add
+  path: "/spec/template/spec/initContainers/-"
+  value:
+    name: squid-init
+    image: {{ $squidProxyImage }}
+    securityContext:
+      privileged: true
+    command: ["/bin/bash"]
+    args:
+      - "-exc"
+      - |-
+        iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 80 -j REDIRECT --to-port 3128
+        iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 443 -j REDIRECT --to-port 3129
+{{- end}}
