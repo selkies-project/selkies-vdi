@@ -90,10 +90,11 @@ RUN \
     ninja -C build install
 
 # Build gst-instruments from source
+ARG GST_INSTRUMENTS_VERSION=0.2.4
 RUN \
     cd /opt/ && \
-    git clone --depth=1 https://github.com/kirushyk/gst-instruments.git -b master && \
-    cd gst-instruments && \
+    git clone https://github.com/kirushyk/gst-instruments.git && \
+    cd gst-instruments && git checkout ${GST_INSTRUMENTS_VERSION} && \
     ./autogen.sh --prefix=/usr && \
     make -j8 && make install
 
