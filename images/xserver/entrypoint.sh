@@ -25,6 +25,15 @@ if [[ -S /tmp/.uinput/mouse0ctl ]]; then
     nohup socat UNIX-RECV:/var/run/appconfig/mouse0ctl,reuseaddr UNIX-CLIENT:/tmp/.uinput/mouse0ctl &
 fi
 
+# Find PCI bus ID and update Xorg.conf
+BUS_ID=$(lspci | grep NVIDIA | cut -d' ' -f1)
+[[ -z "${BUS_ID}" ]] && echo "ERROR: Failed to find NVIDIA device PCI bus id" && exit 1
+# Extract PCI bus ID from lspci output.
+XORG_BUS_ID=$(printf "PCI:0:%.0f:0" ${BUS_ID/*:/})
+echo "Updating /etc/X11/xorg.conf with NVIDIA device BusId ${XORG_BUS_ID}"
+# Patch Xorg.conf
+sed -i 's/BusId.*/BusId          "'${XORG_BUS_ID}'"/g' /etc/X11/xorg.conf
+
 # Start xorg in background
 # The MIT-SHM extension here is important to achieve full frame rates
 nohup Xorg ${DISPLAY} -novtswitch -sharevts -nolisten tcp +extension MIT-SHM vt7 &

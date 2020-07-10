@@ -30,7 +30,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         evtest \
         x11vnc \
         socat \
-        libxrandr-dev && \
+        libxrandr-dev \
+        pciutils && \
     rm -rf /var/lib/apt/lists/
 
 # Export library path for NVIDIA libs
