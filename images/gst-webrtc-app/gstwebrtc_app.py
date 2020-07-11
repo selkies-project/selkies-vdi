@@ -111,7 +111,7 @@ class GSTWebRTCApp:
         self.pipeline.add(self.webrtcbin)
     # [END build_webrtcbin_pipeline]
 
-    # [BEGIN build_video_pipeline]
+    # [START build_video_pipeline]
     def build_video_pipeline(self):
         """Adds the RTP video stream to the pipeline.
         """
@@ -319,7 +319,7 @@ class GSTWebRTCApp:
 
     # [END build_video_pipeline]
 
-    # [BEGIN build_audio_pipeline]
+    # [START build_audio_pipeline]
     def build_audio_pipeline(self):
         """Adds the RTP audio stream to the pipeline.
         """
