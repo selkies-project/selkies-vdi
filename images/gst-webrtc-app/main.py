@@ -218,7 +218,7 @@ if __name__ == '__main__':
     # After connecting, attempt to setup call to peer.
     signalling.on_connect = signalling.setup_call
 
-    # [BEGIN main_setup]
+    # [START main_setup]
     # Fetch the turn server and credentials
     stun_server, turn_server = fetch_coturn(
         args.coturn_web_uri, args.coturn_web_username, args.coturn_auth_header_name)
