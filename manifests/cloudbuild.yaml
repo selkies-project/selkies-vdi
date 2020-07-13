@@ -18,6 +18,9 @@ substitutions:
   _NAME: broker
   _REGION: us-west1
 
+tags:
+  - selkies-vdi-manifests
+
 steps:
   ###
   # Deploy manifests to cluster.

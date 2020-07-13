@@ -22,6 +22,9 @@ substitutions:
   _IMAGE_PREFIX: webrtc-gpu-streaming
   _IMAGE_TAG: latest
 
+tags:
+  - selkies-vdi-images
+
 ###
 # Images to be pushed
 ###
