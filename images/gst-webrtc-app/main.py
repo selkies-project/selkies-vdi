@@ -296,6 +296,7 @@ if __name__ == '__main__':
 
     gpu_mon.on_stats = on_gpu_stats
 
+    # [START main_start]
     # Connect to the signalling server and process messages.
     loop = asyncio.get_event_loop()
     try:
@@ -313,3 +314,4 @@ if __name__ == '__main__':
         webrtc_input.disconnect()
         gpu_mon.stop()
         sys.exit(0)
+    # [END main_start]
