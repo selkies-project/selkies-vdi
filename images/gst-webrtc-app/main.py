@@ -63,25 +63,28 @@ def fetch_coturn(uri, user, auth_header_name):
     stun_host = stun.split(":")[1]
     stun_port = stun.split(":")[2].split("?")[0]
 
-    turn = ice_servers[1]['urls'][0]
-    turn_host = turn.split(':')[1]
-    turn_port = turn.split(':')[2].split('?')[0]
-    turn_user = ice_servers[1]['username']
-    turn_password = ice_servers[1]['credential']
-
     stun_uri = "stun://%s:%s" % (
         stun_host,
         stun_port
     )
 
-    turn_uri = "turn://%s:%s@%s:%s" % (
-        urllib.parse.quote(turn_user, safe=""),
-        urllib.parse.quote(turn_password, safe=""),
-        turn_host,
-        turn_port
-    )
+    turn_uris = []
+    for turn in ice_servers[1]['urls']:
+        turn_host = turn.split(':')[1]
+        turn_port = turn.split(':')[2].split('?')[0]
+        turn_user = ice_servers[1]['username']
+        turn_password = ice_servers[1]['credential']
 
-    return stun_uri, turn_uri
+        turn_uri = "turn://%s:%s@%s:%s" % (
+            urllib.parse.quote(turn_user, safe=""),
+            urllib.parse.quote(turn_password, safe=""),
+            turn_host,
+            turn_port
+        )
+
+        turn_uris.append(turn_uri)
+
+    return stun_uri, turn_uris
 
 def wait_for_app_ready(ready_file, app_auto_init = True):
     """Wait for streaming app ready signal.
@@ -220,11 +223,11 @@ if __name__ == '__main__':
 
     # [START main_setup]
     # Fetch the turn server and credentials
-    stun_server, turn_server = fetch_coturn(
+    stun_server, turn_servers = fetch_coturn(
         args.coturn_web_uri, args.coturn_web_username, args.coturn_auth_header_name)
 
     # Create instance of app
-    app = GSTWebRTCApp(stun_server, turn_server, args.enable_audio == "true", int(args.framerate))
+    app = GSTWebRTCApp(stun_server, turn_servers, args.enable_audio == "true", int(args.framerate))
 
     # [END main_setup]
 

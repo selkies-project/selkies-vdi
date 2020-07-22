@@ -456,7 +456,7 @@ fetch("/turn/")
         // for debugging, force use of relay server.
         webrtc.forceTurn = app.turnSwitch;
 
-        app.debugEntries.push(applyTimestamp("[app] using TURN server: " + config.iceServers[1].urls[0]));
+        app.debugEntries.push(applyTimestamp("[app] using TURN servers: " + config.iceServers[1].urls.join(", ")));
         webrtc.rtcPeerConfig = config;
         webrtc.connect();
     });

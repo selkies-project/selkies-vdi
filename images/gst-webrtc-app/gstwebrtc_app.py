@@ -33,7 +33,7 @@ class GSTWebRTCAppError(Exception):
 
 
 class GSTWebRTCApp:
-    def __init__(self, stun_server=None, turn_server=None, audio=True, framerate=30):
+    def __init__(self, stun_server=None, turn_servers=None, audio=True, framerate=30):
         """Initialize gstreamer webrtc app.
 
         Initializes GObjects and checks for required plugins.
@@ -41,12 +41,12 @@ class GSTWebRTCApp:
         Arguments:
             stun_server {[string]} -- Optional STUN server uri in the form of:
                                     stun:<host>:<port>
-            turn_server {[string]} -- Optional TURN server uri in the form of:
+            turn_servers {[list of strings]} -- Optional TURN server uris in the form of:
                                     turn://<user>:<password>@<host>:<port>
         """
 
         self.stun_server = stun_server
-        self.turn_server = turn_server
+        self.turn_servers = turn_servers
         self.audio = audio
         self.pipeline = None
         self.webrtcbin = None
@@ -103,9 +103,10 @@ class GSTWebRTCApp:
             self.webrtcbin.set_property("stun-server", self.stun_server)
 
         # Add TURN server
-        if self.turn_server:
-            logger.info("adding TURN server: %s" % self.turn_server)
-            self.webrtcbin.emit("add-turn-server", self.turn_server)
+        if self.turn_servers:
+            for turn_server in self.turn_servers:
+                logger.info("adding TURN server: %s" % turn_server)
+                self.webrtcbin.emit("add-turn-server", turn_server)
 
         # Add element to the pipeline.
         self.pipeline.add(self.webrtcbin)
