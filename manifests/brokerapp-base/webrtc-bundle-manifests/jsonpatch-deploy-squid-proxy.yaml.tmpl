@@ -21,6 +21,9 @@
 
 {{- $squidProxyImage := default .AppParams.squidProxyImage (printf "gcr.io/%s/webrtc-gpu-streaming-squid-proxy:latest" .ProjectID) }}
 
+# Split allowed CIDR ranges
+{{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
+
 {{- if $enableSquidProxy }}
 ###
 # Add volume for squid conf
@@ -66,7 +69,7 @@
       # Configure SSL Bump for all sites
       sslcrtd_program /apps/squid/libexec/ssl_crtd -s /apps/squid/var/lib/ssl_db -M 4MB sslcrtd_children 8 startup=1 idle=1  
       ssl_bump none localhost
-      
+
       http_access allow all
       never_direct allow all
 
@@ -100,6 +103,11 @@
     args:
       - "-exc"
       - |-
+        {{- range $cidr := $egressCIDRRanges }}
+        iptables -t nat -A OUTPUT -p tcp -m tcp --dport 80 -d {{$cidr}} -j ACCEPT
+        iptables -t nat -A OUTPUT -p tcp -m tcp --dport 443 -d {{$cidr}} -j ACCEPT
+        {{- end}}
+        # Redirect all other traffic to transparent proxy.
         iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 80 -j REDIRECT --to-port 3128
         iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 443 -j REDIRECT --to-port 3129
 {{- else}}
