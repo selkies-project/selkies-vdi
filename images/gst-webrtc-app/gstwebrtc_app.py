@@ -78,7 +78,7 @@ class GSTWebRTCApp:
     def build_webrtcbin_pipeline(self):
         """Adds the webrtcbin elments to the pipeline.
 
-        The video and audio pipelines will are linked to this in the
+        The video and audio pipelines are linked to this in the
             build_video_pipline() and build_audio_pipeline() methods.
         """
 
