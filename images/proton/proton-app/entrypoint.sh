@@ -37,12 +37,19 @@ xrandr --fb ${RESOLUTION}
 # https://bugs.launchpad.net/ubuntu/+source/nvidia-graphics-drivers-390/+bug/1769857
 [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null 2>&1 || true)
 
-echo "Starting app: ${APP_PATH?env not set}"
-
 while true; do
     eval ${ENABLE_WM:-true} && xfwm4 --daemon ${WM_ARGS}
     sleep 2
-    cd $(dirname ${APP_PATH})
-    wine64 ${APP_PATH} ${APP_ARGS}
+    if [[ -e "${APP_PATH}" ]]; then
+        echo "Starting app: ${APP_PATH}"
+        cd $(dirname ${APP_PATH})
+        wine64 ${APP_PATH} ${APP_ARGS}
+    elif [[ -e "${ENTRYPOINT}" ]]; then
+        echo "Starting env provided entrypoint: ${ENTRYPOINT}"
+        eval ${ENTRYPOINT}
+    else
+        echo "ERROR: No APP_PATH or ENTRYPOINT env var found, nothing to execute."
+        exit 1
+    fi
     sleep 2
 done
