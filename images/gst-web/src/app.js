@@ -55,6 +55,7 @@ var app = new Vue({
                 { text: '15 fps', value: 15 },
                 { text: '30 fps', value: 30 },
                 { text: '60 fps', value: 60 },
+                { text: '100 fps', value: 100 },
             ],
             audioBitRate: (parseInt(window.localStorage.getItem("audioBitRate")) || 32000),
             audioBitRateOptions: [
