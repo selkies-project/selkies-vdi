@@ -37,6 +37,16 @@ if [[ -n "${XPRA_CONF}" ]]; then
   echo "${XPRA_CONF}" | sudo tee /etc/xpra/conf.d/99_appconfig.conf
 fi
 
+# Start dbus
+sudo rm -rf /var/run/dbus
+dbus-uuidgen | sudo tee /var/lib/dbus/machine-id
+sudo mkdir -p /var/run/dbus
+sudo dbus-daemon --system
+
+echo "Starting CUPS"
+sudo cupsd
+sudo sed -i 's/^add-printer-options = -u .*/add-printer-options = -u allow:all/g' /etc/xpra/conf.d/16_printing.conf
+
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \
     --resize-display=no \
