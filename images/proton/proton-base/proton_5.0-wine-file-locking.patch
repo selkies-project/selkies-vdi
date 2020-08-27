@@ -1,0 +1,99 @@
+--- fd.c.orig	2020-08-27 03:24:23.911111066 +0000
++++ fd.c	2020-08-27 02:57:25.825637401 +0000
+@@ -286,6 +286,7 @@
+     struct list         open;       /* list of open file descriptors */
+     struct list         locks;      /* list of file locks */
+     struct list         closed;     /* list of file descriptors to close at destroy time */
++    int                 lock_fd;    /* unix file descriptor for locks */
+ };
+ 
+ static void inode_dump( struct object *obj, int verbose );
+@@ -1091,6 +1092,11 @@
+         }
+         ptr = next;
+     }
++    if (list_empty( &inode->open ) && inode->lock_fd != -1)
++    {
++        close( inode->lock_fd );
++        inode->lock_fd = -1;
++    }
+ }
+ 
+ static void inode_dump( struct object *obj, int verbose )
+@@ -1129,6 +1135,8 @@
+         free( fd->unix_name );
+         free( fd );
+     }
++    if (inode->lock_fd != -1)
++        close( inode->lock_fd );
+     release_object( inode->device );
+ }
+ 
+@@ -1158,6 +1166,7 @@
+         list_init( &inode->open );
+         list_init( &inode->locks );
+         list_init( &inode->closed );
++        inode->lock_fd = -1;
+         list_add_head( &device->inode_hash[hash], &inode->entry );
+     }
+     else release_object( device );
+@@ -1168,7 +1177,7 @@
+ /* add fd to the inode list of file descriptors to close */
+ static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
+ {
+-    if (!list_empty( &inode->locks ))
++    if (!list_empty( &inode->open ))
+     {
+         list_add_head( &inode->closed, &fd->entry );
+     }
+@@ -1186,6 +1195,19 @@
+     }
+ }
+ 
++/* get fd which can be used for locks */
++static int inode_get_lock_fd( struct inode *inode )
++{
++    return inode->lock_fd;
++}
++
++/* set fd which can be used for locks */
++static void inode_set_lock_fd( struct inode *inode, int lock_fd )
++{
++    inode->lock_fd = lock_fd;
++}
++
++
+ 
+ /****************************************************************/
+ /* file lock functions */
+@@ -1223,7 +1245,7 @@
+         fl.l_start  = start;
+         if (!end || end > max_unix_offset) fl.l_len = 0;
+         else fl.l_len = end - start;
+-        if (fcntl( fd->unix_fd, F_SETLK, &fl ) != -1) return 1;
++        if (fcntl( inode_get_lock_fd( fd->inode ), F_SETLK, &fl ) != -1) return 1;
+ 
+         switch(errno)
+         {
+@@ -1983,6 +2005,7 @@
+     {
+         unsigned int err;
+         struct inode *inode = get_inode( st.st_dev, st.st_ino, fd->unix_fd );
++        int lock_fd;
+         int is_link = S_ISLNK(st.st_mode), is_dir;
+ 
+         if (!inode)
+@@ -1996,6 +2019,13 @@
+         fd->closed = closed_fd;
+         fd->cacheable = !inode->device->removable;
+         list_add_head( &inode->open, &fd->inode_entry );
++
++        if (inode_get_lock_fd( inode ) == -1)
++        {
++            lock_fd = open( name, O_RDWR );
++            inode_set_lock_fd( inode, lock_fd );
++        }
++
+         closed_fd = NULL;
+ 
+         /* decode symlink type */
