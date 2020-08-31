@@ -38,7 +38,7 @@ xrandr --fb ${RESOLUTION}
 [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null 2>&1 || true)
 
 while true; do
-    eval ${ENABLE_WM:-true} && xfwm4 --daemon ${WM_ARGS}
+    eval ${ENABLE_WM:-true} && xfwm4 --replace ${WM_ARGS} &
     sleep 2
     if [[ -e "${APP_PATH}" ]]; then
         echo "Starting app: ${APP_PATH}"

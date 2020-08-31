@@ -24,6 +24,7 @@ ENV PATH=${PATH}:/opt/proton/bin
 
 # Install basic window manager and runtime dependencies
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        dbus-x11 \
         xfwm4 \
         zip \
         sudo \
