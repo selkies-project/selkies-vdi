@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package uinput;
+
+service HostService {
+  rpc UinputTriggerOpen (UinputTriggerMessage) returns (UinputTriggerResponse);
+  rpc UinputTriggerClose (UinputTriggerMessage) returns (UinputTriggerResponse);
+}
+
+message UinputTriggerMessage {
+  string podName = 1;
+  enum PluginMode {
+    POD = 0;
+    CONTAINER = 1;
+  }
+  PluginMode pluginMode = 2;
+}
+
+message UinputTriggerResponse {}

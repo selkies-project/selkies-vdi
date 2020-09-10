@@ -1,18 +1,4 @@
-# Copyright 2019 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
   name: uinput-device-plugin
@@ -30,10 +16,14 @@ spec:
     type: RollingUpdate
   template:
     metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      creationTimestamp: null
       labels:
         k8s-app: uinput-device-plugin
     spec:
       dnsPolicy: ClusterFirst
+      priorityClassName: system-node-critical
       schedulerName: default-scheduler
       terminationGracePeriodSeconds: 10
       affinity:
@@ -41,7 +31,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: app.broker/tier
+                  - key: cloud.google.com/gke-accelerator
                     operator: Exists
       tolerations:
         - effect: NoExecute
@@ -65,32 +55,9 @@ spec:
           hostPath:
             path: /sys
             type: Directory
-        - name: root-mount
-          hostPath:
-            path: /
       initContainers:
-        ###
-        # Load the uinput kernel module.
-        ###
-        - name: uinput-modprobe
-          image: "debian:buster"
-          resources:
-            requests:
-              cpu: 0.15
-          securityContext:
-            privileged: true
-          command: ["/bin/bash"]
-          args:
-            - -exc
-            - |
-              apt-get update
-              apt-get install -y kmod
-              chroot /root modprobe uinput
-          volumeMounts:
-            - name: root-mount
-              mountPath: /root
         - name: copy-helper
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           command: ["/bin/bash"]
           args:
             - -exc
@@ -105,7 +72,7 @@ spec:
         # Python script to create pool of uinput devices
         ###
         - name: uinput-devices
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           securityContext:
             privileged: true
           command: ["/usr/local/bin/python3", "/opt/app/uinput_devices.py"]
@@ -151,10 +118,10 @@ spec:
                   ]
 
         ###
-        # uinput.dev/mouse device plugin
+        # uinput.dev./mouse device plugin
         ###
         - name: mouse-uinput-device-plugin
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           securityContext:
             privileged: true
           command: ["/bin/bash"]
@@ -193,7 +160,7 @@ spec:
         # uinput.dev/js device plugin
         ###
         - name: js-uinput-device-plugin
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           securityContext:
             privileged: true
           command: ["/bin/bash"]
@@ -232,7 +199,7 @@ spec:
         # uinput.dev/container device plugin
         ###
         - name: container-uinput-device-plugin
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           securityContext:
             privileged: true
           command: ["/bin/bash"]
@@ -271,7 +238,7 @@ spec:
         # uinput.dev/pod device plugin
         ###
         - name: pod-uinput-device-plugin
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
           securityContext:
             privileged: true
           command: ["/bin/bash"]
@@ -310,7 +277,8 @@ spec:
         # Monitor for creating the uinputctl sockets and reacting to messages.
         ###
         - name: monitor-uinput-device-plugin
-          image: gcr.io/${PROJECT_ID}/uinput-device-plugin:latest
+          image: gcr.io/cloud-solutions-images/uinput-device-plugin:latest
+          imagePullPolicy: Always
           securityContext:
             privileged: true
           command: ["/bin/bash"]

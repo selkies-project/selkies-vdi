@@ -62,6 +62,9 @@ images: [
     # nvidia-gpu-device-plugin
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
+    # uinput-device-plugin
+    'gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/uinput-device-plugin:latest',
 ]
 
 steps:
@@ -379,3 +382,31 @@ steps:
         ]
   waitFor:
     - nvidia-gpu-device-plugin-build
+
+###
+# uinput device plugin image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: uinput-device-plugin-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/uinput-device-plugin:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: uinput-device-plugin
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/uinput-device-plugin:latest',
+            'uinput-device-plugin'
+        ]
+  waitFor:
+    - uinput-device-plugin-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: uinput-device-plugin-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/uinput-device-plugin:latest',
+        ]
+  waitFor:
+    - uinput-device-plugin

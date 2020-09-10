@@ -16,11 +16,22 @@
 
 cd /opt/app
 
+echo "Waiting for X server"
+until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+echo "X server is ready"
+
 if [[ -e /tmp/.uinput/uinput-helper ]]; then
     # Start udevd to send uinput udev device events, requires capability NET_ADMIN
     /usr/lib/systemd/systemd-udevd --daemon
 
     /tmp/.uinput/uinput-helper -logtostderr 2>/var/log/uinput-helper.log &
+fi
+
+if [[ -n "${UINPUT_MOUSE_SOCKET}" ]]; then
+    # Wait for socket to get mounted to container by uinput-device-plugin.
+    echo "Waiting for uinput mouse socket: ${UINPUT_MOUSE_SOCKET}"
+    until [[ -S ${UINPUT_MOUSE_SOCKET} ]]; do sleep 1; done
+    echo "uinput mouse socket is ready"
 fi
 
 while true; do

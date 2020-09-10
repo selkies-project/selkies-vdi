@@ -123,8 +123,8 @@ class WebRTCInput:
             # Proxy uinput mouse commands through unix domain socket.
             logger.info("Connecting to uinput mouse socket: %s" % self.uinput_mouse_socket_path)
             self.uinput_mouse_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        else:
-            self.mouse = pynput.mouse.Controller()
+
+        self.mouse = pynput.mouse.Controller()
 
     def __mouse_disconnect(self):
         if self.mouse:
@@ -220,6 +220,7 @@ class WebRTCInput:
     def send_mouse(self, action, data):
         if action == MOUSE_POSITION:
             # data is a tuple of (x, y)
+            # using X11 mouse even when virtual mouse is enabled for non-relative actions.
             self.mouse.position = data
         elif action == MOUSE_MOVE:
             # data is a tuple of (x, y)

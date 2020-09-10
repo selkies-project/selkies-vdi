@@ -311,7 +311,7 @@ if __name__ == '__main__':
         metrics.start()
         loop.run_until_complete(webrtc_input.connect())
         loop.run_in_executor(None, lambda: webrtc_input.start_clipboard())
-        #loop.run_in_executor(None, lambda: gpu_mon.start())
+        loop.run_in_executor(None, lambda: gpu_mon.start())
         loop.run_until_complete(signalling.connect())
         loop.run_until_complete(signalling.start())
     except Exception as e:
