@@ -30,12 +30,12 @@ RUN \
 
 WORKDIR /opt
 
-ARG GSTREAMER_VERSION=d25a88e3a15b9f38a66ae6d2735c625b6f8db476
-ARG GST_PLUGINS_BASE_VERSION=8b92d144a110bc80a9be46b587691123817f63d6
-ARG GST_PLUGINS_GOOD_VERSION=203ad39d534e79ad8233418da42779700dc56e59
-ARG GST_PLUGINS_BAD_VERSION=b5e506d12b2a2e78d30931e5d88cc101fa971574
-ARG GST_PLUGINS_UGLY_VERSION=8fe8ed3dd2bdcf22097d9886ad5242258b64ee44
-ARG GST_PYTHON_VERSION=c04bb945b0b95e0f8686f3b9994a3327ccf74863
+ARG GSTREAMER_VERSION=1.18.0
+ARG GST_PLUGINS_BASE_VERSION=1.18.0
+ARG GST_PLUGINS_GOOD_VERSION=1.18.0
+ARG GST_PLUGINS_BAD_VERSION=1.18.0
+ARG GST_PLUGINS_UGLY_VERSION=1.18.0
+ARG GST_PYTHON_VERSION=1.18.0
 
 # cloner repo for each gstreamer module
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git && cd gstreamer && git checkout ${GSTREAMER_VERSION}
@@ -83,6 +83,12 @@ RUN \
     meson build --prefix=/usr && \
     ninja -C build install
 
+# Install deps for gst-plugins-good
+RUN \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        libvpx-dev \
+        libvpx6
+
 # Build gst-plugins-good
 RUN \
     cd /opt/gst-plugins-good && \
@@ -126,7 +132,7 @@ RUN \
 #   https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad/merge_requests/526
 RUN \
     cd /opt/gst-plugins-bad && \
-    git fetch https://gitlab.freedesktop.org/danisla/gst-plugins-bad.git gst-cuda-filter && \
+    git fetch https://gitlab.freedesktop.org/danisla/gst-plugins-bad.git gst-cuda-filter-1.18 && \
     git checkout -b gst-cuda-filter FETCH_HEAD
 
 # Install gst-plugins-bad from source
