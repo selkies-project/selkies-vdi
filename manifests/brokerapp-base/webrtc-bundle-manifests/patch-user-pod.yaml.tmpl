@@ -46,16 +46,6 @@ spec:
           effect: "NoSchedule"
           operator: "Exists"
       containers:
-      {{- if .UserParams.compat32 }}
-      {{- if eq .UserParams.compat32 "true"}}
-      - name: xserver
-        resources:
-          limits:
-            # Virtual uinput mouse for relative mouse motion
-            # control socket is shared with webrtc container.
-            uinput.dev/mouse: 1
-      {{- end}}
-      {{- end}}
       - name: desktop
         # Replace image with user provided image from broker.
         image: {{.ImageRepo}}:{{.ImageTag}}
@@ -79,6 +69,16 @@ spec:
         - name: {{$item.Name}}
           value: "{{$item.Value}}"
         {{- end}}
+      - name: xserver
+        env:
+        - name: VDI_USER
+          value: "{{.User}}"
+        {{- range $item := .AppSpec.AppEnv }}
+        {{- if eq "RESOLUTION" $item.Name }}
+        - name: {{ $item.Name }}
+          value: "{{ $item.Value }}"
+        {{- end}}
+        {{- end}}
       - name: webrtc
         env:
         - name: APP_AUTO_INIT
@@ -93,5 +93,11 @@ spec:
         {{- if eq .UserParams.compat32 "true"}}
         - name: UINPUT_MOUSE_SOCKET
           value: "/var/run/appconfig/mouse0ctl"
+        {{- end}}
+        {{- end}}
+        {{- range $item := .AppSpec.AppEnv }}
+        {{- if hasPrefix "WEBRTC_" $item.Name }}
+        - name: {{ $item.Name }}
+          value: "{{ $item.Value }}"
         {{- end}}
         {{- end}}

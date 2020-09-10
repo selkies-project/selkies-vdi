@@ -150,6 +150,7 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: false
+          env: []
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -160,9 +161,8 @@ spec:
               exec:
                 command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
           resources:
-            limits:
-              # shared GPU
-              nvidia.com/gpu: 1
+            requests: {}
+            limits: {}
 
         ###
         # webrtc container
@@ -195,9 +195,8 @@ spec:
             - name: config
               mountPath: /var/run/appconfig
           resources:
-            limits:
-              nvidia.com/gpu: 1
-
+            requests: {}
+            limits: {}
         ###
         # signalling container
         ###

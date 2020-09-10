@@ -13,12 +13,18 @@
 # limitations under the License.
 
 {{- if eq .NodeTier.Name "gpu" }}
+###
+# Add GPU node init node affinity to pod spec
+###
 - op: add
   path: "/spec/template/spec/affinity/nodeAffinity/preferredDuringSchedulingIgnoredDuringExecution/0/preference/matchExpressions/0"
   value:
     key: cloud.google.com/gke-accelerator-initialized
     operator: In
     values: ["true"]
+###
+# Add GPU node tolerations to pod spec
+###
 - op: add
   path: "/spec/template/spec/tolerations/-"
   value:
@@ -31,12 +37,63 @@
     key: "cloud.google.com/gke-accelerator-init"
     effect: "NoSchedule"
     operator: "Exists"
+###
+# Add GPU resource to desktop container
+###
 - op: add
   path: "/spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu"
   value: 1
+###
+# Add GPU resource to xserver container
+###
+- op: add
+  path: "/spec/template/spec/containers/3/resources/limits/nvidia.com~1gpu"
+  value: 1
+###
+# Set X11_DRIVER env to xserver container
+###
+- op: add
+  path: "/spec/template/spec/containers/3/env/-"
+  value:
+    name: X11_DRIVER
+    value: "nvidia"
+###
+# Add GPU resource to webrtc container
+###
+- op: add
+  path: "/spec/template/spec/containers/4/resources/limits/nvidia.com~1gpu"
+  value: 1
+###
+# Add WEBRTC_ENCODER env to webrtc container
+###
+- op: add
+  path: "/spec/template/spec/containers/4/env/-"
+  value:
+    name: WEBRTC_ENCODER
+    value: "nvh264enc"
 {{- else}}
-# Cannot have empty patch, so this is effectively a no-op.
-- op: test
-  path: /spec/template/spec/containers/0/name
-  value: desktop
+###
+# Add X11_DRIVER env to xserver container
+###
+- op: add
+  path: "/spec/template/spec/containers/3/env/-"
+  value:
+    name: X11_DRIVER
+    value: "xdummy"
+###
+# Add X11_DRIVER env to xserver container
+###
+- op: add
+  path: "/spec/template/spec/containers/3/env/-"
+  value:
+    name: X11_DRIVER
+    value: "xdummy"
+###
+# Add WEBRTC_ENCODER env to webrtc container
+###
+- op: add
+  path: "/spec/template/spec/containers/4/env/-"
+  value:
+    name: WEBRTC_ENCODER
+    value: "vp8enc"
 {{- end}}

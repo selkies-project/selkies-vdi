@@ -33,7 +33,7 @@ class GSTWebRTCAppError(Exception):
 
 
 class GSTWebRTCApp:
-    def __init__(self, stun_server=None, turn_servers=None, audio=True, framerate=30):
+    def __init__(self, stun_server=None, turn_servers=None, audio=True, framerate=30, encoder=None):
         """Initialize gstreamer webrtc app.
 
         Initializes GObjects and checks for required plugins.
@@ -51,6 +51,7 @@ class GSTWebRTCApp:
         self.pipeline = None
         self.webrtcbin = None
         self.data_channel = None
+        self.encoder = encoder
 
         self.framerate = framerate
 
@@ -155,168 +156,258 @@ class GSTWebRTCApp:
         # Set this to 0 for most streaming use cases.
         ximagesrc.set_property("use-damage", 0)
 
-        # Create capabilities for videoconvert
-        videoconvert_caps = Gst.caps_from_string("video/x-raw")
+        # Create capabilities for ximagesrc
+        ximagesrc_caps = Gst.caps_from_string("video/x-raw")
 
         # Setting the framerate=60/1 capability instructs the ximagesrc element
         # to generate buffers at 60 frames per second (FPS).
         # The higher the FPS, the lower the latency so this parameter is one
         # way to set the overall target latency of the pipeline though keep in
         # mind that the pipeline may not always perfom at the full 60 FPS.
-        videoconvert_caps.set_value("framerate", Gst.Fraction(self.framerate, 1))
+        ximagesrc_caps.set_value("framerate", Gst.Fraction(self.framerate, 1))
 
-        # Create a capability filter for the videoconvert_caps
-        videoconvert_capsfilter = Gst.ElementFactory.make("capsfilter")
-        videoconvert_capsfilter.set_property("caps", videoconvert_caps)
+        # Create a capability filter for the ximagesrc_caps
+        ximagesrc_capsfilter = Gst.ElementFactory.make("capsfilter")
+        ximagesrc_capsfilter.set_property("caps", ximagesrc_caps)
 
-        # Upload buffers from ximagesrc directly to CUDA memory where
-        # the colorspace conversion will be performed.
-        cudaupload = Gst.ElementFactory.make("cudaupload")
+        if self.encoder in ["nvh264enc"]:
+            # Upload buffers from ximagesrc directly to CUDA memory where
+            # the colorspace conversion will be performed.
+            cudaupload = Gst.ElementFactory.make("cudaupload")
 
-        # Convert the colorspace from BGRx to NVENC compatible format.
-        # This is performed with CUDA which reduces the overall CPU load
-        # compared to using the software videoconvert element.
-        cudaconvert = Gst.ElementFactory.make("cudaconvert")
+            # Convert the colorspace from BGRx to NVENC compatible format.
+            # This is performed with CUDA which reduces the overall CPU load
+            # compared to using the software videoconvert element.
+            cudaconvert = Gst.ElementFactory.make("cudaconvert")
 
-        # Convert ximagesrc BGRx format to I420 using cudaconvert.
-        # This is a more compatible format for client-side software decoders.
-        cudaconvert_caps = Gst.caps_from_string("video/x-raw(memory:CUDAMemory)")
-        cudaconvert_caps.set_value("format", "I420")
-        cudaconvert_capsfilter = Gst.ElementFactory.make("capsfilter")
-        cudaconvert_capsfilter.set_property("caps", cudaconvert_caps)
+            # Convert ximagesrc BGRx format to I420 using cudaconvert.
+            # This is a more compatible format for client-side software decoders.
+            cudaconvert_caps = Gst.caps_from_string("video/x-raw(memory:CUDAMemory)")
+            cudaconvert_caps.set_value("format", "I420")
+            cudaconvert_capsfilter = Gst.ElementFactory.make("capsfilter")
+            cudaconvert_capsfilter.set_property("caps", cudaconvert_caps)
 
-        # Create the nvh264enc element named nvenc.
-        # This is the heart of the video pipeline that converts the raw
-        # frame buffers to an H.264 encoded byte-stream on the GPU.
-        nvh264enc = Gst.ElementFactory.make("nvh264enc", "nvenc")
+            # Create the nvh264enc element named nvenc.
+            # This is the heart of the video pipeline that converts the raw
+            # frame buffers to an H.264 encoded byte-stream on the GPU.
+            nvh264enc = Gst.ElementFactory.make("nvh264enc", "nvenc")
 
-        # The initial bitrate of the encoder in bits per second.
-        # Setting this to 0 will use the bitrate from the NVENC preset.
-        # This parameter can be set while the pipeline is running using the
-        # set_video_bitrate() method. This helps to match the available
-        # bandwidth. If set too high, the cliend side jitter buffer will
-        # not be unable to lock on to the stream and it will fail to render.
-        nvh264enc.set_property("bitrate", 2000)
+            # The initial bitrate of the encoder in bits per second.
+            # Setting this to 0 will use the bitrate from the NVENC preset.
+            # This parameter can be set while the pipeline is running using the
+            # set_video_bitrate() method. This helps to match the available
+            # bandwidth. If set too high, the cliend side jitter buffer will
+            # not be unable to lock on to the stream and it will fail to render.
+            nvh264enc.set_property("bitrate", 2000)
 
-        # Rate control mode tells the encoder how to compress the frames to
-        # reach the target bitrate. A Constant Bit Rate (CBR) setting is best
-        # for streaming use cases as bit rate is the most important factor.
-        # A Variable Bit Rate (VBR) setting tells the encoder to adjust the
-        # compression level based on scene complexity, something not needed
-        # when streaming in real-time.
-        nvh264enc.set_property("rc-mode", "cbr")
+            # Rate control mode tells the encoder how to compress the frames to
+            # reach the target bitrate. A Constant Bit Rate (CBR) setting is best
+            # for streaming use cases as bit rate is the most important factor.
+            # A Variable Bit Rate (VBR) setting tells the encoder to adjust the
+            # compression level based on scene complexity, something not needed
+            # when streaming in real-time.
+            nvh264enc.set_property("rc-mode", "cbr")
 
-        # Group of Pictures (GOP) size is the distance between I-Frames that
-        # contain the full frame data needed to render a whole frame.
-        # Infinite GOP is best for streaming because it reduces the number
-        # of large I-Frames being transmitted. At higher resolutions, these
-        # I-Frames can dominate the bandwidth and add additional latency.
-        # With infinite GOP, you can use a higher bit rate to increase quality
-        # without a linear increase in total bandwidth.
-        # A negative consequence when using infinite GOP size is that
-        # when packets are lost, it may take the decoder longer to recover.
-        # NVENC supports infinite GOP by setting this to -1.
-        nvh264enc.set_property("gop-size", -1)
+            # Group of Pictures (GOP) size is the distance between I-Frames that
+            # contain the full frame data needed to render a whole frame.
+            # Infinite GOP is best for streaming because it reduces the number
+            # of large I-Frames being transmitted. At higher resolutions, these
+            # I-Frames can dominate the bandwidth and add additional latency.
+            # With infinite GOP, you can use a higher bit rate to increase quality
+            # without a linear increase in total bandwidth.
+            # A negative consequence when using infinite GOP size is that
+            # when packets are lost, it may take the decoder longer to recover.
+            # NVENC supports infinite GOP by setting this to -1.
+            nvh264enc.set_property("gop-size", -1)
 
-        # Instructs encoder to handle Quality of Service (QOS) events from
-        # the rest of the pipeline. Setting this to true increases
-        # encoder stability.
-        nvh264enc.set_property("qos", True)
+            # Instructs encoder to handle Quality of Service (QOS) events from
+            # the rest of the pipeline. Setting this to true increases
+            # encoder stability.
+            nvh264enc.set_property("qos", True)
 
-        # The NVENC encoder supports a limited nubmer of encoding presets.
-        # These presets are different than the open x264 standard.
-        # The presets control the picture coding technique, bitrate,
-        # and encoding quality.
-        # The low-latency-hq is the NVENC preset reccomended for streaming.
-        #
-        # See this link for details on each preset:
-        #   https://streamquality.report/docs/report.html#1080p60-nvenc-h264-picture-quality
-        nvh264enc.set_property("preset", "low-latency-hq")
+            # The NVENC encoder supports a limited nubmer of encoding presets.
+            # These presets are different than the open x264 standard.
+            # The presets control the picture coding technique, bitrate,
+            # and encoding quality.
+            # The low-latency-hq is the NVENC preset reccomended for streaming.
+            #
+            # See this link for details on each preset:
+            #   https://streamquality.report/docs/report.html#1080p60-nvenc-h264-picture-quality
+            nvh264enc.set_property("preset", "low-latency-hq")
 
-        # Set the capabilities for the nvh264enc element.
-        nvh264enc_caps = Gst.caps_from_string("video/x-h264")
+            # Set the capabilities for the nvh264enc element.
+            nvh264enc_caps = Gst.caps_from_string("video/x-h264")
 
-        # Sets the H.264 encoding profile to one compatible with WebRTC.
-        # The high profile is used for streaming HD video.
-        # Browsers only support specific H.264 profiles and they are
-        # coded in the RTP payload type set by the rtph264pay_caps below.
-        nvh264enc_caps.set_value("profile", "high")
+            # Sets the H.264 encoding profile to one compatible with WebRTC.
+            # The high profile is used for streaming HD video.
+            # Browsers only support specific H.264 profiles and they are
+            # coded in the RTP payload type set by the rtph264pay_caps below.
+            nvh264enc_caps.set_value("profile", "high")
 
-        # Create a capability filter for the nvh264enc_caps.
-        nvh264enc_capsfilter = Gst.ElementFactory.make("capsfilter")
-        nvh264enc_capsfilter.set_property("caps", nvh264enc_caps)
+            # Create a capability filter for the nvh264enc_caps.
+            nvh264enc_capsfilter = Gst.ElementFactory.make("capsfilter")
+            nvh264enc_capsfilter.set_property("caps", nvh264enc_caps)
 
-        # Create the rtph264pay element to convert buffers into
-        # RTP packets that are sent over the connection transport.
-        rtph264pay = Gst.ElementFactory.make("rtph264pay")
+            # Create the rtph264pay element to convert buffers into
+            # RTP packets that are sent over the connection transport.
+            rtph264pay = Gst.ElementFactory.make("rtph264pay")
 
-        # Set the capabilities for the rtph264pay element.
-        rtph264pay_caps = Gst.caps_from_string("application/x-rtp")
+            # Set the capabilities for the rtph264pay element.
+            rtph264pay_caps = Gst.caps_from_string("application/x-rtp")
 
-        # Set the payload type to video.
-        rtph264pay_caps.set_value("media", "video")
+            # Set the payload type to video.
+            rtph264pay_caps.set_value("media", "video")
 
-        # Set the video encoding name to match our encoded format.
-        rtph264pay_caps.set_value("encoding-name", "H264")
+            # Set the video encoding name to match our encoded format.
+            rtph264pay_caps.set_value("encoding-name", "H264")
 
-        # Set the payload type to one that matches the encoding profile.
-        # Payload number 123 corresponds to H.264 encoding with the high profile.
-        # Other payloads can be derived using WebRTC specification:
-        #   https://tools.ietf.org/html/rfc6184#section-8.2.1
-        rtph264pay_caps.set_value("payload", 123)
+            # Set the payload type to one that matches the encoding profile.
+            # Payload number 123 corresponds to H.264 encoding with the high profile.
+            # Other payloads can be derived using WebRTC specification:
+            #   https://tools.ietf.org/html/rfc6184#section-8.2.1
+            rtph264pay_caps.set_value("payload", 123)
 
-        # Create a capability filter for the rtph264pay_caps.
-        rtph264pay_capsfilter = Gst.ElementFactory.make("capsfilter")
-        rtph264pay_capsfilter.set_property("caps", rtph264pay_caps)
+            # Create a capability filter for the rtph264pay_caps.
+            rtph264pay_capsfilter = Gst.ElementFactory.make("capsfilter")
+            rtph264pay_capsfilter.set_property("caps", rtph264pay_caps)
+
+        elif self.encoder in ["vp8enc", "vp9enc"]:
+            videoconvert = Gst.ElementFactory.make("videoconvert")
+            videoconvert_caps = Gst.caps_from_string("video/x-raw,format=I420")
+            videoconvert_capsfilter = Gst.ElementFactory.make("capsfilter")
+            videoconvert_capsfilter.set_property("caps", videoconvert_caps)
+
+            if self.encoder == "vp8enc":
+                vpenc = Gst.ElementFactory.make("vp8enc", "vpenc")
+                vpenc_caps = Gst.caps_from_string("video/x-vp8")
+                vpenc_capsfilter = Gst.ElementFactory.make("capsfilter")
+                vpenc_capsfilter.set_property("caps", vpenc_caps)
+
+                rtpvppay = Gst.ElementFactory.make("rtpvp8pay")
+                rtpvppay_caps = Gst.caps_from_string("application/x-rtp")
+                rtpvppay_caps.set_value("media", "video")
+                rtpvppay_caps.set_value("encoding-name", "VP8")
+                rtpvppay_caps.set_value("payload", 123)
+                rtpvppay_capsfilter = Gst.ElementFactory.make("capsfilter")
+                rtpvppay_capsfilter.set_property("caps", rtpvppay_caps)
+
+            if self.encoder == "vp9enc":
+                vpenc = Gst.ElementFactory.make("vp9enc", "vpenc")
+                vpenc.set_property("threads", 4)
+                vpenc_caps = Gst.caps_from_string("video/x-vp9")
+                vpenc_capsfilter = Gst.ElementFactory.make("capsfilter")
+                vpenc_capsfilter.set_property("caps", vpenc_caps)
+
+                rtpvppay = Gst.ElementFactory.make("rtpvp9pay")
+                rtpvppay_caps = Gst.caps_from_string("application/x-rtp")
+                rtpvppay_caps.set_value("media", "video")
+                rtpvppay_caps.set_value("encoding-name", "VP9")
+                rtpvppay_caps.set_value("payload", 123)
+                rtpvppay_capsfilter = Gst.ElementFactory.make("capsfilter")
+                rtpvppay_capsfilter.set_property("caps", rtpvppay_caps)
+
+            # VPX Parameters
+            # Borrowed from: https://github.com/nurdism/neko/blob/df98368137732b8aaf840e27cdf2bd41067b2161/server/internal/gst/gst.go#L94
+            vpenc.set_property("threads", 2)
+            vpenc.set_property("cpu-used", 8)
+            vpenc.set_property("deadline", 1)
+            vpenc.set_property("error-resilient", "partitions")
+            vpenc.set_property("keyframe-max-dist", 10)
+            vpenc.set_property("auto-alt-ref", True)
+            vpenc.set_property("target-bitrate", 2000*1000)
+
+        else:
+            raise GSTWebRTCAppError("Unsupported encoder for pipeline: %s" % self.encoder)
 
         # Add all elements to the pipeline.
         self.pipeline.add(ximagesrc)
-        self.pipeline.add(videoconvert_capsfilter)
-        self.pipeline.add(cudaupload)
-        self.pipeline.add(cudaconvert)
-        self.pipeline.add(cudaconvert_capsfilter)
-        self.pipeline.add(nvh264enc)
-        self.pipeline.add(nvh264enc_capsfilter)
-        self.pipeline.add(rtph264pay)
-        self.pipeline.add(rtph264pay_capsfilter)
+        self.pipeline.add(ximagesrc_capsfilter)
+
+        if self.encoder == "nvh264enc":
+            self.pipeline.add(cudaupload)
+            self.pipeline.add(cudaconvert)
+            self.pipeline.add(cudaconvert_capsfilter)
+            self.pipeline.add(nvh264enc)
+            self.pipeline.add(nvh264enc_capsfilter)
+            self.pipeline.add(rtph264pay)
+            self.pipeline.add(rtph264pay_capsfilter)
+
+        elif self.encoder.startswith("vp"):
+            self.pipeline.add(videoconvert)
+            self.pipeline.add(videoconvert_capsfilter)
+            self.pipeline.add(vpenc)
+            self.pipeline.add(vpenc_capsfilter)
+            self.pipeline.add(rtpvppay)
+            self.pipeline.add(rtpvppay_capsfilter)
 
         # Link the pipeline elements and raise exception of linking fails
         # due to incompatible element pad capabilities.
-        if not Gst.Element.link(ximagesrc, videoconvert_capsfilter):
-            raise GSTWebRTCAppError("Failed to link ximagesrc -> videoconvert")
+        if not Gst.Element.link(ximagesrc, ximagesrc_capsfilter):
+            raise GSTWebRTCAppError("Failed to link ximagesrc -> ximagesrc_capsfilter")
 
-        if not Gst.Element.link(videoconvert_capsfilter, cudaupload):
-            raise GSTWebRTCAppError(
-                "Failed to link videoconvert_capsfilter -> cudaupload")
+        if self.encoder == "nvh264enc":
+            if not Gst.Element.link(ximagesrc_capsfilter, cudaupload):
+                raise GSTWebRTCAppError(
+                    "Failed to link ximagesrc_capsfilter -> cudaupload")
 
-        if not Gst.Element.link(cudaupload, cudaconvert):
-            raise GSTWebRTCAppError(
-                "Failed to link cudaupload -> cudaconvert")
+            if not Gst.Element.link(cudaupload, cudaconvert):
+                raise GSTWebRTCAppError(
+                    "Failed to link cudaupload -> cudaconvert")
 
-        if not Gst.Element.link(cudaconvert, cudaconvert_capsfilter):
-            raise GSTWebRTCAppError(
-                "Failed to link cudaconvert -> cudaconvert_capsfilter")
+            if not Gst.Element.link(cudaconvert, cudaconvert_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link cudaconvert -> cudaconvert_capsfilter")
 
-        if not Gst.Element.link(cudaconvert_capsfilter, nvh264enc):
-            raise GSTWebRTCAppError(
-                "Failed to link cudaconvert_capsfilter -> nvh264enc")
+            if not Gst.Element.link(cudaconvert_capsfilter, nvh264enc):
+                raise GSTWebRTCAppError(
+                    "Failed to link cudaconvert_capsfilter -> nvh264enc")
 
-        if not Gst.Element.link(nvh264enc, nvh264enc_capsfilter):
-            raise GSTWebRTCAppError(
-                "Failed to link nvh264enc -> nvh264enc_capsfilter")
+            if not Gst.Element.link(nvh264enc, nvh264enc_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link nvh264enc -> nvh264enc_capsfilter")
 
-        if not Gst.Element.link(nvh264enc_capsfilter, rtph264pay):
-            raise GSTWebRTCAppError(
-                "Failed to link nvh264enc_capsfilter -> rtph264pay")
+            if not Gst.Element.link(nvh264enc_capsfilter, rtph264pay):
+                raise GSTWebRTCAppError(
+                    "Failed to link nvh264enc_capsfilter -> rtph264pay")
 
-        if not Gst.Element.link(rtph264pay, rtph264pay_capsfilter):
-            raise GSTWebRTCAppError(
-                "Failed to link rtph264pay -> rtph264pay_capsfilter")
+            if not Gst.Element.link(rtph264pay, rtph264pay_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link rtph264pay -> rtph264pay_capsfilter")
 
-        # Link the last element to the webrtcbin
-        if not Gst.Element.link(rtph264pay_capsfilter, self.webrtcbin):
-            raise GSTWebRTCAppError(
-                "Failed to link rtph264pay_capsfilter -> webrtcbin")
+            # Link the last element to the webrtcbin
+            if not Gst.Element.link(rtph264pay_capsfilter, self.webrtcbin):
+                raise GSTWebRTCAppError(
+                    "Failed to link rtph264pay_capsfilter -> webrtcbin")
+
+        elif self.encoder.startswith("vp"):
+            if not Gst.Element.link(ximagesrc_capsfilter, videoconvert):
+                raise GSTWebRTCAppError(
+                    "Failed to link ximagesrc_capsfilter -> videoconvert")
+
+            if not Gst.Element.link(videoconvert, videoconvert_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link videoconvert -> videoconvert_capsfilter")
+
+            if not Gst.Element.link(videoconvert_capsfilter, vpenc):
+                raise GSTWebRTCAppError(
+                    "Failed to link videoconvert_capsfilter -> vpenc")
+
+            if not Gst.Element.link(vpenc, vpenc_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link vpenc -> vpenc_capsfilter")
+
+            if not Gst.Element.link(vpenc_capsfilter, rtpvppay):
+                raise GSTWebRTCAppError(
+                    "Failed to link vpenc_capsfilter -> rtpvppay")
+
+            if not Gst.Element.link(rtpvppay, rtpvppay_capsfilter):
+                raise GSTWebRTCAppError(
+                    "Failed to link rtpvppay -> rtpvppay_capsfilter")
+
+            # Link the last element to the webrtcbin
+            if not Gst.Element.link(rtpvppay_capsfilter, self.webrtcbin):
+                raise GSTWebRTCAppError(
+                    "Failed to link rtpvppay_capsfilter -> webrtcbin")
 
     # [END build_video_pipeline]
 
@@ -420,8 +511,19 @@ class GSTWebRTCApp:
             GSTWebRTCAppError -- thrown if any plugins are missing.
         """
 
-        required = ["opus", "nice", "nvcodec", "webrtc", "dtls", "srtp", "rtp", "sctp",
+        required = ["opus", "nice", "webrtc", "dtls", "srtp", "rtp", "sctp",
                     "rtpmanager", "ximagesrc"]
+
+        supported = ["nvh264enc", "vp8enc", "vp9enc"]
+        if self.encoder not in supported:
+            raise GSTWebRTCAppError('Unsupported encoder, must be one of: ' + ','.join(supported))
+
+        if self.encoder.startswith("nv"):
+            required.append("nvcodec")
+
+        if self.encoder.startswith("vp"):
+            required.append("vpx")
+
         missing = list(
             filter(lambda p: Gst.Registry.get().find_plugin(p) is None, required))
         if missing:
@@ -478,8 +580,15 @@ class GSTWebRTCApp:
             bitrate {integer} -- bitrate in bits per second, for example, 2000 for 2kbits/s or 10000 for 1mbit/sec.
         """
 
-        element = Gst.Bin.get_by_name(self.pipeline, "nvenc")
-        element.set_property("bitrate", bitrate)
+        if self.encoder.startswith("nv"):
+            element = Gst.Bin.get_by_name(self.pipeline, "nvenc")
+            element.set_property("bitrate", bitrate)
+        elif self.encoder.startswith("vp"):
+            element = Gst.Bin.get_by_name(self.pipeline, "vpenc")
+            element.set_property("target-bitrate", bitrate*1000)
+        else:
+            logger.warning("set_video_bitrate not supported with encoder: %s" % self.encoder)
+
         self.__send_data_channel_message(
             "pipeline", {"status": "Video bitrate set to: %d" % bitrate})
 

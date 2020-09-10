@@ -26,6 +26,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xserver-xorg-input-evdev \
         xserver-xorg-input-libinput \
         xserver-xorg-input-kbd \
+        xserver-xorg-video-dummy \
         xinput \
         evtest \
         x11vnc \
@@ -43,8 +44,10 @@ ENV DISPLAY :0
 # Set the PATH
 ENV PATH ${PATH}:/usr/local/nvidia/bin
 
-COPY xorg.conf /etc/X11/xorg.conf
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x entrypoint.sh
+COPY xorg*.conf /etc/X11/
+COPY entrypoint*.sh /
+RUN chmod +x /entrypoint*.sh
+
+VOLUME /var/run/appconfig
 
 ENTRYPOINT ["/entrypoint.sh"]

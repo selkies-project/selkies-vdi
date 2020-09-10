@@ -20,8 +20,9 @@ logger = logging.getLogger("gpu_monitor")
 
 
 class GPUMonitor:
-    def __init__(self, period=1):
+    def __init__(self, period=1, enabled=True):
         self.period = period
+        self.enabled = enabled
         self.running = False
 
         self.on_stats = lambda load, memoryTotal, memoryUsed: logger.warn(
@@ -30,8 +31,9 @@ class GPUMonitor:
     def start(self):
         self.running = True
         while self.running:
-            gpu = GPUtil.getGPUs()[0]
-            self.on_stats(gpu.load, gpu.memoryTotal, gpu.memoryUsed)
+            if self.enabled:
+                gpu = GPUtil.getGPUs()[0]
+                self.on_stats(gpu.load, gpu.memoryTotal, gpu.memoryUsed)
             time.sleep(self.period)
 
     def stop(self):
