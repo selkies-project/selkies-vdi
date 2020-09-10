@@ -43,7 +43,10 @@ configMapGenerator:
       - jsonpatch-deploy-recording.yaml.tmpl
       - jsonpatch-deploy-squid-proxy.yaml.tmpl
       - jsonpatch-deploy-shared-storage-cephfs.yaml.tmpl
+      - jsonpatch-deploy-app-proxy.yaml.tmpl
       - jsonpatch-deploy-shared-storage-nfs.yaml.tmpl
       - jsonpatch-deploy-shared-storage-smb.yaml.tmpl
       - jsonpatch-deploy-user-pod-gpu.yaml.tmpl
       - jsonpatch-deploy-user-pod-js.yaml.tmpl
+      - jsonpatch-service-app-proxy.yaml.tmpl
+      - jsonpatch-virtualservice-app-proxy.yaml.tmpl

@@ -18,9 +18,19 @@
     {{- $persistEnabled = true }}
   {{- end}}
 {{- end}}
+{{- if .AppParams.enablePersistence}}
+  {{- if eq .AppParams.enablePersistence "true"}}
+    {{- $persistEnabled = true }}
+  {{- end}}
+{{- end}}
 {{- $dindEnabled := false }}
 {{- if .UserParams.enableDind }}
   {{- if eq .UserParams.enableDind "true"}}
+    {{- $dindEnabled = true }}
+  {{- end}}
+{{- end}}
+{{- if .AppParams.enableDind }}
+  {{- if eq .AppParams.enableDind "true"}}
     {{- $dindEnabled = true }}
   {{- end}}
 {{- end}}

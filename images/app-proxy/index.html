@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<!--
+  Copyright 2019 Google LLC
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <title>Selkies Connector</title>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-app-bar app>
+                <v-toolbar-title>Selkies Connector</v-toolbar-title>
+            </v-app-bar>
+
+            <v-main>
+                <v-container>
+                    <p>
+                        The Selkies connector is used to create a secure TCP tunnel between your local computer and the
+                        launched app.
+                    </p>
+                    <p>
+                        Select your operating system below and follow the instructions.
+                    </p>
+
+                    <v-tabs v-model="tabs" fixed-tabs>
+                        <v-tabs-slider></v-tabs-slider>
+                        <v-tab href="#mobile-tabs-5-1" class="primary--text">
+                            <v-icon>mdi-linux</v-icon>
+                        </v-tab>
+
+                        <v-tab href="#mobile-tabs-5-2" class="primary--text">
+                            <v-icon>mdi-apple</v-icon>
+                        </v-tab>
+
+                        <v-tab href="#mobile-tabs-5-3" class="primary--text">
+                            <v-icon>mdi-microsoft-windows</v-icon>
+                        </v-tab>
+                    </v-tabs>
+
+                    <v-tabs-items v-model="tabs">
+                        <v-tab-item value="mobile-tabs-5-1">
+                            <v-container>
+                                <ul>
+                                    <li><a href="selkies_connector_linux_amd64">Download the Selkies Connector for
+                                            Linux</a></li>
+                                    <li>Open a terminal and run the commands below to start the connector</li>
+                                </ul>
+                                <v-container>
+                                    <div class="d-block pa-2 deep-purple accent-4 white--text">
+                                        <p>mv ~/Downloads/selkies_connector_linux_amd64 ~/selkies_connector</p>
+                                        <p>cd $HOME</p>
+                                        <p>chmod +x ~/selkies_connector</p>
+                                        <p>./selkies_connector -app {{app}} -local_port 2222 -remote_port 22</p>
+                                    </div>
+                                    <common-usage-1 />
+                                </v-container>
+                                <common-usage-2 />
+
+                            </v-container>
+                        </v-tab-item>
+                        <v-tab-item value="mobile-tabs-5-2">
+                            <v-container>
+                                <ul>
+                                    <li><a href="selkies_connector_darwin_amd64">Download the Selkies Connector for
+                                            MacOS</a></li>
+                                    <li>Open a terminal and run the commands below to start the connector</li>
+                                </ul>
+                                <v-container>
+                                    <div class="d-block pa-2 deep-purple accent-4 white--text">
+                                        <p>mv ~/Downloads/selkies_connector_darwin_amd64 ~/selkies_connector</p>
+                                        <p>cd $HOME</p>
+                                        <p>chmod +x ~/selkies_connector</p>
+                                        <p>./selkies_connector -app {{app}} -local_port 2222 -remote_port 22</p>
+                                    </div>
+                                    <common-usage-1 />
+                                </v-container>
+                                <common-usage-2 />
+                            </v-container>
+                        </v-tab-item>
+                        <v-tab-item value="mobile-tabs-5-3">
+                            <v-container>
+                                <ul>
+                                    <li><a href="selkies_connector_win64.exe">Download the Selkies Connector for
+                                            Windows</a></li>
+                                    <li>Open a command prompt and run the commands below to start the connector</li>
+                                </ul>
+                                <v-container>
+                                    <div class="d-block pa-2 deep-purple accent-4 white--text">
+                                        <p>cd %userprofile%\Downloads</p>
+                                        <p>selkies_connector_win64.exe -app {{app}} -local_port 2222 -remote_port 22</p>
+                                    </div>
+                                    <common-usage-1 />
+                                </v-container>
+                                <common-usage-2 />
+                            </v-container>
+                        </v-tab-item>
+                    </v-tabs-items>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script>
+        function getAppName() {
+            return window.location.pathname.split("/")[1];
+        }
+
+        Vue.component('common-usage-1', {
+            template: `
+            <div class="mt-3 white--text">
+                <p>Change <code>-local_port 2222</code> to your desired local port.</p>
+                <p>Change <code>-remote_port 22</code> to the target port of the service running
+                    in the app.</p>
+                <p>Run with <code>-help</code> argument to see all options.</p>
+            </div>
+            `
+        });
+
+        Vue.component('common-usage-2', {
+            template: `
+            <ul>
+            <li>Follow the instructions to perform the first-time OAuth flow to login with your Selkies credentials</li>
+            <li>You can now access the app service on <code>localhost</code> at the port specified by <code>-local_port</code></li>
+            </ul>
+            `
+        });
+
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            created() {
+                this.$vuetify.theme.dark = true
+            },
+            data() {
+                return {
+                    app: getAppName(),
+                    tabs: null,
+                }
+            },
+        });
+    </script>
+</body>
+
+</html>
