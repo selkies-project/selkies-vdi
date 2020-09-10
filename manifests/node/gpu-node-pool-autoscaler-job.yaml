@@ -21,8 +21,10 @@ metadata:
     k8s-app: gpu-node-pool-autoscaler
 spec:
   activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 60
   template:
     spec:
+      serviceAccountName: pod-broker-node-init
       restartPolicy: OnFailure
       nodeSelector:
         cloud.google.com/gke-nodepool: "gpu-cos"
@@ -41,10 +43,22 @@ spec:
           operator: "Exists"
       containers:
         ###
-        # pause container
+        # self-deleting job.
         ###
-        - image: gcr.io/google-containers/pause:2.0
-          name: pause
-          resources:
-            requests:
-              cpu: 10m
+        - image: google/cloud-sdk
+          name: delete-job
+          command: ["/bin/sh"]
+          args:
+            - -exc
+            - |
+              sleep 10
+              kubectl delete job -n ${NAMESPACE} ${JOB_NAME}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['job-name']
