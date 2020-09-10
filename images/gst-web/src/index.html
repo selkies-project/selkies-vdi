@@ -27,8 +27,8 @@
     }
 
     .video-container video {
-      object-fit: cover;
       width: 100%;
+      height: 100%;
       position: absolute;
       top: 50%;
       left: 50%;
@@ -195,31 +195,31 @@
                 </v-select>
               </p>
               <p>
-                <ul>
-                  <li>Peer connection state: <b>{{ status }}</b></li>
-                  <li>Peer connection type: <b>{{ connectionStatType }}</b></li>
-                  <li>Packets received: <b>{{ connectionPacketsReceived }}</b></li>
-                  <li>Packets lost: <b>{{ connectionPacketsLost }}</b></li>
-                </ul>
-                Bandwidth Stats:
-                <ul>
-                  <li>Video receive rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
-                  <li>Available receive bandwith: <b>{{ connectionAvailableBandwidth }}</b></li>
-                </ul>
-                Video Stats
-                <ul>
-                  <li>Latency: <b>{{ connectionVideoLatency }} ms</b></li>
-                  <li>Video: <b>{{ connectionCodec }} {{ connectionResolution }}</b></li>
-                  <li>Video decoder: <b>{{ connectionVideoDecoder }}</b></li>
-                  <li>Frame rate: <b>{{ connectionFrameRate }} fps</b></li>
-                  <li>Bit rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
-                </ul>
-                Audio Stats
-                <ul>
-                  <li>Latency: <b>{{ connectionAudioLatency }} ms</b></li>
-                  <li>Codec: <b>{{ connectionAudioCodecName }}</b></li>
-                  <li>Bit rate: <b>{{ connectionAudioBitrate }} kbps</b></li>
-                </ul>
+              <ul>
+                <li>Peer connection state: <b>{{ status }}</b></li>
+                <li>Peer connection type: <b>{{ connectionStatType }}</b></li>
+                <li>Packets received: <b>{{ connectionPacketsReceived }}</b></li>
+                <li>Packets lost: <b>{{ connectionPacketsLost }}</b></li>
+              </ul>
+              Bandwidth Stats:
+              <ul>
+                <li>Video receive rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
+                <li>Available receive bandwith: <b>{{ connectionAvailableBandwidth }}</b></li>
+              </ul>
+              Video Stats
+              <ul>
+                <li>Latency: <b>{{ connectionVideoLatency }} ms</b></li>
+                <li>Video: <b>{{ connectionCodec }} {{ connectionResolution }}</b></li>
+                <li>Video decoder: <b>{{ connectionVideoDecoder }}</b></li>
+                <li>Frame rate: <b>{{ connectionFrameRate }} fps</b></li>
+                <li>Bit rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
+              </ul>
+              Audio Stats
+              <ul>
+                <li>Latency: <b>{{ connectionAudioLatency }} ms</b></li>
+                <li>Codec: <b>{{ connectionAudioCodecName }}</b></li>
+                <li>Bit rate: <b>{{ connectionAudioBitrate }} kbps</b></li>
+              </ul>
               </p>
               <hr />
               <v-textarea bottom class="scrolly" label="Status Logs" readonly :value="logEntries.join('\n\n')">
@@ -239,30 +239,30 @@
               <p v-if="publishingAllowed">
                 Publishing
 
-                <div v-if="publishingIdle">
-                  <v-form v-model="publishingValid">
-                    <v-text-field label="New app name" :placeholder="`${app.appName}-sandbox`"
-                      :rules="[rules.required, rules.validname]" v-model="publishingAppName">
-                    </v-text-field>
+              <div v-if="publishingIdle">
+                <v-form v-model="publishingValid">
+                  <v-text-field label="New app name" :placeholder="`${app.appName}-sandbox`"
+                    :rules="[rules.required, rules.validname]" v-model="publishingAppName">
+                  </v-text-field>
 
-                    <v-text-field label="New app display name" :placeholder="`${app.appName}-sandbox`"
-                      v-model="publishingAppDisplayName">
-                    </v-text-field>
+                  <v-text-field label="New app display name" :placeholder="`${app.appName}-sandbox`"
+                    v-model="publishingAppDisplayName">
+                  </v-text-field>
 
-                    <v-text-field label="New app description" :placeholder="`Created from ${app.appName}`"
-                      v-model="publishingAppDescription">
-                    </v-text-field>
+                  <v-text-field label="New app description" :placeholder="`Created from ${app.appName}`"
+                    v-model="publishingAppDescription">
+                  </v-text-field>
 
-                    <v-text-field label="URL to app icon" v-model="publishingAppIcon">
-                    </v-text-field>
-                  </v-form>
+                  <v-text-field label="URL to app icon" v-model="publishingAppIcon">
+                  </v-text-field>
+                </v-form>
 
-                  <v-btn color="primary" small v-on:click="publish()" :disabled="!publishingValid">Publish</v-btn>
-                </div>
-                <div v-else>
-                  <v-progress-circular v-if="publishingAllowed" indeterminate :size="50" :width="4" color="primary">
-                  </v-progress-circular>
-                </div>
+                <v-btn color="primary" small v-on:click="publish()" :disabled="!publishingValid">Publish</v-btn>
+              </div>
+              <div v-else>
+                <v-progress-circular v-if="publishingAllowed" indeterminate :size="50" :width="4" color="primary">
+                </v-progress-circular>
+              </div>
               </p>
             </v-flex>
           </v-layout>
