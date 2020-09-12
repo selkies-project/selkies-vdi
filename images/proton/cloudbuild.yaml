@@ -22,7 +22,7 @@ substitutions:
   _BUILD_CACHE: "false"
   _IMAGE_PREFIX: vdi-proton
   _IMAGE_TAG: latest
-  _PROTON_VERSION: proton_5.0
+  _PROTON_VERSION: proton-5.0-9
 
 tags:
   - vdi-proton-image
@@ -122,7 +122,7 @@ steps:
         fi
 
         cd /opt/
-        git clone -b ${_PROTON_VERSION} https://github.com/ValveSoftware/Proton.git proton
+        git clone --depth 1 https://github.com/ValveSoftware/Proton.git -b ${_PROTON_VERSION} proton
         cd proton/
         git submodule update --init
 
