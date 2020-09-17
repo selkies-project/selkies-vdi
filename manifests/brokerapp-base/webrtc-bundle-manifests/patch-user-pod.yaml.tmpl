@@ -62,12 +62,12 @@ spec:
         # Add the userParams to the env prefixed with VDI_
         {{- range $key, $value := .UserParams }}
         - name: VDI_{{ $key }}
-          value: "{{ $value }}" 
+          value: {{ quote $value }}
         {{- end}}
         # Add environment vars from brokerappconfig spec.
         {{- range $item := .AppSpec.AppEnv }}
         - name: {{$item.Name}}
-          value: "{{$item.Value}}"
+          value: {{ quote $item.Value }}
         {{- end}}
       - name: xserver
         env:
@@ -76,7 +76,7 @@ spec:
         {{- range $item := .AppSpec.AppEnv }}
         {{- if eq "RESOLUTION" $item.Name }}
         - name: {{ $item.Name }}
-          value: "{{ $item.Value }}"
+          value: {{ quote $item.Value }}
         {{- end}}
         {{- end}}
       - name: webrtc
@@ -98,6 +98,6 @@ spec:
         {{- range $item := .AppSpec.AppEnv }}
         {{- if hasPrefix "WEBRTC_" $item.Name }}
         - name: {{ $item.Name }}
-          value: "{{ $item.Value }}"
+          value: {{ quote $item.Value }}
         {{- end}}
         {{- end}}
