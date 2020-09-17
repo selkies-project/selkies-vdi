@@ -99,6 +99,16 @@ class Input {
          * @type {Array}
          */
         this.listeners = [];
+
+        /**
+         * @type {function}
+         */
+        this.onresizeend = null;
+
+        // internal variables used by resize start/end functions.
+        this._rtime = null;
+        this._rtimeout = false;
+        this._rdelta = 200;
     }
 
     /**
@@ -399,6 +409,31 @@ class Input {
     }
 
     /**
+     * Called when window is being resized, used to detect when resize ends so new resolution can be sent.
+     */
+    _resizeStart() {
+        this._rtime = new Date();
+        if (this._rtimeout === false) {
+            this._rtimeout = true;
+            setTimeout(() => { this._resizeEnd() }, this._rdelta);
+        }
+    }
+
+    /**
+     * Called in setTimeout loop to detect if window is done being resized.
+     */
+    _resizeEnd() {
+        if (new Date() - this._rtime < this._rdelta) {
+            setTimeout(() => { this._resizeEnd() }, this._rdelta);
+        } else {
+            this._rtimeout = false;
+            if (this.onresizeend !== null) {
+                this.onresizeend();
+            }
+        }
+    }
+
+    /**
      * Attaches input event handles to docuemnt, window and element.
      */
     attach() {
@@ -410,6 +445,7 @@ class Input {
         this.listeners.push(addListener(window, 'keydown', this._key, this));
         this.listeners.push(addListener(window, 'keyup', this._key, this));
         this.listeners.push(addListener(window, 'resize', this._windowMath, this));
+        this.listeners.push(addListener(window, 'resize', this._resizeStart, this));
 
         // Gamepad support
         this.listeners.push(addListener(window, 'gamepadconnected', this._gamepadConnected, this));
@@ -482,6 +518,13 @@ class Input {
                 console.log("keyboard lock failed: ", e);
             }
         )
+    }
+
+    getWindowResolution() {
+        return [
+            parseInt(this.element.offsetWidth * window.devicePixelRatio),
+            parseInt(this.element.offsetHeight * window.devicePixelRatio)
+        ];
     }
 }
 
