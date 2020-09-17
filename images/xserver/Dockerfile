@@ -31,9 +31,13 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         evtest \
         x11vnc \
         socat \
+        dbus-x11 \
         libxrandr-dev \
         pciutils && \
     rm -rf /var/lib/apt/lists/
+
+# Remove libnss-systemd because it causes the dbus-daemon startup to hang for 90s.
+RUN apt remove -y libnss-systemd
 
 # Export library path for NVIDIA libs
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64

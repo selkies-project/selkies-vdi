@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -ex
 
 # Symlink for X11 virtual terminal
 ln -sf /dev/ptmx /dev/tty7
@@ -25,9 +25,15 @@ if [[ -S /tmp/.uinput/mouse0ctl ]]; then
     nohup socat UNIX-RECV:/var/run/appconfig/mouse0ctl,reuseaddr UNIX-CLIENT:/tmp/.uinput/mouse0ctl &
 fi
 
+# Start dbus
+rm -rf /var/run/dbus
+dbus-uuidgen | tee /var/lib/dbus/machine-id
+mkdir -p /var/run/dbus
+dbus-daemon --config-file=/usr/share/dbus-1/system.conf --print-address
+
 if [[ "${X11_DRIVER:-"nvidia"}" == "xdummy" ]]; then
     echo "Starting X11 server with Xdummy video driver."
-    nohup Xorg ${DISPLAY} -novtswitch -sharevts -nolisten tcp +extension MIT-SHM +extension GLX +extension RANDR +extension RENDER vt7 -config /etc/X11/xorg-xpra.conf &
+    nohup Xorg ${DISPLAY} -noreset -dpi 96 -novtswitch -sharevts -nolisten tcp +extension MIT-SHM +extension GLX +extension RANDR +extension RENDER vt7 -config /etc/X11/xorg-xpra.conf &
 else
     echo "Starting X11 server with NVIDIA GPU driver."
 
@@ -53,17 +59,6 @@ echo "X socket is ready"
 echo "Waiting for X11 startup"
 until xhost + >/dev/null 2>&1; do sleep 1; done
 echo "X11 startup complete"
-
-RESOLUTION=${RESOLUTION:-"1920x1080"}
-echo "Setting resolution to: ${RESOLUTION}"
-count=0
-until xdpyinfo | egrep -q "dimensions:.*${RESOLUTION}"; do
-    xrandr -s ${RESOLUTION}
-    xrandr --fb ${RESOLUTION}
-    sleep 0.5
-    ((count=count+1))
-    [[ $count -ge 60 ]] && echo "failed to set resolution" && break
-done
 
 # Notify sidecar containers
 touch /var/run/appconfig/xserver_ready
