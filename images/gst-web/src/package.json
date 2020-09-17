@@ -4,6 +4,7 @@
   },
   "devDependencies": {
     "eslint": "^6.8.0",
-    "eslint-plugin-vue": "^5.2.3"
+    "eslint-plugin-vue": "^5.2.3",
+    "lodash": ">=4.17.19"
   }
 }
