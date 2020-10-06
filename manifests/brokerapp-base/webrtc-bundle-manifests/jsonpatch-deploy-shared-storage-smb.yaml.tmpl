@@ -1,0 +1,79 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $enableSharedStorageSMB := false }}
+{{- if .AppParams.enableSharedStorageSMB }}
+  {{- if eq .AppParams.enableSharedStorageSMB "true" }}
+    {{- $enableSharedStorageSMB = true }}
+  {{- end}}
+{{- end}}
+
+{{- $subPath := default .App .AppParams.sharedStorageSMBSubPath }}
+
+{{- $smbServer := default "127.0.0.1" .AppParams.sharedStorageSMBServer }}
+{{- $smbShare := default "share" .AppParams.sharedStorageSMBShare }}
+
+{{- if $enableSharedStorageSMB }}
+###
+# Add shared volume to pod spec
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: shared-smb
+    flexVolume:
+      driver: "microsoft.com/smb"
+      secretRef:
+        name: {{ default "smbcreds" .AppParams.sharedStorageSMBCredsSecret }}
+      options:
+        source: {{ printf "//%s/%s" $smbServer $smbShare | quote}}
+        mountoptions: "vers=3.0,user=app,uid=1000,gid=1000" # more options: https://linux.die.net/man/8/mount.cifs
+
+###
+# Add init container for mount path
+###
+- op: add
+  path: "/spec/template/spec/initContainers/-"
+  value:
+    name: shared-smb-init
+    image: busybox:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args:
+      - -xc
+      - |
+        mkdir -p /mnt/shared/${SUBPATH}
+        /bin/chown 1000:1000 /mnt/shared/${SUBPATH}
+    env:
+      - name: SUBPATH
+        value: "{{ $subPath }}"
+    volumeMounts:
+      - name: shared-smb
+        mountPath: /mnt/shared
+
+###
+# Add volumeMount to desktop container
+###
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: shared-smb
+    mountPath: {{ default "/mnt/shared" .AppParams.sharedStorageSMBMountPath }}
+    subPath: {{ $subPath }}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
