@@ -1,6 +1,8 @@
---- fd.c.orig	2020-09-11 15:34:42.326172243 +0000
-+++ fd.c	2020-09-11 22:54:17.173702179 +0000
-@@ -203,6 +203,7 @@
+diff --git a/server/fd.c b/server/fd.c
+index 990a1a708a..bcf9934e15 100644
+--- a/server/fd.c
++++ b/server/fd.c
+@@ -203,6 +203,7 @@ struct fd
      unsigned int         comp_flags;  /* completion flags */
      int                  esync_fd;    /* esync file descriptor */
      unsigned int         fsync_idx;   /* fsync shm index */
@@ -8,7 +10,7 @@
  };
  
  static void fd_dump( struct object *obj, int verbose );
-@@ -286,6 +287,7 @@
+@@ -286,6 +287,7 @@ struct inode
      struct list         open;       /* list of open file descriptors */
      struct list         locks;      /* list of file locks */
      struct list         closed;     /* list of file descriptors to close at destroy time */
@@ -16,7 +18,7 @@
  };
  
  static void inode_dump( struct object *obj, int verbose );
-@@ -1091,6 +1093,11 @@
+@@ -1091,6 +1093,11 @@ static void inode_close_pending( struct inode *inode, int keep_unlinks )
          }
          ptr = next;
      }
@@ -28,7 +30,7 @@
  }
  
  static void inode_dump( struct object *obj, int verbose )
-@@ -1129,6 +1136,8 @@
+@@ -1129,6 +1136,8 @@ static void inode_destroy( struct object *obj )
          free( fd->unix_name );
          free( fd );
      }
@@ -37,7 +39,7 @@
      release_object( inode->device );
  }
  
-@@ -1158,6 +1167,7 @@
+@@ -1158,6 +1167,7 @@ static struct inode *get_inode( dev_t dev, ino_t ino, int unix_fd )
          list_init( &inode->open );
          list_init( &inode->locks );
          list_init( &inode->closed );
@@ -45,7 +47,7 @@
          list_add_head( &device->inode_hash[hash], &inode->entry );
      }
      else release_object( device );
-@@ -1168,7 +1178,7 @@
+@@ -1168,7 +1178,7 @@ static struct inode *get_inode( dev_t dev, ino_t ino, int unix_fd )
  /* add fd to the inode list of file descriptors to close */
  static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
  {
@@ -54,7 +56,7 @@
      {
          list_add_head( &inode->closed, &fd->entry );
      }
-@@ -1186,6 +1196,19 @@
+@@ -1186,6 +1196,19 @@ static void inode_add_closed_fd( struct inode *inode, struct closed_fd *fd )
      }
  }
  
@@ -74,7 +76,7 @@
  
  /****************************************************************/
  /* file lock functions */
-@@ -1212,6 +1235,7 @@
+@@ -1212,6 +1235,7 @@ static int file_lock_signaled( struct object *obj, struct wait_queue_entry *entr
  static int set_unix_lock( struct fd *fd, file_pos_t start, file_pos_t end, int type )
  {
      struct flock fl;
@@ -82,7 +84,7 @@
  
      if (!fd->fs_locks) return 1;  /* no fs locks possible for this fd */
      for (;;)
-@@ -1223,7 +1247,9 @@
+@@ -1223,7 +1247,9 @@ static int set_unix_lock( struct fd *fd, file_pos_t start, file_pos_t end, int t
          fl.l_start  = start;
          if (!end || end > max_unix_offset) fl.l_len = 0;
          else fl.l_len = end - start;
@@ -93,7 +95,7 @@
  
          switch(errno)
          {
-@@ -1474,6 +1500,7 @@
+@@ -1474,6 +1500,7 @@ obj_handle_t lock_fd( struct fd *fd, file_pos_t start, file_pos_t count, int sha
          struct file_lock *lock = LIST_ENTRY( ptr, struct file_lock, inode_entry );
          if (!lock_overlaps( lock, start, end )) continue;
          if (shared && (lock->shared || lock->fd == fd)) continue;
@@ -101,7 +103,7 @@
          /* found one */
          if (!wait)
          {
-@@ -1565,10 +1592,12 @@
+@@ -1565,7 +1592,9 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
      unsigned int existing_sharing = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
      unsigned int existing_access = 0;
      struct list *ptr;
@@ -110,32 +112,38 @@
 +    fd->implied_lock = 0;
      fd->access = access;
      fd->sharing = sharing;
--
-+    
-     LIST_FOR_EACH( ptr, &fd->inode->open )
-     {
-         struct fd *fd_ptr = LIST_ENTRY( ptr, struct fd, inode_entry );
-@@ -1580,6 +1609,19 @@
+ 
+@@ -1579,6 +1608,29 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
+             existing_access |= fd_ptr->access;
          }
      }
- 
++    //fprintf(stderr, "locking check, sharing=%02x, access=%02x, wr=%02x, rd=%02x, shwr=%02x, shrd=%02x\n", sharing, access, read_access, write_access, FILE_SHARE_WRITE, FILE_SHARE_WRITE);
 +    lock_fd = inode_get_lock_fd( fd->inode );
-+    if (lock_fd == -1 && sharing == 0) {
-+            lock_fd = fd->unix_fd;
-+            inode_set_lock_fd( fd->inode, lock_fd );
-+            
++    if ( lock_fd == -1) {
++        lock_fd = fd->unix_fd;
++        inode_set_lock_fd( fd->inode, lock_fd );
++        if ( sharing == 0 ) {
++            //fprintf(stderr, "creating WRITE lock on file\n");
 +            if (!add_lock( fd, FALSE, 0, -1 )) {
-+                fprintf(stderr, "failed to create write lock\n");
++                //fprintf(stderr, "failed to create write lock\n");
 +                return STATUS_SHARING_VIOLATION;
 +            }
 +            fd->implied_lock = 1;
 +        }
++    }
++    if ( sharing == 1 ) {
++        //fprintf(stderr, "creating READ lock on file\n");
++        if (!add_lock( fd, TRUE, 0, -1 )) {
++            //fprintf(stderr, "failed to create read lock\n");
++            return STATUS_SHARING_VIOLATION;
++        }
++        fd->implied_lock = 1;
++    }
 +    inode_set_lock_fd( fd->inode, lock_fd );
-+    
+ 
      if (((access & read_access) && !(existing_sharing & FILE_SHARE_READ)) ||
          ((access & write_access) && !(existing_sharing & FILE_SHARE_WRITE)) ||
-         ((access & DELETE) && !(existing_sharing & FILE_SHARE_DELETE)))
-@@ -1983,6 +2025,7 @@
+@@ -1983,6 +2035,7 @@ struct fd *open_fd( struct fd *root, const char *name, int flags, mode_t *mode,
      {
          unsigned int err;
          struct inode *inode = get_inode( st.st_dev, st.st_ino, fd->unix_fd );
@@ -143,7 +151,7 @@
          int is_link = S_ISLNK(st.st_mode), is_dir;
  
          if (!inode)
-@@ -1996,6 +2039,13 @@
+@@ -1996,6 +2049,13 @@ struct fd *open_fd( struct fd *root, const char *name, int flags, mode_t *mode,
          fd->closed = closed_fd;
          fd->cacheable = !inode->device->removable;
          list_add_head( &inode->open, &fd->inode_entry );
@@ -157,3 +165,11 @@
          closed_fd = NULL;
  
          /* decode symlink type */
+@@ -2055,6 +2115,7 @@ struct fd *open_fd( struct fd *root, const char *name, int flags, mode_t *mode,
+     return fd;
+ 
+ error:
++    if (fd->unix_fd != -1) close( fd->unix_fd );
+     release_object( fd );
+     free( closed_fd );
+     if (root_fd != -1) fchdir( server_dir_fd ); /* go back to the server dir */
