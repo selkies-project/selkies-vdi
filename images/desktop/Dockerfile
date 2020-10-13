@@ -115,7 +115,9 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Add user and grant sudo
-RUN adduser --gecos '' --disabled-password --shell /bin/bash app && \
+RUN sed -i 's/:1000:/:2000:/g' /etc/{group,passwd} && \
+    groupadd --gid 1000 app && \
+    adduser --uid=1000 --gid=1000 --gecos '' --disabled-password --shell /bin/bash app && \
 	echo "app ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
 WORKDIR /home/app/project
