@@ -71,6 +71,7 @@ RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/bionic/main/binary-amd
 ADD https://xpra.org/repos/bionic/xpra.list /etc/apt/sources.list.d/xpra-beta.list
 RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
     sudo apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-requests \
         xpra
 
 # Install Vulkan ICD
