@@ -34,6 +34,8 @@ spec:
     server: "{{ default "127.0.0.1" .AppParams.sharedStorageNFSServer}}"
     path: "{{ default "/data" .AppParams.sharedStorageNFSShare}}"
     readOnly: false
+  mountOptions:
+    - mand
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
