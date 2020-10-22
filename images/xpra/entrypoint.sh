@@ -46,6 +46,8 @@ sudo dbus-daemon --system
 echo "Starting CUPS"
 sudo cupsd
 sudo sed -i 's/^add-printer-options = -u .*/add-printer-options = -u allow:all/g' /etc/xpra/conf.d/16_printing.conf
+until lpinfo -v | grep -q xpraforwarder; do sleep 1; done
+echo "CUPS is ready"
 
 echo "Starting xpra"
 xpra ${XPRA_START:-"start"} ${DISPLAY} \
