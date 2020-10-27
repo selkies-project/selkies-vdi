@@ -1,0 +1,13 @@
+diff --git a/libs/wine/Makefile.in b/libs/wine/Makefile.in
+index f7dd34b058..7a456a412c 100644
+--- a/libs/wine/Makefile.in
++++ b/libs/wine/Makefile.in
+@@ -25,7 +25,7 @@ libwine_LDFLAGS = $(LIBWINE_LDFLAGS)
+ libwine_DEPS = $(LIBWINE_DEPENDS)
+ 
+ version.c: dummy
+-	version=`(GIT_DIR=$(top_srcdir)/.git git describe HEAD 2>/dev/null || echo "wine-$(PACKAGE_VERSION)") | sed -n -e '$$s/\(.*\)/const char wine_build[] = "\1";/p'` && (echo $$version | cmp -s - $@) || echo $$version >$@ || (rm -f $@ && exit 1)
++	version=`(GIT_DIR=$(top_srcdir)/.git git describe HEAD 2>/dev/null || echo "wine-$(PACKAGE_VERSION)") | sed -n -e '$$s/\(.*\)/const char wine_build[] = "\1  (Selkies-p2)";/p'` && (echo $$version | cmp -s - $@) || echo $$version >$@ || (rm -f $@ && exit 1)
+ 
+ dummy:
+ .PHONY: dummy

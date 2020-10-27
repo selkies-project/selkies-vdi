@@ -127,7 +127,8 @@ steps:
         git submodule update --init
 
         # Apply patch for to fix NFS file locking.
-        patch -u wine/server/fd.c -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking.patch
+        patch -u wine/server/fd.c -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking-2.patch
+        patch -u wine/libs/wine/Makefile.in -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking-2-version.patch
 
         ./configure.sh --no-steam-runtime --build-name "Proton ${_PROTON_VERSION} My"
         export NO_NESTED_MAKE=1

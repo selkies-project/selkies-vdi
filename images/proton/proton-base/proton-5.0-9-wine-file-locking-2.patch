@@ -1,0 +1,55 @@
+diff --git a/server/fd.c b/server/fd.c
+old mode 100644
+new mode 100755
+index 990a1a708a..227aaca11e
+--- a/server/fd.c
++++ b/server/fd.c
+@@ -203,6 +203,7 @@ struct fd
+     unsigned int         comp_flags;  /* completion flags */
+     int                  esync_fd;    /* esync file descriptor */
+     unsigned int         fsync_idx;   /* fsync shm index */
++    unsigned int         implied_lock;/* lock added by check_sharing */
+ };
+ 
+ static void fd_dump( struct object *obj, int verbose );
+@@ -1474,6 +1475,7 @@ obj_handle_t lock_fd( struct fd *fd, file_pos_t start, file_pos_t count, int sha
+         struct file_lock *lock = LIST_ENTRY( ptr, struct file_lock, inode_entry );
+         if (!lock_overlaps( lock, start, end )) continue;
+         if (shared && (lock->shared || lock->fd == fd)) continue;
++        if (lock->fd->implied_lock == 1) return 0;
+         /* found one */
+         if (!wait)
+         {
+@@ -1566,6 +1568,7 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
+     unsigned int existing_access = 0;
+     struct list *ptr;
+ 
++    fd->implied_lock = 0;
+     fd->access = access;
+     fd->sharing = sharing;
+ 
+@@ -1580,6 +1583,24 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
+         }
+     }
+ 
++    if ( sharing == 0 ) {
++        //fprintf(stderr, "creating WRITE lock on file\n");
++        if (!add_lock( fd, FALSE, 0, -1 )) {
++            //fprintf(stderr, "failed to create write lock\n");
++            return STATUS_SHARING_VIOLATION;
++        }
++        fd->implied_lock = 1;
++    }
++
++    if ( sharing == 1 ) {
++        //fprintf(stderr, "creating READ lock on file\n");
++        if (!add_lock( fd, TRUE, 0, -1 )) {
++            //fprintf(stderr, "failed to create read lock\n");
++            return STATUS_SHARING_VIOLATION;
++        }
++        fd->implied_lock = 1;
++    }
++
+     if (((access & read_access) && !(existing_sharing & FILE_SHARE_READ)) ||
+         ((access & write_access) && !(existing_sharing & FILE_SHARE_WRITE)) ||
+         ((access & DELETE) && !(existing_sharing & FILE_SHARE_DELETE)))
