@@ -1,7 +1,5 @@
 diff --git a/server/fd.c b/server/fd.c
-old mode 100644
-new mode 100755
-index 990a1a708a..227aaca11e
+index 990a1a708a..66b267e3b7 100644
 --- a/server/fd.c
 +++ b/server/fd.c
 @@ -203,6 +203,7 @@ struct fd
@@ -28,10 +26,11 @@ index 990a1a708a..227aaca11e
      fd->access = access;
      fd->sharing = sharing;
  
-@@ -1580,6 +1583,24 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
-         }
-     }
- 
+@@ -1597,6 +1600,25 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned
+         ((existing_access & write_access) && !(sharing & FILE_SHARE_WRITE)) ||
+         ((existing_access & DELETE) && !(sharing & FILE_SHARE_DELETE)))
+         return STATUS_SHARING_VIOLATION;
++
 +    if ( sharing == 0 ) {
 +        //fprintf(stderr, "creating WRITE lock on file\n");
 +        if (!add_lock( fd, FALSE, 0, -1 )) {
@@ -50,6 +49,6 @@ index 990a1a708a..227aaca11e
 +        fd->implied_lock = 1;
 +    }
 +
-     if (((access & read_access) && !(existing_sharing & FILE_SHARE_READ)) ||
-         ((access & write_access) && !(existing_sharing & FILE_SHARE_WRITE)) ||
-         ((access & DELETE) && !(existing_sharing & FILE_SHARE_DELETE)))
+     return 0;
+ }
+ 
