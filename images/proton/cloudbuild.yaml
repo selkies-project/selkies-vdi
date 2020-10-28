@@ -127,8 +127,8 @@ steps:
         git submodule update --init
 
         # Apply patch for to fix NFS file locking.
-        patch -u wine/server/fd.c -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking-2.patch
-        patch -u wine/libs/wine/Makefile.in -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking-2-version.patch
+        patch -u wine/server/fd.c -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking.patch
+        patch -u wine/libs/wine/Makefile.in -i /workspace/proton-base/${_PROTON_VERSION}-wine-file-locking-version.patch
 
         ./configure.sh --no-steam-runtime --build-name "Proton ${_PROTON_VERSION} My"
         export NO_NESTED_MAKE=1
@@ -145,14 +145,8 @@ steps:
 
         make -j$(getconf _NPROCESSORS_ONLN) dxvk
 
-        make -j$(getconf _NPROCESSORS_ONLN) lsteamclient32
-        make -j$(getconf _NPROCESSORS_ONLN) lsteamclient64
-
-        make -j$(getconf _NPROCESSORS_ONLN) vrclient32
-        make -j$(getconf _NPROCESSORS_ONLN) vrclient64
-
-        make -j$(getconf _NPROCESSORS_ONLN) dist
         make -j$(getconf _NPROCESSORS_ONLN) fonts
+        make -j$(getconf _NPROCESSORS_ONLN) dist
 
         tar -C ./dist/dist -c . | gzip -c -1 > /workspace/proton_dist_${_PROTON_VERSION}.tar.gz
 
