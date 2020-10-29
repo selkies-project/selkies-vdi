@@ -12,6 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###
+# Example BrokerAppConfig appParams
+###
+#    appParams:
+#      - name: enableSharedStorageNFS
+#        default: "true"
+#      - name: sharedStorageNFSSize
+#        default: "10Gi"
+#      - name: sharedStorageNFSMountPath
+#        default: "/mnt/shared"
+#      - name: sharedStorageNFSServer
+#        default: "192.168.0.11"
+#      - name: sharedStorageNFSShare
+#        default: "/data"
+#      - name: enablePersistence
+#        default: "true"
+#      - name: persistStorageClass
+#        default: "broker-shared-filestore"
+
 {{- $enableSharedStorageNFS := false }}
 {{- if .AppParams.enableSharedStorageNFS }}
   {{- if eq .AppParams.enableSharedStorageNFS "true" }}

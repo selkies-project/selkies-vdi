@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###
+# Example BrokerAppConfig appParams
+###
+#    appParams:
+#      - name: enableSharedStorageSMB
+#        default: "true"
+#      - name: sharedStorageSMBServer
+#        default: "192.168.0.11"
+#      - name: sharedStorageSMBShare
+#        default: "share"
+#      - name: sharedStorageSMBMountPath
+#        default: "/mnt/smb"
+#      - name: sharedStorageSMBCredsSecret
+#        default: "smbcreds"
+
 {{- $enableSharedStorageSMB := false }}
 {{- if .AppParams.enableSharedStorageSMB }}
   {{- if eq .AppParams.enableSharedStorageSMB "true" }}

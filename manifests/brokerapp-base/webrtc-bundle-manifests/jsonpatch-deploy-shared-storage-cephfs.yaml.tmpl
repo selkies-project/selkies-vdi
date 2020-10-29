@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###
+# Example BrokerAppConfig appParams
+###
+#    appParams:
+#      - name: enableSharedStorageCephFS
+#        default: "true"
+#      - name: sharedStorageCephFSServer
+#        default: "192.168.0.251:6789"
+#      - name: sharedStorageCephFSUser
+#        default: "admin"
+#      - name: sharedStorageCephFSMountPath
+#        default: "/mnt/shared"
+#      - name: sharedStorageCephFSSecretName
+#        default: "ceph-secret"
+
 {{- $enableSharedStorageCephFS := false }}
 {{- if .AppParams.enableSharedStorageCephFS }}
   {{- if eq .AppParams.enableSharedStorageCephFS "true" }}
