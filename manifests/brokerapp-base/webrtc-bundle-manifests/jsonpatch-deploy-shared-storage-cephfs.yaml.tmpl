@@ -1,0 +1,82 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $enableSharedStorageCephFS := false }}
+{{- if .AppParams.enableSharedStorageCephFS }}
+  {{- if eq .AppParams.enableSharedStorageCephFS "true" }}
+    {{- $enableSharedStorageCephFS = true }}
+  {{- end}}
+{{- end}}
+
+{{- $subPath := default .App .AppParams.sharedStorageCephFSSubPath }}
+{{- $cephfsMons := split "," (default "127.0.0.1:6789" .AppParams.sharedStorageCephFSServers) }}
+
+{{- $cephfsUser := default "admin" .AppParams.sharedStorageCephFSUser }}
+{{- $cephfsSecret := default "ceph-secret" .AppParams.sharedStorageCephFSSecretName }}
+
+{{- if $enableSharedStorageCephFS }}
+###
+# Add shared volume to pod spec
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: shared-cephfs
+    cephfs:
+      monitors:
+      {{- range $mon := $cephfsMons }}
+        - {{$mon}}
+      {{- end}}
+      user: {{$cephfsUser}}
+      secretRef:
+        name: {{$cephfsSecret}}
+      readOnly: false
+
+###
+# Add init container for mount path
+###
+- op: add
+  path: "/spec/template/spec/initContainers/-"
+  value:
+    name: shared-cephfs-init
+    image: busybox:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args:
+      - -xc
+      - |
+        mkdir -p /mnt/shared/${SUBPATH}
+        /bin/chown 1000:1000 /mnt/shared/${SUBPATH}
+    env:
+      - name: SUBPATH
+        value: "{{ $subPath }}"
+    volumeMounts:
+      - name: shared-cephfs
+        mountPath: /mnt/shared
+
+###
+# Add volumeMount to desktop container
+###
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: shared-cephfs
+    mountPath: {{ default "/mnt/shared" .AppParams.sharedStorageCephFSMountPath }}
+    subPath: {{ $subPath }}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
