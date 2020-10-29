@@ -24,8 +24,10 @@
 #        default: "share"
 #      - name: sharedStorageSMBMountPath
 #        default: "/mnt/smb"
-#      - name: sharedStorageSMBCredsSecret
-#        default: "smbcreds"
+#      - name: sharedStorageSMBUserB64
+#        default: "YXBw" # echo -n 'app' | base64
+#      - name: sharedStorageSMBPasswordB64
+#        default: "c2Vsa2llcw==" # echo -n 'selkies' | base64
 
 {{- $enableSharedStorageSMB := false }}
 {{- if .AppParams.enableSharedStorageSMB }}
@@ -50,7 +52,7 @@
     flexVolume:
       driver: "microsoft.com/smb"
       secretRef:
-        name: {{ default "smbcreds" .AppParams.sharedStorageSMBCredsSecret }}
+        name: {{.FullName}}-{{.ServiceName}}-smbcreds
       options:
         source: {{ printf "//%s/%s" $smbServer $smbShare | quote}}
         mountoptions: "vers=3.0,user=app,uid=1000,gid=1000" # more options: https://linux.die.net/man/8/mount.cifs

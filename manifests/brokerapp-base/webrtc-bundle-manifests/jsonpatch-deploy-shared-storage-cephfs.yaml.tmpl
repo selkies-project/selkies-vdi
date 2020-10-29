@@ -24,8 +24,8 @@
 #        default: "admin"
 #      - name: sharedStorageCephFSMountPath
 #        default: "/mnt/shared"
-#      - name: sharedStorageCephFSSecretName
-#        default: "ceph-secret"
+#      - name: sharedStorageCephFSKey64
+#        default: "QVFEWWQ1cGY1cHJVQmhBQU9qQmwxUjBlbk4zeVJEM1RIQnJuWGc9PQ==" # echo -n "AQDYd5pf5prUBhAAOjBl1R0enN3yRD3THBrnXg==" | base64
 
 {{- $enableSharedStorageCephFS := false }}
 {{- if .AppParams.enableSharedStorageCephFS }}
@@ -38,7 +38,6 @@
 {{- $cephfsMons := split "," (default "127.0.0.1:6789" .AppParams.sharedStorageCephFSServers) }}
 
 {{- $cephfsUser := default "admin" .AppParams.sharedStorageCephFSUser }}
-{{- $cephfsSecret := default "ceph-secret" .AppParams.sharedStorageCephFSSecretName }}
 
 {{- if $enableSharedStorageCephFS }}
 ###
@@ -55,7 +54,7 @@
       {{- end}}
       user: {{$cephfsUser}}
       secretRef:
-        name: {{$cephfsSecret}}
+        name: {{.FullName}}-{{.ServiceName}}-ceph-key
       readOnly: false
 
 ###
