@@ -16,10 +16,10 @@
 
 while true; do
     WINDOW_ID=$(xwininfo -name Desktop | grep "Window id" | cut -d' ' -f 4)
-    if [[ -n "${WINDOW_ID}" ]]; then
-        SCREEN_SIZE=$(xpra info $XPRA | grep client.screen.size= | cut -d= -f2 | tr -d "(),")
+    if [[ -n "${WINDOW_ID}" && -f /var/run/appconfig/xpra_display_size ]]; then
+        SCREEN_SIZE=$(cat /var/run/appconfig/xpra_display_size)
         if [[ -n "${SCREEN_SIZE}" ]]; then
-            xdotool windowsize $WINDOW_ID $SCREEN_SIZE
+            xdotool windowsize $WINDOW_ID ${SCREEN_SIZE/x/ }
         fi
     fi
     sleep 1

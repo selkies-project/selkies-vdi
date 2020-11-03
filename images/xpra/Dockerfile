@@ -119,6 +119,13 @@ RUN \
 
 COPY patch-fix-printing.js /usr/share/xpra/www/js/fix-printing.js
 
+# Patch to add HTML5 auto fullscreen feature
+RUN \
+    sed -i 's|</body>|    <script type="application/javascript" src="js/auto-fullscreen.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
+    rm -f /usr/share/xpra/www/index.html.*
+
+COPY patch-auto-fullscreen.js /usr/share/xpra/www/js/auto-fullscreen.js
+
 # Patch to fix broken minimize action
 RUN \
     cd /usr/share/xpra/www/js && \
