@@ -1,0 +1,154 @@
+diff --git a/configure b/configure
+index 673ea905fd..86a511f481 100755
+--- a/configure
++++ b/configure
+@@ -592,8 +592,12 @@ ac_includes_default="\
+ #ifdef HAVE_SYS_TYPES_H
+ # include <sys/types.h>
+ #endif
+-#ifdef HAVE_SYS_STAT_H
+-# include <sys/stat.h>
++#ifdef HAVE_LINUX_STAT_H
++# include <linux/stat.h>
++#else
++# ifdef HAVE_SYS_STAT_H
++#  include <sys/stat.h>
++# endif
+ #endif
+ #ifdef STDC_HEADERS
+ # include <stdlib.h>
+@@ -7410,6 +7414,7 @@ for ac_header in \
+ 	linux/serial.h \
+ 	linux/types.h \
+ 	linux/ucdrom.h \
++	linux/stat.h \
+ 	lwp.h \
+ 	mach-o/nlist.h \
+ 	mach-o/loader.h \
+@@ -19094,6 +19099,25 @@ _ACEOF
+ fi
+ 
+ 
++ac_fn_c_check_member "$LINENO" "struct statx" "stx_btime" "ac_cv_member_struct_statx_stx_btime" "$ac_includes_default"
++if test "x$ac_cv_member_struct_statx_stx_btime" = xyes; then :
++
++cat >>confdefs.h <<_ACEOF
++#define HAVE_STRUCT_STATX_STX_BTIME 1
++_ACEOF
++
++
++fi
++
++ac_fn_c_check_func "$LINENO" "statx" "ac_cv_func_statx"
++if test "x$ac_cv_func_statx" == xyes; then :
++cat >>confdefs.h <<_ACEOF
++#define HAVE_STATX 1
++_ACEOF
++
++
++fi
++
+ ac_fn_c_check_member "$LINENO" "struct stat" "st_blocks" "ac_cv_member_struct_stat_st_blocks" "$ac_includes_default"
+ if test "x$ac_cv_member_struct_stat_st_blocks" = xyes; then :
+ 
+diff --git a/configure.ac b/configure.ac
+index 33b0a22e59..118dd6880c 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -473,6 +473,7 @@ AC_CHECK_HEADERS(\
+ 	linux/serial.h \
+ 	linux/types.h \
+ 	linux/ucdrom.h \
++	linux/stat.h \
+ 	lwp.h \
+ 	mach-o/nlist.h \
+ 	mach-o/loader.h \
+@@ -2479,6 +2480,10 @@ AC_CHECK_MEMBERS([struct option.name],,,
+ #include <getopt.h>
+ #endif])
+ 
++AC_CHECK_MEMBERS([
++	struct statx.stx_btime])
++AC_CHECK_FUNCS(statx)
++
+ dnl Check for stat.st_blocks and ns-resolved times
+ AC_CHECK_MEMBERS([
+ 	struct stat.st_blocks,
+diff --git a/dlls/ntdll/file.c b/dlls/ntdll/file.c
+index 1a36d75a76..7fd718bd52 100644
+--- a/dlls/ntdll/file.c
++++ b/dlls/ntdll/file.c
+@@ -110,6 +110,7 @@
+ #include "ddk/ntddk.h"
+ #include "ddk/ntddser.h"
+ #include "ntifs.h"
++#include <linux/limits.h>
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(ntdll);
+ WINE_DECLARE_DEBUG_CHANNEL(winediag);
+@@ -127,6 +128,10 @@ static const WCHAR ntfsW[] = {'N','T','F','S'};
+ NTSTATUS FILE_DecodeSymlink(const char *unix_src, char *unix_dest, USHORT *unix_dest_len,
+                             DWORD *tag, ULONG *flags, BOOL *is_dir);
+ 
++#ifdef HAVE_STATX
++LARGE_INTEGER btime_cache;
++#endif
++
+ /* fetch the attributes of a file */
+ static inline ULONG get_file_attributes( const struct stat *st )
+ {
+@@ -145,11 +150,30 @@ static inline ULONG get_file_attributes( const struct stat *st )
+ int fd_get_file_info( int fd, struct stat *st, ULONG *attr )
+ {
+     int ret;
++#ifdef HAVE_STATX
++    struct statx stx;
++    int dirfd = AT_FDCWD;
++    int flags = AT_SYMLINK_NOFOLLOW;
++    unsigned int mask = STATX_ALL;
++    char filePath[PATH_MAX];
++    char fdPath[PATH_MAX];
++#endif
+ 
+     *attr = 0;
+     ret = fstat( fd, st );
+     if (ret == -1) return ret;
+     *attr |= get_file_attributes( st );
++
++#ifdef HAVE_STATX
++    sprintf(fdPath, "/proc/self/fd/%d", fd);
++    if (readlink(fdPath, filePath, sizeof(filePath)-1) != -1)
++    {
++        if (statx(dirfd, filePath, flags, mask, &stx) != -1)
++        {
++	    btime_cache.QuadPart = stx.stx_btime.tv_sec;
++        }
++    }
++#endif
+     return ret;
+ }
+ 
+@@ -2545,6 +2569,9 @@ static inline void get_file_times( const struct stat *st, LARGE_INTEGER *mtime,
+ #ifdef HAVE_STRUCT_STAT___ST_BIRTHTIM
+     creation->QuadPart += st->__st_birthtim.tv_nsec / 100;
+ #endif
++#endif
++#ifdef HAVE_STATX
++    RtlSecondsSince1970ToTime((DWORD)btime_cache.QuadPart, creation);
+ #else
+     *creation = *mtime;
+ #endif
+diff --git a/include/config.h.in b/include/config.h.in
+index b29910ca52..df8b809b2f 100644
+--- a/include/config.h.in
++++ b/include/config.h.in
+@@ -857,6 +857,9 @@
+ /* Define to 1 if you have the `statvfs' function. */
+ #undef HAVE_STATVFS
+ 
++/* Define to 1 if you have the `statx' function. */
++#undef HAVE_STATX
++
+ /* Define to 1 if you have the <stdbool.h> header file. */
+ #undef HAVE_STDBOOL_H
+ 
