@@ -36,6 +36,7 @@ spec:
       dnsPolicy: ClusterFirst
       schedulerName: default-scheduler
       terminationGracePeriodSeconds: 10
+      hostNetwork: true
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

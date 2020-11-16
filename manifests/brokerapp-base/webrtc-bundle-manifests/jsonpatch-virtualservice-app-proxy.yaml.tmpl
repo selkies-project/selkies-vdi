@@ -59,7 +59,6 @@
           host: {{.FullName}}-{{.ServiceName}}
           port:
             number: 8022
-    websocketUpgrade: true
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test

@@ -39,7 +39,6 @@ spec:
             host: {{.FullName}}-{{.ServiceName}}
             port:
               number: 8080
-      websocketUpgrade: true
     ###
     # rule for webrtc
     ###
@@ -56,7 +55,6 @@ spec:
             host: {{.FullName}}-{{.ServiceName}}
             port:
               number: 80
-      websocketUpgrade: true
     - match:
         - uri:
             prefix: /
