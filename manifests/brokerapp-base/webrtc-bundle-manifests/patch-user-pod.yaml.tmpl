@@ -59,8 +59,6 @@ spec:
         env:
         - name: VDI_USER
           value: "{{.User}}"
-        - name: AUTH_USER
-          value: "{{default .User .Username}}"
         # Add the userParams to the env prefixed with VDI_
         {{- range $key, $value := .UserParams }}
         - name: VDI_{{ $key }}
