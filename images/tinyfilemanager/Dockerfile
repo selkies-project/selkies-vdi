@@ -14,6 +14,15 @@
 
 FROM php:7
 
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    zip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install php-zip
+RUN docker-php-ext-install zip
+
 # Create user to run as, should be same UID as mounted files
 RUN adduser --gecos '' --disabled-password --shell /bin/bash tfm --uid 1000
 
