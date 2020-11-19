@@ -1,0 +1,88 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# Example BrokerAppConfig appParams used in conjunction with persistent home directory.
+# Related files:
+#   jsonpatch-service-file-manager.yaml.tmpl
+#   jsonpatch-virtualservice-file-manager.yaml.tmpl
+#   resource-vdi-file-manager-config.yaml.tmpl
+###
+#    appParams:
+#      - name: enableFileManager
+#        default: "true"
+#      - name: fileManagerVolume
+#        default: "persist"
+#      - name: fileManagerTheme
+#        default: "dark"
+#      - name: fileManagerSubPath
+#        default: "/data"
+
+{{- $enableFileManager := false }}
+{{- if .AppParams.enableFileManager }}
+  {{- if eq .AppParams.enableFileManager "true" }}
+    {{- $enableFileManager = true }}
+  {{- end}}
+{{- end}}
+
+{{- $fileManagerImage := default (printf "gcr.io/%s/webrtc-gpu-streaming-tinyfilemanager:latest" .ProjectID) .AppParams.fileManagerImage }}
+{{- $fileManagerVolume := default "persist" .AppParams.fileManagerVolume }}
+{{- $fileManagerSubPath := default "" .AppParams.fileManagerSubPath | quote }}
+
+{{- if $enableFileManager }}
+###
+# Add file manager config file configmap volume
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: tfm-config
+    configMap:
+      name: {{.FullName}}-{{.ServiceName}}-tfm
+      defaultMode: 0644
+###
+# Add file manager container
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: tinyfilemanager
+    image: {{ $fileManagerImage }}
+    ports:
+      - name: http
+        containerPort: 3181
+        protocol: TCP
+    volumeMounts:
+      - name: {{ $fileManagerVolume }}
+        mountPath: /data
+        subPath: {{ $fileManagerSubPath }}
+      - name: tfm-config
+        mountPath: /var/www/html/tfm/config.php
+        subPath: config.php
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+        # If user creates too many temporary files, the pod will be evicted.
+        # Available in k8s 1.15+
+        # ephemeral-storage: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}

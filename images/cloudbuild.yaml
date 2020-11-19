@@ -61,6 +61,9 @@ images: [
     # squid-proxy
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:latest',
+    # tinyfilemanager
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
     # nvidia-gpu-device-plugin
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
@@ -371,6 +374,34 @@ steps:
         ]
   waitFor:
     - squid-proxy
+
+###
+# tinyfilemanager image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+            'tinyfilemanager'
+        ]
+  waitFor:
+    - tinyfilemanager-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+        ]
+  waitFor:
+    - tinyfilemanager
 
 ###
 # NVIDIA device plugin image
