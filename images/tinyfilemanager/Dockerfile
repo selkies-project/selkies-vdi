@@ -26,6 +26,9 @@ ARG TFM_VERSION=2.4.3
 # Install tinyfilemanager
 RUN curl -o index.php -sfL https://raw.githubusercontent.com/prasathmani/tinyfilemanager/${TFM_VERSION}/tinyfilemanager.php
 
+# Patch to force HTTPS
+RUN sed -i 's/^$is_https =/$is_https = true ||/g' index.php
+
 # Copy php.ini to increase allowed upload size
 COPY php.ini /etc/php.ini
 
