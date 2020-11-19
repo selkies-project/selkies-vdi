@@ -19,7 +19,7 @@
   {{- end}}
 {{- end}}
 
-{{- $appProxyImage := default .AppParams.appProxyImage (printf "gcr.io/%s/webrtc-gpu-streaming-app-proxy:latest" .ProjectID) }}
+{{- $appProxyImage := default (printf "gcr.io/%s/webrtc-gpu-streaming-app-proxy:latest" .ProjectID) .AppParams.appProxyImage }}
 
 {{- if $enableAppProxy }}
 ###

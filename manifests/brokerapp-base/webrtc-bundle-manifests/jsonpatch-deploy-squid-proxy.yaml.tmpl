@@ -19,7 +19,7 @@
   {{- end}}
 {{- end}}
 
-{{- $squidProxyImage := default .AppParams.squidProxyImage (printf "gcr.io/%s/webrtc-gpu-streaming-squid-proxy:latest" .ProjectID) }}
+{{- $squidProxyImage := default (printf "gcr.io/%s/webrtc-gpu-streaming-squid-proxy:latest" .ProjectID) .AppParams.squidProxyImage }}
 
 # Split allowed CIDR ranges
 {{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
@@ -87,7 +87,7 @@
       exec /apps/squid/sbin/squid -NsY -f /apps/squid.conf.tproxy
     env:
       - name: SQUID_EXTRA_CONF
-        value: {{ default .AppParams.squidExtraConf "" | quote }}
+        value: {{ default "" .AppParams.squidExtraConf | quote }}
 
 ###
 # Add init container to redirect ports for transparent proxy
