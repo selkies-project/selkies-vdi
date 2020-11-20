@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###
+# Example BrokerAppConfig appParams when combined with egressCIDRRanges
+###
+#    appParams:
+#      - name: enableSquidProxy
+#        default: "true"
+#      - name: egressCIDRRanges
+#        default: "10.31.0.0/24"
+#      - name: squidProxyWhitelist
+#        default: ".ipinfo.io .google.com"
+
 {{- $enableSquidProxy := false }}
 {{- if .AppParams.enableSquidProxy }}
   {{- if eq .AppParams.enableSquidProxy "true" }}
@@ -23,6 +34,9 @@
 
 # Split allowed CIDR ranges
 {{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
+
+# Whitelist of sites to allow
+{{- $squidProxyWhitelist := .AppParams.squidProxyWhitelist }}
 
 {{- if $enableSquidProxy }}
 ###
@@ -59,8 +73,8 @@
 
       # Enable transpart proxy with SSL bump
       http_port 3128 intercept
-      https_port 3129 intercept ssl-bump generate-host-certificates=on cert=/apps/server_crt.pem key=/apps/server_key.pem sslflags=DONT_VERIFY_PEER
-      http_port 3130 ssl-bump generate-host-certificates=on cert=/apps/server_crt.pem key=/apps/server_key.pem sslflags=DONT_VERIFY_PEER
+      https_port 3129 intercept ssl-bump generate-host-certificates=on cert=/apps/CA_crt.pem key=/apps/CA_key.pem sslflags=DONT_VERIFY_PEER
+      http_port 3130 ssl-bump generate-host-certificates=on cert=/apps/CA_crt.pem key=/apps/CA_key.pem sslflags=DONT_VERIFY_PEER
 
       # Run as specific user
       cache_effective_user proxy
@@ -68,10 +82,41 @@
       
       # Configure SSL Bump for all sites
       sslcrtd_program /apps/squid/libexec/ssl_crtd -s /apps/squid/var/lib/ssl_db -M 4MB sslcrtd_children 8 startup=1 idle=1  
-      ssl_bump none localhost
+      sslproxy_cert_error allow all
+      
+      {{- if .AppParams.squidProxyWhitelist }}
+      # From: https://aws.amazon.com/blogs/security/how-to-add-dns-filtering-to-your-nat-instance-with-squid/
+      acl SSL_port port 443
+      http_access allow SSL_port
+      acl step1 at_step SslBump1
+      acl step2 at_step SslBump2
+      acl step3 at_step SslBump3
+      ssl_bump peek step1 all
 
+      # Filter HTTP requests based on the whitelist
+      acl allowed_http_sites dstdomain {{ $squidProxyWhitelist }}
+      http_access allow allowed_http_sites
+
+      # Filter HTTPS requests based on the whitelist
+      acl allowed_https_sites ssl::server_name {{ $squidProxyWhitelist }}
+      ssl_bump peek step2 allowed_https_sites
+      ssl_bump splice step3 allowed_https_sites
+      ssl_bump terminate step2 all
+
+      http_access deny all
+      {{- else}}
+      ssl_bump none localhost
+      ssl_bump peek all
+      ssl_bump splice all
       http_access allow all
-      never_direct allow all
+      {{- end}}
+
+      # Extra debugging
+      #debug_options ALL,2 28,9
+
+      # Example extra conf to send to upstream peer
+      #never_direct allow all
+      #cache_peer ${PROXY_CACHE_PEER} parent 3128 0 default
 
       ${SQUID_EXTRA_CONF}
       EOF
@@ -104,8 +149,10 @@
       - "-exc"
       - |-
         {{- range $cidr := $egressCIDRRanges }}
+        {{- if (len $cidr) gt 0 }}
         iptables -t nat -A OUTPUT -p tcp -m tcp --dport 80 -d {{$cidr}} -j ACCEPT
         iptables -t nat -A OUTPUT -p tcp -m tcp --dport 443 -d {{$cidr}} -j ACCEPT
+        {{- end}}
         {{- end}}
         # Redirect all other traffic to transparent proxy.
         iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner 13 --dport 80 -j REDIRECT --to-port 3128

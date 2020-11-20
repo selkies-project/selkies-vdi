@@ -91,6 +91,10 @@ spec:
     #  default: "in"
     #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
     #  default: "${EGRESS_PROXY}/32"
+    #- name: enableSquidProxy # Transparent squid proxy for http/https
+    #  default: "true"
+    #- name: squidProxyWhitelist # Optional squid proxy whitelist domains.
+    #  default: ".ipinfo.io .google.com"
     #- name: xpraUploadsMountPath
     #  default: "/mnt/uploads"
     #- name: enableFileManager # Enable file manager sidecar
