@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- if eq .AppSpec.Type "statefulset" }}
-# [START pod_broker_virtual_service]
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -64,5 +62,3 @@ spec:
             host: pod-broker
             port:
               number: 80
-# [END pod_broker_virtual_service]
-{{- end}}

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- if eq .AppSpec.Type "statefulset" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,6 +36,8 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: vdi
+  annotations:
+    gke.accel.vdi/user: "{{.User}}"
 spec:
   selector:
     matchLabels:
@@ -44,12 +47,38 @@ spec:
   volumeClaimTemplates: []
   template:
     metadata:
-      annotations: {}
+      annotations:
+        gke.accel.vdi/user: "{{.User}}"
       labels:
         app: vdi
     spec:
+      serviceAccount: {{.Namespace}}
+
+      enableServiceLinks: false
+
       # Disable service account used for accessing the kubernetes API/
       automountServiceAccountToken: false
+
+      nodeSelector:
+        app.broker/tier: {{ .NodeTier.NodeLabel }}
+        cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: app.broker/initialized
+                    operator: In
+                    values: ["true"]
+      
+      tolerations:
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
 
       # Terminate pod after 10 seconds of receiving SIGTERM
       terminationGracePeriodSeconds: 5
@@ -79,23 +108,41 @@ spec:
       initContainers: []
       containers:
         ###
-        # NOTE: To speed up container startup time, images are pulled locally in the gpu-node-init daemonset, hence the imagePullPolicy=Never
-        ###
-
-        ###
         # Desktop container
         ###
         - name: desktop
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop:latest
+          image: {{.ImageRepo}}:{{.ImageTag}}
+          # Allow entrypoint command override from app config spec.
+          {{- if .AppParams.command}}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+{{.AppParams.command | nindent 12}}
+          {{- end}}
           securityContext:
             privileged: false
             runAsUser: 1000
             runAsGroup: 1000
           env:
+            - name: VDI_USER
+              value: "{{.User}}"
             - name: LD_LIBRARY_PATH
               value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
             - name: PULSE_SERVER
               value: "127.0.0.1:4713"
+            
+            # Add the userParams to the env prefixed with VDI_
+            {{- range $key, $value := .UserParams }}
+            - name: VDI_{{ $key }}
+              value: {{ quote $value }}
+            {{- end}}
+
+            # Add environment vars from brokerappconfig spec.
+            {{- range $item := .AppSpec.AppEnv }}
+            - name: {{$item.Name}}
+              value: {{ quote $item.Value }}
+            {{- end}}
+
           volumeMounts:
             # Shared pod mount at host for intra-container and cross-pod sharing.
             - name: x11
@@ -150,7 +197,18 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: false
-          env: []
+          env:
+          - name: VDI_USER
+            value: "{{.User}}"
+          
+          # Add environment vars from brokerappconfig spec.
+          {{- range $item := .AppSpec.AppEnv }}
+          {{- if eq "RESOLUTION" $item.Name }}
+          - name: {{ $item.Name }}
+            value: {{ quote $item.Value }}
+          {{- end}}
+          {{- end}}
+
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -189,6 +247,23 @@ spec:
               value: "x-goog-authenticated-user-email"
             - name: COTURN_WEB_URI
               value: "http://turn.pod-broker-system.svc.cluster.local/"
+            - name: APP_AUTO_INIT
+              value: "{{default "true" .AppParams.appAutoInit}}"
+            - name: ENABLE_AUDIO
+              value: "{{default "false" .UserParams.enableAudio}}"
+            {{- if .AppParams.enableClipboard }}
+            - name: ENABLE_CLIPBOARD
+              value: "{{.AppParams.enableClipboard}}"
+            {{- end}}
+
+            # Add WEBRTC_ prefixed environment vars from brokerappconfig spec.
+            {{- range $item := .AppSpec.AppEnv }}
+            {{- if hasPrefix "WEBRTC_" $item.Name }}
+            - name: {{ $item.Name }}
+              value: {{ quote $item.Value }}
+            {{- end}}
+            {{- end}}
+
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -254,3 +329,4 @@ spec:
         #      valueFrom:
         #        fieldRef:
         #          fieldPath: metadata.namespace
+{{- end}}

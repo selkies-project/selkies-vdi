@@ -21,7 +21,7 @@
 #      - name: egressCIDRRanges
 #        default: "10.31.0.0/24"
 #      - name: squidProxyWhitelist
-#        default: ".ipinfo.io .google.com"
+#        default: ".turn.pod-broker-system.svc.cluster.local .ipinfo.io .google.com"
 
 {{- $enableSquidProxy := false }}
 {{- if .AppParams.enableSquidProxy }}
@@ -149,7 +149,7 @@
       - "-exc"
       - |-
         {{- range $cidr := $egressCIDRRanges }}
-        {{- if (len $cidr) gt 0 }}
+        {{- if gt (len $cidr) 0 }}
         iptables -t nat -A OUTPUT -p tcp -m tcp --dport 80 -d {{$cidr}} -j ACCEPT
         iptables -t nat -A OUTPUT -p tcp -m tcp --dport 443 -d {{$cidr}} -j ACCEPT
         {{- end}}

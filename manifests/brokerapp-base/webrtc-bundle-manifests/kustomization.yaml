@@ -25,8 +25,8 @@ generatorOptions:
 configMapGenerator:
   - name: webrtc-gpu-streaming-manifests-1.4.0
     files:
-      - patch-user-pod.yaml.tmpl
-      - resource-vdi-deploy.yaml
+      - resource-vdi-deploy.yaml.tmpl
+      - resource-vdi-statefulset.yaml.tmpl
       - resource-vdi-egress-network-policy.yaml.tmpl
       - resource-vdi-file-manager-config.yaml.tmpl
       - resource-vdi-isolated-network-def.yaml.tmpl
@@ -50,6 +50,7 @@ configMapGenerator:
       - jsonpatch-deploy-shared-storage-smb.yaml.tmpl
       - jsonpatch-deploy-user-pod-gpu.yaml.tmpl
       - jsonpatch-deploy-user-pod-js.yaml.tmpl
+      - jsonpatch-service-selectors.yaml.tmpl
       - jsonpatch-service-app-proxy.yaml.tmpl
       - jsonpatch-service-file-manager.yaml.tmpl
       - jsonpatch-virtualservice-app-proxy.yaml.tmpl

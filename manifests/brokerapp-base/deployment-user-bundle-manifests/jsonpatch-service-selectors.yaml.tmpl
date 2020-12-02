@@ -12,23 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- $enableFileManager := false }}
-{{- if .AppParams.enableFileManager }}
-  {{- if eq .AppParams.enableFileManager "true" }}
-    {{- $enableFileManager = true }}
-  {{- end}}
-{{- end}}
-
-{{- if $enableFileManager}}
+{{- if eq .AppSpec.Type "deployment" }}
 ###
-# Add proxy http port to service
+# The reservation broker removes the managed-by label when assiging the pod to a user.
+# Kustomize automatially propagates common labels into service selectors, this patch removes them.
+# See also: https://github.com/kubernetes-sigs/kustomize/issues/1009#issuecomment-603520120
 ###
-- op: add
-  path: /spec/ports/-
-  value:
-    port: 3181
-    name: http-files
-    targetPort: 3181
+- op: remove
+  path: /spec/selector/app.kubernetes.io~1managed-by
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test

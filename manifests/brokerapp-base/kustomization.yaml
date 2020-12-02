@@ -18,4 +18,5 @@ kind: Kustomization
 namespace: pod-broker-system
 
 bases:
+  - deployment-user-bundle-manifests/
   - webrtc-bundle-manifests/

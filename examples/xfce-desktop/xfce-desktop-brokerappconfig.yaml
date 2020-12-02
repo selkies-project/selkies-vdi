@@ -22,6 +22,15 @@ spec:
   displayName: XFCE Desktop
   description: XFCE Cloud Shell desktop environment
   icon: https://upload.wikimedia.org/wikipedia/commons/5/5b/Xfce_logo.svg
+  
+  # Change type to 'deployment' to run with reservation broker. 
+  type: statefulset
+
+  # User bundle when operating in deployment mode.
+  #userBundles:
+  #  - configMapRef:
+  #      name: webrtc-gpu-streaming-user-manifests-1.4.0
+
   bundle:
     configMapRef:
       name: webrtc-gpu-streaming-manifests-1.4.0
@@ -74,29 +83,63 @@ spec:
       displayName: "Use Xpra"
       type: bool
       default: "false"
-    - name: enableDind
+    - name: enableDind # Requires enablePersistence to also be true
       displayName: "Enable Docker"
       type: bool
       default: "false"
   appParams:
     - name: idleShutdownTimeout
       default: "3600" # seconds
-    - name: enableRecording
-      default: "false"
+
+    ###
+    # Screen recording feaure
+    ###
+    #- name: enableRecording
+    #  default: "true"
     #- name: recordingFramerate # recording framerate, lower uses less space and CPU.
     #  default: "15"
     #- name: recordingBitrate # recording bitrate in kbps
     #  default: "500"
+
+    ###
+    # WebRTC clipboard feature.
+    ###
     #- name: enableClipboard # enable one-way clipboard.
     #  default: "in"
-    #- name: egressProxyCIDR # CIDR range for egress proxy network policy.
-    #  default: "${EGRESS_PROXY}/32"
-    #- name: enableSquidProxy # Transparent squid proxy for http/https
+
+    ###
+    # WebRTC virtual mouse device feature.
+    ###
+    #- name: enableVirtualMouse
+    #  default: "true"
+
+    ###
+    # Egress network policy (firewall) feature, allowed CIDR ranges.
+    ###
+    #- name: enableEgressPolicy
+    #  default: "true"
+    #- name: egressCIDRRanges
+    #  default: 192.140.0.0/14,172.86.42.0/24
+    
+    ###
+    # Squid http(s) transparent proxy feature.
+    ###
+    #- name: enableSquidProxy
     #  default: "true"
     #- name: squidProxyWhitelist # Optional squid proxy whitelist domains.
-    #  default: ".ipinfo.io .google.com"
+    ### allow a few domains
+    #  default: .ipinfo.io .google.com
+    ### allow WebRTC and watchdog endpoint.
+    #  default: .turn.pod-broker-system.svc.cluster.local .istio-ingressgateway.istio-system.svc.cluster.local
+    ### allow YouTube
+    #  default: .youtube.com .googlevideo.com .ytimg.com
+
     #- name: xpraUploadsMountPath
     #  default: "/mnt/uploads"
+
+    ###
+    # File manager sidecar feature
+    ###
     #- name: enableFileManager # Enable file manager sidecar
     #  default: "true"
     #- name: fileManagerVolume # Volume that file manager sidecar mounts.
@@ -105,6 +148,7 @@ spec:
     #  default: "/xfce-desktop"
     #- name: fileManagerTheme # Theme for file manager.
     #  default: "dark"
+
   #appEnv:
   # proxy env, use with appParams.egressProxyCIDR
   #- name: http_proxy
@@ -121,7 +165,7 @@ spec:
   #  value: "on"
   #- name: XPRA_HTML5_DEFAULT_SETTINGS
   #  value: "floating_menu = true\\nvideo = false\\nsound = false\\nencoding = jpeg"
-  defaultTier: gpu
+  defaultTier: standard
   nodeTiers:
     - name: gpu
       nodeLabel: gpu-cos

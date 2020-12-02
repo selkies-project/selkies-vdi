@@ -12,26 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-{{- $enableFileManager := false }}
-{{- if .AppParams.enableFileManager }}
-  {{- if eq .AppParams.enableFileManager "true" }}
-    {{- $enableFileManager = true }}
-  {{- end}}
-{{- end}}
-
-{{- if $enableFileManager}}
-###
-# Add proxy http port to service
-###
-- op: add
-  path: /spec/ports/-
-  value:
-    port: 3181
-    name: http-files
-    targetPort: 3181
-{{- else}}
-# Cannot have empty patch, so this is effectively a no-op.
-- op: test
-  path: /kind
-  value: Service
-{{- end}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: vdi
+spec:
+  selector:
+    app.kubernetes.io/instance: {{.FullName}}
+    app.kubernetes.io/name: {{.App}}
+  ports:
+    # Port 80 is the default port routed by the pod broker.
+    - port: 80
+      name: web
+      targetPort: 8082
+    - port: 8080
+      name: signalling
+      targetPort: 8080
+    - port: 8081
+      name: xpra
+      targetPort: 8081

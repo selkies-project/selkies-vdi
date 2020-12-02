@@ -1,0 +1,318 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if eq .AppSpec.Type "deployment" }}
+###
+# TODO: figure out how to remove this service.
+# It's not needed with the deployment type brokerapp but is needed for templating patches.
+###
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.App}}
+spec:
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.App}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.App}}
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 50%
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        app: {{.App}}
+    spec:
+      serviceAccount: {{.Namespace}}
+
+      enableServiceLinks: false
+
+      # Disable service account used for accessing the kubernetes API/
+      automountServiceAccountToken: false
+
+      nodeSelector:
+        app.broker/tier: {{ .NodeTier.NodeLabel }}
+        cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: app.broker/initialized
+                    operator: In
+                    values: ["true"]
+      
+      tolerations:
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+
+      # Terminate pod after 10 seconds of receiving SIGTERM
+      terminationGracePeriodSeconds: 5
+      volumes:
+        ###
+        # shared x11 socket volume
+        ###
+        - name: x11
+          emptyDir:
+            medium: Memory
+            sizeLimit: 10Mi
+        ###
+        # Shared config volume
+        ###
+        - name: config
+          emptyDir:
+            medium: Memory
+            sizeLimit: 10Mi
+        ###
+        # shared memory mount
+        # used to bypass default container runtime of 64MB
+        ###
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+      initContainers: []
+      containers:
+        ###
+        # Desktop container
+        ###
+        - name: desktop
+          image: {{.ImageRepo}}:{{.ImageTag}}
+          # Allow entrypoint command override from app config spec.
+          {{- if .AppParams.command}}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+{{.AppParams.command | nindent 12}}
+          {{- end}}
+          securityContext:
+            privileged: false
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: VDI_USER
+              value: "{{.App}}"
+            - name: LD_LIBRARY_PATH
+              value: "/usr/local/nvidia/lib64:/usr/local/nvidia/lib32"
+            - name: PULSE_SERVER
+              value: "127.0.0.1:4713"
+            
+            # Add environment vars from brokerappconfig spec.
+            {{- range $item := .AppSpec.AppEnv }}
+            - name: {{$item.Name}}
+              value: {{ quote $item.Value }}
+            {{- end}}
+
+          volumeMounts:
+            # Shared pod mount at host for intra-container and cross-pod sharing.
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            # Shared pod mount for intra-container data sharing.
+            - name: config
+              mountPath: /var/run/appconfig
+            # increased shared memory mount
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            requests: {}
+            limits: {}
+
+        ###
+        # Watchdog container
+        ###
+        - name: watchdog
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "Waiting for host X server at ${DISPLAY}"
+              until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+              echo "Host X server is ready"
+              exec /usr/bin/python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
+          env: []
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+
+        ###
+        # Pulse audio container
+        ###
+        - name: pulseaudio
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: pulseaudio
+              containerPort: 4713
+              protocol: TCP
+
+        ###
+        # Xserver container
+        ###
+        - name: xserver
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          env:
+          - name: VDI_USER
+            value: "{{.App}}"
+          
+          # Add environment vars from brokerappconfig spec.
+          {{- range $item := .AppSpec.AppEnv }}
+          {{- if eq "RESOLUTION" $item.Name }}
+          - name: {{ $item.Name }}
+            value: {{ quote $item.Value }}
+          {{- end}}
+          {{- end}}
+
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "kill $(pidof Xorg tail bash)"]
+          resources:
+            requests: {}
+            limits: {}
+
+        ###
+        # webrtc container
+        ###
+        - name: webrtc
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+          # tty required to gather gpu stats using nvidia-smi and GPUtil python module.
+          tty: true
+          env:
+            - name: GST_DEBUG
+              value: "*:2"
+            - name: LD_LIBRARY_PATH
+              value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
+            - name: DISPLAY
+              value: ":0"
+            - name: "PULSE_SERVER"
+              value: "127.0.0.1:4713"
+            - name: SIGNALLING_SERVER
+              value: "ws://127.0.0.1:8080"
+            - name: "COTURN_AUTH_HEADER_NAME"
+              value: "x-goog-authenticated-user-email"
+            - name: COTURN_WEB_URI
+              value: "http://turn.pod-broker-system.svc.cluster.local/"
+            - name: APP_AUTO_INIT
+              value: "{{default "true" .AppParams.appAutoInit}}"
+            - name: ENABLE_AUDIO
+              value: "{{default "false" .AppParams.enableAudio}}"
+            {{- if .AppParams.enableClipboard }}
+            - name: ENABLE_CLIPBOARD
+              value: "{{.AppParams.enableClipboard}}"
+            {{- end}}
+
+            # Add WEBRTC_ prefixed environment vars from brokerappconfig spec.
+            {{- range $item := .AppSpec.AppEnv }}
+            {{- if hasPrefix "WEBRTC_" $item.Name }}
+            - name: {{ $item.Name }}
+              value: {{ quote $item.Value }}
+            {{- end}}
+            {{- end}}
+
+          volumeMounts:
+            - name: x11
+              mountPath: /tmp/.X11-unix
+            - name: config
+              mountPath: /var/run/appconfig
+          resources:
+            requests: {}
+            limits: {}
+        ###
+        # signalling container
+        ###
+        - name: signalling
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: signalling
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: signalling
+
+        ###
+        # web container
+        ###
+        - name: web
+          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh"]
+          args:
+            - -exc
+            - |
+              sed -i \
+                  -e 's/listen.*80;/listen 8082;/g' \
+                  /etc/nginx/conf.d/default.conf
+
+              exec nginx -g 'daemon off;'
+          ports:
+            - name: web
+              containerPort: 8082
+          readinessProbe:
+            httpGet:
+              path: /
+              port: web
+        ###
+        # WebRTC metrics exporter container
+        # TODO
+        ###
+        #- name: webrtc-metrics
+        #  image: gcr.io/google-containers/prometheus-to-sd:v0.7.2
+        #  command:
+        #    - /monitor
+        #    - --source=:http://localhost:8000
+        #    - --stackdriver-prefix=custom.googleapis.com
+        #    - --pod-id=$(POD_NAME)
+        #    - --namespace-id=$(POD_NAMESPACE)
+        #  env:
+        #    - name: POD_NAME
+        #      valueFrom:
+        #        fieldRef:
+        #          apiVersion: v1
+        #          fieldPath: metadata.name
+        #    - name: POD_NAMESPACE
+        #      valueFrom:
+        #        fieldRef:
+        #          fieldPath: metadata.namespace
+{{- end}}
