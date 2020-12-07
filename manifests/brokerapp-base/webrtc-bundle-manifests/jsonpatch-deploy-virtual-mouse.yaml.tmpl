@@ -13,6 +13,12 @@
 # limitations under the License.
 
 {{- $enableVirtualMouse := false }}
+{{- if .UserParams.enableVirtualMouse }}
+  {{- if eq .UserParams.enableVirtualMouse "true" }}
+    {{- $enableVirtualMouse = true }}
+  {{- end}}
+{{- end}}
+
 {{- if .AppParams.enableVirtualMouse }}
   {{- if eq .AppParams.enableVirtualMouse "true" }}
     {{- $enableVirtualMouse = true }}

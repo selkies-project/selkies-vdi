@@ -31,7 +31,7 @@ RUN \
 
 # Build app
 WORKDIR /opt/app
-COPY *.py watchdog.sh debug.sh /opt/app/
+COPY *.py debug.sh /opt/app/
 
 ENV PATH=/usr/local/nvidia/bin:${PATH}
 

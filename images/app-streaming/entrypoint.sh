@@ -39,7 +39,7 @@ xrandr --fb ${RESOLUTION}
 
 echo "Starting apps"
 while true; do
-    eval ${ENABLE_WM:-true} && xfwm4 --daemon --replace ${WM_ARGS}
+    eval ${ENABLE_WM:-true} && xfwm4 --replace ${WM_ARGS} &
     sleep 2
     ${EXEC_CMD?missing env}
     sleep 2

@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- $brokerRoute := "broker" }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $brokerRoute = "reservation-broker" }}
+{{- end}}
+
 ###
 # Patch the watchdog container
 ###
@@ -23,7 +28,9 @@
     - name: BROKER_COOKIE
       value: "broker_{{.App}}={{.CookieValue}}"
     - name: BROKER_ENDPOINT
-      value: "https://{{.SysParams.Domain}}/broker"
+      value: "https://{{.SysParams.Domain}}/{{ $brokerRoute }}"
+    - name: IN_CLUSTER_BROKER_ENDPOINT
+      value: "http://istio-ingressgateway.istio-system.svc.cluster.local/{{ $brokerRoute }}"
     - name: BROKER_HOST
       value: "{{.SysParams.Domain}}"
     - name: IN_CLUSTER

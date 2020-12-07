@@ -161,16 +161,7 @@ spec:
         # Watchdog container
         ###
         - name: watchdog
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/bash"]
-          args:
-            - -ec
-            - |
-              echo "Waiting for host X server at ${DISPLAY}"
-              until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
-              echo "Host X server is ready"
-              exec /usr/bin/python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
+          image: {{printf "gcr.io/%s/webrtc-gpu-streaming-watchdog:latest" .ProjectID}}
           env: []
           volumeMounts:
             - name: x11

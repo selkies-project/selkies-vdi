@@ -27,7 +27,7 @@ set -x
 echo "INFO: Shutting down ${APP_NAME?} pod for user ${POD_USER?} through pod broker" >&2
 
 if [[ ${IN_CLUSTER:-"true"} == "true" ]]; then
-    curl -s -f -H "Cookie: ${BROKER_COOKIE?}" -H "Host: ${BROKER_HOST?}" -X DELETE http://istio-ingressgateway.istio-system.svc.cluster.local/broker/${APP_NAME?}/
+    curl -s -f -v -H "Cookie: ${BROKER_COOKIE?}" -H "Host: ${BROKER_HOST?}" -X DELETE ${IN_CLUSTER_BROKER_ENDPOINT}/${APP_NAME?}/
 else
     ID_TOKEN=$(curl -s -f -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience=${CLIENT_ID?}&format=full")
     curl -s -f -H "Cookie: ${BROKER_COOKIE?}" -H "Authorization: Bearer ${ID_TOKEN}" -X DELETE ${BROKER_ENDPOINT?}/${APP_NAME?}/
