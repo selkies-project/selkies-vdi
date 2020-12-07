@@ -325,7 +325,7 @@ steps:
 # App streaming image based on Ubuntu Focal (focal tag)
 ###
 - name: 'gcr.io/cloud-builders/docker'
-  id: app-streaming-bionic-pull
+  id: app-streaming-focal-pull
   entrypoint: 'bash'
   args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal || exit 0); fi"]
   waitFor: ["-"]
