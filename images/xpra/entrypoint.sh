@@ -62,6 +62,7 @@ sudo chmod 777 /var/log/xpra
     --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
     --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
     --open-files=${XPRA_OPEN_FILES:-"on"} \
+    --printing=${XPRA_ENABLE_PRINTING:-"yes"} \
     ${XPRA_ARGS} 2>&1 | tee /var/log/xpra/xpra.log) &
 PID=$!
 
