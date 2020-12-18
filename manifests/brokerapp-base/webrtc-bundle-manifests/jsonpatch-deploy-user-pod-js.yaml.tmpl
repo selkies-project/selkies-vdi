@@ -26,6 +26,11 @@
     {{- $enableJoystick = true }}
   {{- end}}
 {{- end}}
+{{- if .AppParams.enableJoystick }}
+  {{- if eq .AppParams.enableJoystick "true" }}
+    {{- $enableJoystick = true }}
+  {{- end}}
+{{- end}}
 
 {{- if and ($xpraDisabled) ($enableJoystick) }}
 ###
