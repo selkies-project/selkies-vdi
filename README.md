@@ -1,5 +1,7 @@
 # GPU-accelerated streaming with WebRTC and Gstreamer
 
+[![Discord](https://img.shields.io/discord/798699922223398942?logo=discord)](https://discord.gg/wDNGDeSW5F)
+
 ## Description
 
 Provides GPU accelerated WebRTC streaming and Xpra VDI support to Selkies.
