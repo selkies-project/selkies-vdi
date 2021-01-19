@@ -1,0 +1,164 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: gcp.solutions/v1
+kind: BrokerAppConfig
+metadata:
+  name: xpra-desktop
+spec:
+  version: 1.0.0
+  name: xpra-desktop
+  displayName: Xpra Desktop
+  description: Xpra desktop example
+  icon: https://xpra.org/trac/export/14219/xpra/trunk/osx/background.png
+  
+  # Change type to 'deployment' to run with reservation broker. 
+  type: statefulset
+
+  # User bundle when operating in deployment mode.
+  #userBundles:
+  #  - configMapRef:
+  #      name: webrtc-gpu-streaming-user-manifests-1.4.0
+
+  bundle:
+    configMapRef:
+      name: webrtc-gpu-streaming-manifests-1.4.0
+  serviceName: vdi
+  defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+  defaultTag: "latest"
+  images:
+    xserver:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xserver
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xserver
+      newTag: latest
+    desktop:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-desktop
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+      newTag: latest
+    pulseaudio:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-pulseaudio
+      newTag: latest
+    gst-webrtc-app:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app
+      newTag: latest
+    signaling:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-signaling
+      newTag: latest
+    gst-web:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
+      newTag: latest
+    watchdog:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-watchdog
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-watchdog
+      newTag: latest
+    xpra:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
+      newTag: latest
+  userParams:
+    - name: enablePersistence
+      displayName: "Persistent Home"
+      type: bool
+      default: "true"
+    - name: enableDind # Requires enablePersistence to also be true
+      displayName: "Enable Docker"
+      type: bool
+      default: "false"
+  appParams:
+    - name: idleShutdownTimeout
+      default: "3600" # seconds
+
+    ###
+    # Screen recording feaure
+    ###
+    #- name: enableRecording
+    #  default: "true"
+    #- name: recordingFramerate # recording framerate, lower uses less space and CPU.
+    #  default: "15"
+    #- name: recordingBitrate # recording bitrate in kbps
+    #  default: "500"
+
+    ###
+    # Egress network policy (firewall) feature, allowed CIDR ranges.
+    ###
+    #- name: enableEgressPolicy
+    #  default: "true"
+    #- name: egressCIDRRanges
+    #  default: 192.140.0.0/14,172.86.42.0/24
+    
+    ###
+    # Squid http(s) transparent proxy feature.
+    ###
+    #- name: enableSquidProxy
+    #  default: "true"
+    #- name: squidProxyWhitelist # Optional squid proxy whitelist domains.
+    ### allow a few domains
+    #  default: .ipinfo.io .google.com
+    ### allow WebRTC and watchdog endpoint.
+    #  default: .turn.pod-broker-system.svc.cluster.local .istio-ingressgateway.istio-system.svc.cluster.local
+    ### allow YouTube
+    #  default: .youtube.com .googlevideo.com .ytimg.com
+
+    ###
+    # Xpra appParam features
+    ###
+    - name: enableXpra
+      default: "true"
+    #- name: xpraUploadsMountPath
+    #  default: "/mnt/uploads"
+
+    ###
+    # File manager sidecar feature
+    ###
+    #- name: enableFileManager # Enable file manager sidecar
+    #  default: "true"
+    #- name: fileManagerVolume # Volume that file manager sidecar mounts.
+    #  default: "persist"
+    #- name: fileManagerSubPath # useful with shared volumes, subpath on volume to mount.
+    #  default: "/xfce-desktop"
+    #- name: fileManagerTheme # Theme for file manager.
+    #  default: "dark"
+
+  appEnv:
+  # proxy env, use with appParams.egressProxyCIDR
+  #- name: http_proxy
+  #  value: "${EGRESS_PROXY}:3128"
+  #- name: https_proxy
+  #  value: "${EGRESS_PROXY}:3128"
+  #- name: XPRA_ENTRYPOINT
+  #  value: "xfdesktop --sm-client-disable -A"
+  - name: XPRA_CLIPBOARD_DIRECTION # Values are to-server|to-client|both
+    value: "to-server"
+  - name: XPRA_FILE_TRANSFER
+    value: "off"
+  - name: XPRA_OPEN_FILES
+    value: "off"
+  - name: XPRA_HTML5_DEFAULT_SETTINGS
+    value: "floating_menu = true\\nvideo = false\\nsound = false\\nencoding = jpeg"
+  defaultTier: standard
+  nodeTiers:
+    - name: gpu
+      nodeLabel: gpu-cos
+      resources:
+        requests:
+          cpu: 500m
+    - name: standard
+      nodeLabel: tier1
+      resources:
+        requests:
+          cpu: 500m
