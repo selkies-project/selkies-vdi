@@ -17,9 +17,13 @@ FROM python:3-slim
 RUN pip3 install \
     xlib
 
-
 WORKDIR /opt/app
 
 COPY *.py *.sh /opt/app/
+
+RUN groupadd --gid 1000 app && \
+    adduser --uid 1000 --gid 1000 --disabled-password --gecos '' app
+
+USER app
 
 ENTRYPOINT ["/opt/app/entrypoint.sh"]
