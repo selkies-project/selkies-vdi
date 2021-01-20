@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM docker.io/salrashid123/squidproxy
+FROM docker.io/salrashid123/squidproxy@sha256:5f50ac4dba3ccbf80747574341368ef78edbea648b02805a30b893385eb78038
 
 RUN apt-get -y update && \
     apt-get install -y \
