@@ -35,8 +35,8 @@
 # Split allowed CIDR ranges
 {{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
 
-# Whitelist of sites to allow
-{{- $squidProxyWhitelist := .AppParams.squidProxyWhitelist }}
+# Whitelist of sites to allow in addition to the URLs needed for the idle shutdown container to work.
+{{- $squidProxyWhitelist := printf "%s .%s .turn.pod-broker-system.svc.cluster.local .istio-ingressgateway.istio-system.svc.cluster.local" .AppParams.squidProxyWhitelist .SysParams.Domain }}
 
 {{- if $enableSquidProxy }}
 ###

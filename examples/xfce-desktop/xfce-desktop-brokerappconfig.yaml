@@ -133,8 +133,6 @@ spec:
     #- name: squidProxyWhitelist # Optional squid proxy whitelist domains.
     ### allow a few domains
     #  default: .ipinfo.io .google.com
-    ### allow WebRTC and watchdog endpoint.
-    #  default: .turn.pod-broker-system.svc.cluster.local .istio-ingressgateway.istio-system.svc.cluster.local
     ### allow YouTube
     #  default: .youtube.com .googlevideo.com .ytimg.com
 
