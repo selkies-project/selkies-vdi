@@ -113,6 +113,11 @@
         value: "tcp://127.0.0.1:8082"
       - name: XPRA_DOWNLOAD_DIR
         value: "/mnt/downloads"
+      # Add app context for PWA manifest
+      - name: XPRA_PWA_APP_NAME
+        value: {{.AppSpec.DisplayName | quote}}
+      - name: XPRA_PWA_APP_PATH
+        value: {{.App | quote}}
       # Add environment vars from brokerappconfig spec.
       {{- range $item := .AppSpec.AppEnv }}
       - name: {{$item.Name}}

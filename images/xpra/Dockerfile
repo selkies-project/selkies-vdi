@@ -114,17 +114,31 @@ COPY patch-fullscreen-keyboard-lock.js /usr/share/xpra/www/js/keyboard-lock.js
 
 # Patch to add HTML5 printing fix
 RUN \
-    sed -i 's|</body>|    <script type="application/javascript" src="js/fix-printing.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
+    sed -i 's|</body>|        <script type="application/javascript" src="js/fix-printing.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
     rm -f /usr/share/xpra/www/index.html.*
 
 COPY patch-fix-printing.js /usr/share/xpra/www/js/fix-printing.js
 
 # Patch to add HTML5 auto fullscreen feature
 RUN \
-    sed -i 's|</body>|    <script type="application/javascript" src="js/auto-fullscreen.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
+    sed -i 's|</body>|        <script type="application/javascript" src="js/auto-fullscreen.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
     rm -f /usr/share/xpra/www/index.html.*
 
 COPY patch-auto-fullscreen.js /usr/share/xpra/www/js/auto-fullscreen.js
+
+# Patch HTML for PWA
+RUN \ 
+    sed -i \
+        -e 's|</head>|        <meta name="viewport" content="width=device-width, initial-scale=1.0">\n        </head>|' \
+        -e 's|</head>|        <link rel="manifest" href="manifest.json" crossorigin="use-credentials">\n        </head>|' \
+        -e 's|</head>|        <meta name="theme-color" content="white"/>\n        </head>|' \
+        -e 's|</body>|        <script type="application/javascript">window.onload = () => {"use strict"; if ("serviceWorker" in navigator) { navigator.serviceWorker.register("./sw.js");}}</script>\n    </body>|' /usr/share/xpra/www/index.html && \
+    rm -f /usr/share/xpra/www/index.html.*
+
+# Copy PWA source files
+COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
+COPY pwa/sw.js /usr/share/xpra/www/sw.js
+COPY pwa/xpra-icon.png /usr/share/xpra/www/xpra-icon.png
 
 # Patch to fix broken minimize action
 RUN \

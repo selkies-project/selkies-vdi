@@ -36,6 +36,12 @@ if [[ -n "${XPRA_CONF}" ]]; then
   echo "${XPRA_CONF}" | sudo tee /etc/xpra/conf.d/99_appconfig.conf
 fi
 
+# Update PWA manifest.json with app info and route.
+sudo sed -i \
+  -e "s|XPRA_PWA_APP_NAME|${XPRA_PWA_APP_NAME:-Xpra Desktop}|g" \
+  -e "s|XPRA_PWA_APP_PATH|${XPRA_PWA_APP_PATH:-xpra-desktop}|g" \
+  '/usr/share/xpra/www/manifest.json'
+
 # Start dbus
 sudo rm -rf /var/run/dbus
 dbus-uuidgen | sudo tee /var/lib/dbus/machine-id
