@@ -42,6 +42,16 @@ sudo sed -i \
   -e "s|XPRA_PWA_APP_PATH|${XPRA_PWA_APP_PATH:-xpra-desktop}|g" \
   '/usr/share/xpra/www/manifest.json'
 
+if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then
+  echo "INFO: Converting icon to PWA standard"
+  if [[ "${XPRA_PWA_ICON_URL}" =~ "data:image/png;base64" ]]; then
+    echo "${XPRA_PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d | sudo tee /usr/share/xpra/www/icon.png >/dev/null
+  else
+    curl -L "${XPRA_PWA_ICON_URL}" | \
+      sudo convert -size 512x512 - /usr/share/xpra/www/icon.png
+  fi
+fi
+
 # Start dbus
 sudo rm -rf /var/run/dbus
 dbus-uuidgen | sudo tee /var/lib/dbus/machine-id

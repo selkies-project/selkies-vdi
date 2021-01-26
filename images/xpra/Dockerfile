@@ -138,7 +138,6 @@ RUN \
 # Copy PWA source files
 COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
 COPY pwa/sw.js /usr/share/xpra/www/sw.js
-COPY pwa/xpra-icon.png /usr/share/xpra/www/xpra-icon.png
 
 # Patch to fix broken minimize action
 RUN \

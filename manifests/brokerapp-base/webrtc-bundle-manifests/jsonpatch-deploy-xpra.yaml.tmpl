@@ -118,6 +118,8 @@
         value: {{.AppSpec.DisplayName | quote}}
       - name: XPRA_PWA_APP_PATH
         value: {{.App | quote}}
+      - name: XPRA_PWA_ICON_URL
+        value: {{.AppSpec.Icon | quote}}
       # Add environment vars from brokerappconfig spec.
       {{- range $item := .AppSpec.AppEnv }}
       - name: {{$item.Name}}
