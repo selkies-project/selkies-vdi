@@ -268,15 +268,18 @@ spec:
         - name: web
           image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web:latest
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh"]
-          args:
-            - -exc
-            - |
-              sed -i \
-                  -e 's/listen.*80;/listen 8082;/g' \
-                  /etc/nginx/conf.d/default.conf
-
-              exec nginx -g 'daemon off;'
+          env:
+            - name: GST_WEB_PORT
+              value: "8082"
+            - name: PATH_PREFIX
+              value: "/"
+            # Add app context for PWA manifest
+            - name: PWA_APP_NAME
+              value: {{.AppSpec.DisplayName | quote}}
+            - name: PWA_APP_PATH
+              value: {{.App | quote}}
+            - name: PWA_ICON_URL
+              value: {{.AppSpec.Icon | quote}}
           ports:
             - name: web
               containerPort: 8082

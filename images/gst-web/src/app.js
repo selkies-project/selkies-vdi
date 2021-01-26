@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+// Service Worker to support PWA
+window.onload = () => {
+    'use strict';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+}
+
 /**
  * Fetch the value of a cookie by name.
  * @param {string} a
