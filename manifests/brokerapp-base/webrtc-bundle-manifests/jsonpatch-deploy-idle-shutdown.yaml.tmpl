@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+{{- $brokerCookie := .CookieValue }}
 {{- $brokerRoute := "broker" }}
+{{- $appName := .App }}
 {{- if eq .AppSpec.Type "deployment" }}
   {{- $brokerRoute = "reservation-broker" }}
+  {{- $brokerCookie = "watchdog@localhost#deadbeef" }}
+  {{- $appName = "shutdown" }}
 {{- end}}
 
 ###
@@ -26,7 +30,7 @@
     - name: DISPLAY
       value: ":0"
     - name: BROKER_COOKIE
-      value: "broker_{{.App}}={{.CookieValue}}"
+      value: "broker_{{.App}}={{ $brokerCookie }}"
     - name: BROKER_ENDPOINT
       value: "https://{{.SysParams.Domain}}/{{ $brokerRoute }}"
     - name: IN_CLUSTER_BROKER_ENDPOINT
@@ -40,6 +44,6 @@
     - name: POD_USER
       value: "{{.User}}"
     - name: APP_NAME
-      value: "{{.App}}"
+      value: "{{ $appName }}"
     - name: WATCHDOG_TIMEOUT
       value: "{{default 600 .AppParams.idleShutdownTimeout}}"
