@@ -49,6 +49,7 @@ spec:
     metadata:
       annotations:
         gke.accel.vdi/user: "{{.User}}"
+        app.broker/session-key: "{{default "" .AppParams.sessionKey}}"
       labels:
         app: vdi
     spec:
