@@ -47,8 +47,12 @@ if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then
   if [[ "${XPRA_PWA_ICON_URL}" =~ "data:image/png;base64" ]]; then
     echo "${XPRA_PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d | sudo tee /usr/share/xpra/www/icon.png >/dev/null
   else
-    curl -L "${XPRA_PWA_ICON_URL}" | \
-      sudo convert -size 512x512 - /usr/share/xpra/www/icon.png
+    curl -o /tmp/icon.png -s -f -L "${XPRA_PWA_ICON_URL}" || true
+    sudo convert -size 512x512 /tmp/icon.png /usr/share/xpra/www/icon.png || true
+    if [[ ! -f /usr/share/xpra/www/icon.png ]]; then
+      echo "WARN: failed to download PWA icon, PWA features may not be available: ${XPRA_PWA_ICON_URL}"
+    fi
+    rm -f /tmp/icon.png
   fi
 fi
 
