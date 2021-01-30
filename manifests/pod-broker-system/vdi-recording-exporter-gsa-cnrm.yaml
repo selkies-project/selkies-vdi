@@ -26,7 +26,11 @@ kind: IAMPolicyMember
 metadata:
   name: vdi-recording-exporter-storage
 spec:
-  member: serviceAccount:vdi-recording-exporter@${PROJECT_ID}.iam.gserviceaccount.com
   role: roles/storage.admin
+  memberFrom:
+    serviceAccountRef:
+      name: vdi-recording-exporter
   resourceRef:
-    kind: Project
+    apiVersion: storage.cnrm.cloud.google.com/v1beta1
+    kind: StorageBucket
+    name: ${PROJECT_ID}-vdi-recordings
