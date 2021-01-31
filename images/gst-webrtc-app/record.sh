@@ -19,14 +19,26 @@ until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
 [[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
 echo "X server is ready"
 
+echo "Waiting for session to start"
+until [[ $(curl -s -o /dev/null -w "%{http_code}" -H "Cookie: ${BROKER_COOKIE?}" -H "Host: ${BROKER_HOST?}" ${BROKER_SESSION_ENDPOINT?}) -eq 200 ]]; do
+    sleep 2
+done
+SESSION_DATA=$(curl -s -H "Cookie: ${BROKER_COOKIE?}" -H "Host: ${BROKER_HOST?}" ${BROKER_SESSION_ENDPOINT?})
+export DIR_TIMESTAMP=$(jq -r '.session_start' <<< "$SESSION_DATA")
+export VDI_USER=$(jq -r '.user' <<< "$SESSION_DATA")
+echo "Session is ready, user=$VDI_USER, session_start=$DIR_TIMESTAMP"
+
 SECONDS_PER_FILE=${SECONDS_PER_FILE:-60}
 # Convert to ns
 ((max_size_time=SECONDS_PER_FILE*1000000000))
 
 MAX_FILES=${MAX_FILES:-0}
 RECORDING_TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
-DEST_DIR=/tmp/recording/data/${VDI_USER}/${VDI_APP}/${RECORDING_TIMESTAMP}
+DEST_DIR=/tmp/recording/${VDI_USER}/${DIR_TIMESTAMP}/data/${VDI_USER}/${VDI_APP}/${RECORDING_TIMESTAMP}
 mkdir -p "$DEST_DIR"
+
+# Note directory for cleanup, called by lifecycle hook.
+echo "/tmp/recording/${VDI_USER}/${DIR_TIMESTAMP}" > /tmp/cleanup_dir
 
 echo "INFO: Saving recordings to: ${DEST_DIR}"
 
@@ -140,12 +152,23 @@ else
             ts=$(date +%s)
             REC_RES=$(xdpyinfo | awk '/dimensions/{print $2}')
             echo "INFO: Starting recording with timestamp ${ts} at resolution of ${REC_RES}"
-            gst-launch-1.0 \
-                ximagesrc show-pointer=1 remote=1 blocksize=16384 use-damage=0 \
-                ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
-                ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
-                ! h264parse \
-                ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${REC_RES}_%04d.mp4 >/tmp/recording/recording_${ts}.log 2>&1 &
+
+            if command -v nvidia-smi >/dev/null; then
+                # Use hardware encoder
+                gst-launch-1.0 \
+                    ximagesrc show-pointer=1 remote=1 blocksize=16384 use-damage=0 \
+                    ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-15}/1 \
+                    ! cudaupload ! cudaconvert ! video/x-raw\(memory:CUDAMemory\),format=I420 ! nvh264enc bitrate=${REC_VIDEO_BITRATE:-500} rc-mode=cbr preset=default \
+                    ! h264parse \
+                    ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${REC_RES}_%04d.mp4 >/tmp/recording/recording_${ts}.log 2>&1 &
+            else
+                # Use software encoder
+                gst-launch-1.0 \
+                    ximagesrc show-pointer=1 remote=1 use-damage=0 \
+                    ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
+                    ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
+                    ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${REC_RES}_%04d.mp4 >/tmp/recording/recording_${ts}.log 2>&1 &
+            fi
         fi
 
         sleep 5

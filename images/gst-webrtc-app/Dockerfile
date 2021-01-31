@@ -27,6 +27,7 @@ RUN \
         x11-utils \
         xdotool \
         wmctrl \
+        jq \
         x11-xserver-utils
 
 # Build app

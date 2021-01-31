@@ -19,6 +19,17 @@
   {{- end}}
 {{- end}}
 
+#{{- $hostPath := printf "/tmp/webrtc_recordings/%s/%s" .User .Timestamp }}
+{{- $hostPath = "/tmp/webrtc_recordings" }}
+{{- $brokerCookie := .CookieValue }}
+{{- $brokerRoute := printf "broker/%s" .App }}
+{{- $appName := .App }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $brokerRoute = "reservation-broker" }}
+  {{- $brokerCookie = "session@localhost#deadbeef" }}
+  {{- $appName = "session" }}
+{{- end}}
+
 {{- if $enableRecording }}
 # Add shared hostpath volume
 - op: add
@@ -26,7 +37,7 @@
   value:
     name: recording
     hostPath:
-      path: "/tmp/webrtc_recordings/{{.User}}/{{.Timestamp}}"
+      path: "{{ $hostPath }}"
       type: DirectoryOrCreate
 
 # Add recording container
@@ -48,6 +59,16 @@
         value: "*:2"
       - name: DISPLAY
         value: ":0"
+      - name: VDI_DEPLOYMENT_TYPE
+        value: {{.AppSpec.Type | quote}}
+      - name: BROKER_COOKIE
+        value: "broker_{{.App}}={{ $brokerCookie }}"
+      - name: BROKER_ENDPOINT
+        value: "https://{{.SysParams.Domain}}/{{ $brokerRoute }}"
+      - name: BROKER_SESSION_ENDPOINT
+        value: "http://istio-ingressgateway.istio-system.svc.cluster.local/{{ $brokerRoute }}/session/"
+      - name: BROKER_HOST
+        value: "{{.SysParams.Domain}}"
       - name: VDI_USER
         value: "{{.User}}"
       - name: VDI_APP
@@ -80,7 +101,7 @@
           command:
             - /bin/bash
             - -c
-            - rm -rf /tmp/recording/*
+            - test -f /tmp/cleanup_dir && (cat /tmp/cleanup_dir | xargs rm -rf); true
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test
