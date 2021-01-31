@@ -25,7 +25,7 @@
   {{- end}}
 {{- end}}
 
-{{- $subPath := default "" .AppParams.persistStorageSubPath }}
+{{- $subPath := default "" .AppParams.persistStorageSubPath | quote }}
 {{- if eq $subPath "USER" }}
   {{- $subPath = .User }}
 {{- end}}
@@ -67,12 +67,14 @@
     args:
       - -xc
       - |
-        mkdir -p /mnt/persist/${SUBPATH}
-        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}
+        mkdir -p /mnt/persist/${SUBPATH}/project
         grep -q DOCKER_HOST /mnt/persist/${SUBPATH}/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /mnt/persist/${SUBPATH}/.bashrc)
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/.bashrc
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/project
     env:
       - name: SUBPATH
-        value: "{{ $subPath }}"
+        value: {{ $subPath }}
     volumeMounts:
       - name: persist
         mountPath: /mnt/persist
@@ -87,8 +89,48 @@
     mountPath: /home/app
     subPath: {{ $subPath }}
 {{- else}}
-# Cannot have empty patch, so this is effectively a no-op.
-- op: test
-  path: /spec/template/spec/containers/0/name
-  value: desktop
+###
+# Add empty volume for home directory
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: persist
+    emptyDir:
+      sizeLimit: 1Gi
+
+###
+# Add init container for persistent storage
+###
+- op: add
+  path: "/spec/template/spec/initContainers/-"
+  value:
+    name: persist-init
+    image: busybox:latest
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args:
+      - -xc
+      - |
+        mkdir -p /mnt/persist/${SUBPATH}/project
+        grep -q DOCKER_HOST /mnt/persist/${SUBPATH}/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /mnt/persist/${SUBPATH}/.bashrc)
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/.bashrc
+        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/project
+    env:
+      - name: SUBPATH
+        value: {{ $subPath }}
+    volumeMounts:
+      - name: persist
+        mountPath: /mnt/persist
+
+###
+# Add volumeMount to desktop container
+###
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: persist
+    mountPath: /home/app
+    subPath: {{ $subPath }}
 {{- end}}
