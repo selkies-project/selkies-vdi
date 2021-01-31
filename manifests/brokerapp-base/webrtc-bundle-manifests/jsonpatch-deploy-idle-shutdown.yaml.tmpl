@@ -17,8 +17,8 @@
 {{- $appName := .App }}
 {{- if eq .AppSpec.Type "deployment" }}
   {{- $brokerRoute = "reservation-broker" }}
-  {{- $brokerCookie = "watchdog@localhost#deadbeef" }}
-  {{- $appName = "shutdown" }}
+  {{- $brokerCookie = "session@localhost#deadbeef" }}
+  {{- $appName = "session" }}
 {{- end}}
 
 ###
