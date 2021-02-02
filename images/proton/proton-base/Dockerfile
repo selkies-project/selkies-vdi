@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:19.10
+FROM ubuntu:20.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
@@ -38,7 +38,7 @@ RUN mkdir /tmp/sub; cd /tmp/sub && \
 
 # Install common build deps
 RUN apt-get install -y \
-  gcc-8 g++-8 g++-8-multilib flex bison nasm yasm fontforge-nox \
+  gcc-8 g++-8 g++-8-multilib flex bison nasm yasm fontforge-nox autoconf libtool \
   meson gobjc++-mingw-w64 mingw-w64 ccache wget \
   libxslt1.1 libxslt1.1:i386 \
   libcups2 libcups2:i386 \
