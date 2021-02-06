@@ -98,39 +98,4 @@
     name: persist
     emptyDir:
       sizeLimit: 1Gi
-
-###
-# Add init container for persistent storage
-###
-- op: add
-  path: "/spec/template/spec/initContainers/-"
-  value:
-    name: persist-init
-    image: busybox:latest
-    imagePullPolicy: IfNotPresent
-    command: ["/bin/sh"]
-    args:
-      - -xc
-      - |
-        mkdir -p /mnt/persist/${SUBPATH}/project
-        grep -q DOCKER_HOST /mnt/persist/${SUBPATH}/.bashrc || (echo DOCKER_HOST=tcp://127.0.0.1:2376 >> /mnt/persist/${SUBPATH}/.bashrc)
-        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}
-        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/.bashrc
-        /bin/chown 1000:1000 /mnt/persist/${SUBPATH}/project
-    env:
-      - name: SUBPATH
-        value: {{ $subPath }}
-    volumeMounts:
-      - name: persist
-        mountPath: /mnt/persist
-
-###
-# Add volumeMount to desktop container
-###
-- op: add
-  path: "/spec/template/spec/containers/0/volumeMounts/-"
-  value:
-    name: persist
-    mountPath: /home/app
-    subPath: {{ $subPath }}
 {{- end}}
