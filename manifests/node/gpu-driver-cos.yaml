@@ -239,5 +239,28 @@ spec:
             - name: root-mount
               mountPath: /hostfs
       containers:
-        - image: "gcr.io/google-containers/pause:2.0"
-          name: pause
+        ###
+        # Continuously apply the node label
+        # Need to constantly apply node labels as they are reset on cluster upgrade:
+        # See also: https://github.com/kubernetes/kubernetes/issues/18307
+        ###
+        - name: node-label
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              while true; do
+                # update node label
+                kubectl label node "${MY_NODE_NAME}" --overwrite cloud.google.com/gke-accelerator-initialized=true
+                sleep 10
+              done
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
