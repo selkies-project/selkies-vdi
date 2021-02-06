@@ -19,27 +19,29 @@
   {{- end}}
 {{- end}}
 
-{{- $fileManagerTheme := default "light" .AppParams.fileManagerTheme }}
-
-{{- $name := printf "%s-tfm" .ServiceName }}
-{{- if eq .AppSpec.Type "deployment" }}
-  {{- $name = printf "%s-%s-tfm" .App .ServiceName }}
-{{- end}}
-
 {{- if $enableFileManager}}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ $name }}
-data:
-  config.php: |-
-    <?php
-    // Full config.php: https://github.com/prasathmani/tinyfilemanager/blob/master/config.php
-
-    $use_auth = false;
-    $theme = '{{ $fileManagerTheme }}';
-    $root_path = '/data';
-    $http_host = $_SERVER['HTTP_HOST'] . '/{{.App}}/files';
-    $max_upload_size_bytes = 102400;
-    ?>
+###
+# rule for file manager with cookie.
+###
+- op: add
+  path: /spec/http/0
+  value:
+    match:
+      - uri:
+          prefix: /{{.App}}/files/
+        headers:
+          cookie:
+            regex: ".*broker_{{.App}}={{.CookieValue}}.*"
+    rewrite:
+      uri: /
+    route:
+      - destination:
+          host: {{.FullName}}-{{.ServiceName}}
+          port:
+            number: 3181
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/hosts/0
+  value: "*"
 {{- end}}

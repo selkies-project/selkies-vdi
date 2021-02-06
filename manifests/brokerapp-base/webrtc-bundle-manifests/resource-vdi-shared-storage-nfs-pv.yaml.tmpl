@@ -19,11 +19,18 @@
   {{- end}}
 {{- end}}
 
+{{- $name := printf "shared-%s" .ServiceName }}
+{{- $pvName := printf "%s-shared-%s" .FullName .ServiceName }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $name = printf "%s-shared-%s" .App .ServiceName }}
+  {{- $pvName = printf "%s-shared-%s" .App .ServiceName }}
+{{- end}}
+
 {{- if $enableSharedStorageNFS }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: shared-{{.ServiceName}}
+  name: {{ $name }}
 spec:
   capacity:
     storage: {{ default "1Gi" .AppParams.sharedStorageNFSSize }}
@@ -40,12 +47,12 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: shared-{{.ServiceName}}
+  name: {{ $name }}
 spec:
   accessModes:
   - ReadWriteMany
   storageClassName: ""
-  volumeName: {{.FullName}}-shared-{{.ServiceName}}
+  volumeName: {{ $pvName }}
   resources:
      requests:
        storage: {{ default "1Gi" .AppParams.sharedStorageNFSSize }}

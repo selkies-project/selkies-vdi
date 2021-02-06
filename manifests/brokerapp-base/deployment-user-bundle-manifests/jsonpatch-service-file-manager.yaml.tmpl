@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
+{{- $enableFileManager := false }}
+{{- if .AppParams.enableFileManager }}
+  {{- if eq .AppParams.enableFileManager "true" }}
+    {{- $enableFileManager = true }}
+  {{- end}}
+{{- end}}
 
-generatorOptions:
-  # Generate stable ConfigMap names for compatability with the BrokerAppConfig configMapRef.
-  disableNameSuffixHash: true
-
-configMapGenerator:
-  - name: webrtc-gpu-streaming-user-manifests-1.4.0
-    files:
-      - jsonpatch-service-file-manager.yaml.tmpl
-      - jsonpatch-service-selectors.yaml.tmpl
-      - jsonpatch-virtualservice-file-manager.yaml.tmpl
-      - resource-vdi-service.yaml.tmpl
-      - resource-vdi-virtual-service.yaml.tmpl
+{{- if $enableFileManager}}
+###
+# Add proxy http port to service
+###
+- op: add
+  path: /spec/ports/-
+  value:
+    port: 3181
+    name: http-files
+    targetPort: 3181
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /kind
+  value: Service
+{{- end}}

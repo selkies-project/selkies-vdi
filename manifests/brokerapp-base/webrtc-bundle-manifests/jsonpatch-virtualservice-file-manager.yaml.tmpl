@@ -19,7 +19,7 @@
   {{- end}}
 {{- end}}
 
-{{- if $enableFileManager}}
+{{- if and ($enableFileManager) (eq .AppSpec.Type "statefulset") }}
 ###
 # rule for file manager with cookie.
 ###

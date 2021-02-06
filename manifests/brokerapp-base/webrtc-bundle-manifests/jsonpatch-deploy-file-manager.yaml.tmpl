@@ -39,6 +39,14 @@
 {{- $fileManagerImage := default (printf "gcr.io/%s/webrtc-gpu-streaming-tinyfilemanager:latest" .ProjectID) .AppParams.fileManagerImage }}
 {{- $fileManagerVolume := default "persist" .AppParams.fileManagerVolume }}
 {{- $fileManagerSubPath := default "" .AppParams.fileManagerSubPath | quote }}
+{{- if eq $fileManagerSubPath "USER" }}
+  {{- $fileManagerSubPath = .User }}
+{{- end}}
+
+{{- $cmName := printf "%s-%s-tfm" .FullName .ServiceName }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $cmName = printf "%s-%s-tfm" .App .ServiceName }}
+{{- end}}
 
 {{- if $enableFileManager }}
 ###
@@ -49,7 +57,7 @@
   value:
     name: tfm-config
     configMap:
-      name: {{.FullName}}-{{.ServiceName}}-tfm
+      name: {{ $cmName }}
       defaultMode: 0644
 ###
 # Add file manager container

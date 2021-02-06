@@ -39,6 +39,10 @@
 {{- end}}
 
 {{- $subPath := default .App .AppParams.sharedStorageNFSSubPath }}
+{{- $claimName := printf "shared-%s" .ServiceName }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $claimName = printf "%s-shared-%s" .App .ServiceName }}
+{{- end}}
 
 {{- if $enableSharedStorageNFS }}
 ###
@@ -49,7 +53,7 @@
   value:
     name: shared
     persistentVolumeClaim:
-      claimName: shared-{{.ServiceName}}
+      claimName: {{ $claimName }}
 
 ###
 # Add init container for mount path

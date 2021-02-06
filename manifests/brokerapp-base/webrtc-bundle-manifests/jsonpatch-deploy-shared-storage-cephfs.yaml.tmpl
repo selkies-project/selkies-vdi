@@ -36,6 +36,10 @@
 
 {{- $subPath := default .App .AppParams.sharedStorageCephFSSubPath }}
 {{- $cephfsMons := split "," (default "127.0.0.1:6789" .AppParams.sharedStorageCephFSServers) }}
+{{- $secretName := printf "%s-%s-ceph-key" .FullName .ServiceName }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $secretName = printf "%s-%s-ceph-key" .App .ServiceName }}
+{{- end}}
 
 {{- $cephfsUser := default "admin" .AppParams.sharedStorageCephFSUser }}
 
@@ -54,7 +58,7 @@
       {{- end}}
       user: {{$cephfsUser}}
       secretRef:
-        name: {{.FullName}}-{{.ServiceName}}-ceph-key
+        name: {{ $secretName }}
       readOnly: false
 
 ###
