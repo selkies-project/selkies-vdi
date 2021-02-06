@@ -41,6 +41,9 @@ sudo sed -i \
   -e "s|XPRA_PWA_APP_NAME|${XPRA_PWA_APP_NAME:-Xpra Desktop}|g" \
   -e "s|XPRA_PWA_APP_PATH|${XPRA_PWA_APP_PATH:-xpra-desktop}|g" \
   '/usr/share/xpra/www/manifest.json'
+sudo sed -i \
+  -e "s|XPRA_PWA_CACHE|${XPRA_PWA_APP_PATH:-xpra-desktop}-pwa|g" \
+  '/usr/share/xpra/www/sw.js'
 
 if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then
   echo "INFO: Converting icon to PWA standard"
