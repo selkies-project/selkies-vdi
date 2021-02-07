@@ -81,6 +81,7 @@ sudo chmod 777 /var/log/xpra
     --html=on \
     --daemon=no \
     --no-pulseaudio \
+    --bell=${XPRA_ENABLE_BELL:-"no"} \
     --clipboard=${XPRA_ENABLE_CLIPBOARD:-"yes"} \
     --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
     --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
