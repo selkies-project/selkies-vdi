@@ -30,7 +30,7 @@
   {{- $subPath = .User }}
 {{- end}}
 
-{{- $storageClass := default "standard" .AppParams.persistStorageClass }}
+{{- $storageClass := default "pd-balanced" .AppParams.persistStorageClass }}
 {{- if eq $storageClass "NONE" }}
   {{- $storageClass = "" }}
 {{- end }}
