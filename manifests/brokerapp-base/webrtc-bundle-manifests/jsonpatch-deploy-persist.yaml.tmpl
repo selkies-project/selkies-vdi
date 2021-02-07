@@ -30,10 +30,12 @@
   {{- $subPath = .User }}
 {{- end}}
 
-{{- $storageClass := default "standard" .AppParams.persistStorageClass }}
+{{- $storageClass := default "pd-balanced" .AppParams.persistStorageClass }}
 {{- if eq $storageClass "NONE" }}
   {{- $storageClass = "" }}
 {{- end }}
+
+{{- $mountPath := default "/home/app" .AppParams.persistStorageMountPath }}
 
 {{- if $enablePersistence }}
 ###
@@ -46,6 +48,8 @@
       name: persist
       annotations:
         gke.accel.vdi/user: "{{.User}}"
+      labels:
+        app.broker/deletion-policy: "abandon"
     spec:
       accessModes: [ "{{ default "ReadWriteOnce" .AppParams.persistVolumeMode }}" ]
       storageClassName: {{ $storageClass | quote }}
@@ -86,7 +90,7 @@
   path: "/spec/template/spec/containers/0/volumeMounts/-"
   value:
     name: persist
-    mountPath: /home/app
+    mountPath: {{ $mountPath }}
     subPath: {{ $subPath }}
 {{- else}}
 ###
