@@ -111,6 +111,12 @@ spec:
     #  default: .ipinfo.io .google.com
     ### allow YouTube
     #  default: .youtube.com .googlevideo.com .ytimg.com
+    ### allow specific domains and methods using squidExtraConf blob
+    ### NOTE: this only applies to http reuqests, not SSL.
+    #- name: squidExtraAcl
+    #  default: |
+    #    acl get_domains method GET AND dstdomain .ipinfo.io .google.com
+    #    http_access allow get_domains
 
     ###
     # Xpra appParam features

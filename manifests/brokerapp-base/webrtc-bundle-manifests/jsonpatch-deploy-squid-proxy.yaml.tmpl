@@ -103,6 +103,8 @@
       ssl_bump splice step3 allowed_https_sites
       ssl_bump terminate step2 all
 
+      ${SQUID_EXTRA_ACL}
+
       http_access deny all
       {{- else}}
       ssl_bump none localhost
@@ -133,6 +135,8 @@
     env:
       - name: SQUID_EXTRA_CONF
         value: {{ default "" .AppParams.squidExtraConf | quote }}
+      - name: SQUID_EXTRA_ACL
+        value: {{ default "" .AppParams.squidExtraAcl | quote }}
 
 ###
 # Add init container to redirect ports for transparent proxy
