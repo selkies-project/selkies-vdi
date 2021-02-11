@@ -387,7 +387,7 @@ class WebRTCDemo {
      * @param {String} message
      */
     sendDataChannelMessage(message) {
-        if (this._send_channel.readyState === 'open') {
+        if (this._send_channel !== null && this._send_channel.readyState === 'open') {
             this._send_channel.send(message);
         } else {
             this._setError("attempt to send data channel message before channel was open.");
