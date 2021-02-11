@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.7
+FROM python:3.7 as build
 
-ARG GIT_TAG=3941ee66e59392a869b2954937e85e8d204a58c5
+ARG GIT_TAG=e1de93cf40677220a516e85969b8c7626cb66988
 
 RUN \
-    git clone https://github.com/centricular/gstwebrtc-demos.git && \
-    cd gstwebrtc-demos/signalling && \
+    git clone https://gitlab.freedesktop.org/gstreamer/gst-examples.git && \
+    cd gst-examples/webrtc/signalling && \
     git checkout ${GIT_TAG} && \
-    pip3 install --user websockets && \
     cp -R * /opt/
+
+FROM python:3-alpine
 
 WORKDIR /opt/
 
-CMD python -u ./simple-server.py --port 8080 --disable-ssl
+COPY --from=build /opt/simple_server.py ./
+
+RUN pip3 install websockets
+
+CMD python3 -u simple_server.py --addr 0.0.0.0 --port 8080 --disable-ssl
