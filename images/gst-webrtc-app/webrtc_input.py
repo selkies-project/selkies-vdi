@@ -18,6 +18,7 @@ import pynput
 import uinput
 import os
 import msgpack
+import re
 import subprocess
 from subprocess import Popen, PIPE, STDOUT
 import socket
@@ -117,6 +118,8 @@ class WebRTCInput:
             'unhandled on_client_fps')
         self.on_client_latency = lambda latency: logger.warn(
             'unhandled on_client_latency')
+        self.on_resize = lambda res: logger.warn(
+            'unhandled on_resize')
 
     def __mouse_connect(self):
         if self.uinput_mouse_socket_path:
@@ -458,6 +461,17 @@ class WebRTCInput:
                 logger.info("set clipboard content, length: %d" % len(data))
             else:
                 logger.warning("rejecting clipboard write because inbound clipboard is disabled.")
+        elif toks[0] == "r":
+            # resize event
+            res = toks[1]
+            if not re.match(re.compile(r'^\d+x\d+$'), res):
+                logger.warning("rejecting resolution change: %s" % res)
+            # Make sure resolution is divisible by 2
+            x, y = [int(i) + int(i)%2 for i in res.split("x")]
+            # scale to min/max size for resolution
+            x = min(3840, max(100, x))
+            y = min(2160, max(100, y))
+            self.on_resize("%dx%d" % (x, y))
         elif toks[0] == "_arg_fps":
             # Set framerate
             fps = int(toks[1])

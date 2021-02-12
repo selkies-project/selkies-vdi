@@ -16,6 +16,11 @@
 
 set -ex
 
+function finish {
+    rm -f /var/run/appconfig/xserver_ready
+}
+trap finish EXIT
+
 # Symlink for X11 virtual terminal
 ln -sf /dev/ptmx /dev/tty7
 
@@ -31,10 +36,9 @@ dbus-uuidgen | tee /var/lib/dbus/machine-id
 mkdir -p /var/run/dbus
 dbus-daemon --config-file=/usr/share/dbus-1/system.conf --print-address
 
-if [[ "${X11_DRIVER:-"nvidia"}" == "xdummy" ]]; then
-    echo "Starting X11 server with Xdummy video driver."
-    nohup Xorg ${DISPLAY} -noreset -dpi 96 -novtswitch -sharevts -nolisten tcp +extension MIT-SHM +extension GLX +extension RANDR +extension RENDER vt7 -config /etc/X11/xorg-xpra.conf &
-else
+export RESOLUTION=${RESOLUTION:-"1920x1080"}
+export PID=$$
+if [[ "${X11_DRIVER:-"nvidia"}" == "nvidia" ]]; then
     echo "Starting X11 server with NVIDIA GPU driver."
 
     # Find PCI bus ID and update Xorg.conf
@@ -48,20 +52,40 @@ else
 
     # Start xorg in background
     # The MIT-SHM extension here is important to achieve full frame rates
-    nohup Xorg ${DISPLAY} -novtswitch -sharevts -nolisten tcp +extension MIT-SHM vt7 &
+    Xorg ${DISPLAY} -novtswitch -sharevts -nolisten tcp +extension MIT-SHM vt7 &
+    PID=$!
+else
+    echo "Starting X11 server with software video driver."
+    Xvfb -screen ${DISPLAY} 8192x4096x24 +extension RANDR +extension GLX +extension MIT-SHM -nolisten tcp -noreset -shmem &
+    PID=$!
 fi
 
 # Wait for X11 to start
+set +x
 echo "Waiting for X socket"
 until [[ -S /tmp/.X11-unix/X${DISPLAY/:/} ]]; do sleep 1; done
 echo "X socket is ready"
+set -x
 
 echo "Waiting for X11 startup"
 until xhost + >/dev/null 2>&1; do sleep 1; done
 echo "X11 startup complete"
 
+if [[ "${X11_DRIVER:-"nvidia"}" != "nvidia" ]]; then
+    # Add default modes
+    for res in 1280x720 1920x1080 2560x1440; do
+        echo "INFO: Adding default mode: $res"
+        IFS="x" read -ra toks <<< "$res"
+        xrandr --newmode ${res} 0.00 ${toks[0]} 0 0 0 ${toks[1]} 0 0 0 -hsync +vsync
+        xrandr --addmode screen ${res}
+    done
+fi
+
+echo "INFO: Setting mode to: ${RESOLUTION}"
+xrandr -s "${RESOLUTION}"
+
 # Notify sidecar containers
 touch /var/run/appconfig/xserver_ready
 
-# Foreground process, tail logs
-tail -n 1000 -F /var/log/Xorg.${DISPLAY/:/}.log
+# Wait for background process
+wait $PID

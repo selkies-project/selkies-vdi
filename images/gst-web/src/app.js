@@ -326,6 +326,10 @@ webrtc.onconnectionstatechange = (state) => {
 };
 
 webrtc.ondatachannelopen = () => {
+    app.windowResolution = webrtc.input.getWindowResolution();
+    console.log(`Initial window resolution: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
+    webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
+
     var video_bit_rate = app.videoBitRate || (parseInt(window.localStorage.getItem("videoBitRate")) || 2000)
     console.log("Setting initial video bit rate to: " + video_bit_rate);
     try {
@@ -376,6 +380,7 @@ webrtc.input.onfullscreenhotkey = () => {
 webrtc.input.onresizeend = () => {
     app.windowResolution = webrtc.input.getWindowResolution();
     console.log(`Window size changed: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
+    webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
 }
 
 webrtc.onplayvideorequired = () => {
