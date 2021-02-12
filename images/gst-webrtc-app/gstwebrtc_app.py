@@ -26,7 +26,7 @@ from gi.repository import GstWebRTC
 from gi.repository import GstSdp
 
 logger = logging.getLogger("gstwebrtc_app")
-
+logger.setLevel(logging.INFO)
 
 class GSTWebRTCAppError(Exception):
     pass

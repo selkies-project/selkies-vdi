@@ -108,7 +108,7 @@ class Input {
         // internal variables used by resize start/end functions.
         this._rtime = null;
         this._rtimeout = false;
-        this._rdelta = 200;
+        this._rdelta = 500;
     }
 
     /**

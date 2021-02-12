@@ -37,4 +37,8 @@ fi
 while true; do
     python3 /opt/app/main.py ${EXTRA_FLAGS}
     sleep 1
+
+    echo "Waiting for X server"
+    until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
+    echo "X server is ready"
 done

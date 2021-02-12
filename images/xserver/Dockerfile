@@ -29,12 +29,17 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xserver-xorg-video-dummy \
         xinput \
         evtest \
-        x11vnc \
         socat \
+        xvfb \
         dbus-x11 \
         libxrandr-dev \
         pciutils && \
     rm -rf /var/lib/apt/lists/
+
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /tini
+RUN chmod +x /tini
 
 # Remove libnss-systemd because it causes the dbus-daemon startup to hang for 90s.
 RUN apt remove -y libnss-systemd
@@ -54,4 +59,4 @@ RUN chmod +x /entrypoint*.sh
 
 VOLUME /var/run/appconfig
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]

@@ -28,6 +28,7 @@ from webrtc_signalling import WebRTCSignalling, WebRTCSignallingErrorNoPeer
 from gstwebrtc_app import GSTWebRTCApp
 from gpu_monitor import GPUMonitor
 from metrics import Metrics
+from resize import resize_display
 
 
 def fetch_coturn(uri, user, auth_header_name):
@@ -170,6 +171,9 @@ if __name__ == '__main__':
     parser.add_argument('--encoder',
                         default=os.environ.get('WEBRTC_ENCODER', 'nvh264enc'),
                         help='gstreamer encoder plugin to use')
+    parser.add_argument('--enable_resize', action='store_true',
+                        default=os.environ.get('WEBRTC_ENABLE_RESIZE', 'false'),
+                        help='Enable dynamic resizing to match browser size')
     parser.add_argument('--metrics_port',
                         default=os.environ.get('METRICS_PORT', '8000'),
                         help='port to start metrics server on')
@@ -281,6 +285,9 @@ if __name__ == '__main__':
 
     # Send clipboard contents when requested
     webrtc_input.on_clipboard_read = lambda data: app.send_clipboard_data(data)
+
+    if args.enable_resize == 'true':
+        webrtc_input.on_resize = lambda res: resize_display(res) and app.send_reload_window()
 
     # Write framerate arg to local config and then tell client to reload.
     webrtc_input.on_set_fps = lambda fps: set_json_app_argument(args.json_config, "framerate", fps) or app.send_reload_window() 
