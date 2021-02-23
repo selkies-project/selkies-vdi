@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2021 The Selkies Authors
 #
@@ -38,4 +38,5 @@ sed -i \
     -e 's|root.*/usr/share/nginx/html.*|alias /usr/share/nginx/html/;|g' \
   /etc/nginx/conf.d/default.conf
 
+echo "INFO: Starting web server"
 exec nginx -g 'daemon off;'

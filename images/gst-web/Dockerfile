@@ -16,7 +16,7 @@ FROM nginx:alpine
 
 # Install dependencies
 RUN \
-    apk add -u --no-cache imagemagick
+    apk add -u --no-cache imagemagick bash
 
 WORKDIR /usr/share/nginx/html
 
