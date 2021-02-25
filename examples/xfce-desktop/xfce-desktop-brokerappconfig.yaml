@@ -21,7 +21,7 @@ spec:
   name: xfce-desktop
   displayName: XFCE Desktop
   description: XFCE Cloud Shell desktop environment
-  icon: https://upload.wikimedia.org/wikipedia/commons/5/5b/Xfce_logo.svg
+  icon: https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Xfce_logo.svg/500px-Xfce_logo.svg.png
   
   # Change type to 'deployment' to run with reservation broker. 
   type: statefulset

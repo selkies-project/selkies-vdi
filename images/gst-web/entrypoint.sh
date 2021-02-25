@@ -21,14 +21,25 @@ sed -i \
     -e "s|PWA_APP_NAME|${PWA_APP_NAME:-WebRTC}|g" \
     -e "s|PWA_APP_PATH|${PWA_APP_PATH:-webrtc-desktop}|g" \
   /usr/share/nginx/html/manifest.json
+sed -i \
+  -e "s|PWA_CACHE|${PWA_APP_PATH:-webrtc-desktop}-pwa|g" \
+  /usr/share/nginx/html/sw.js
 
 if [[ -n "${PWA_ICON_URL}" ]]; then
   echo "INFO: Converting icon to PWA standard"
   if [[ "${PWA_ICON_URL}" =~ "data:image/png;base64" ]]; then
-    echo "${PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d | tee /usr/share/nginx/html/icon.png >/dev/null
+    echo "${PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d > /tmp/icon.png
   else
-    curl -s -L "${PWA_ICON_URL}" | \
-      convert -size 512x512 - /usr/share/nginx/html/icon.png
+    curl -s -L "${PWA_ICON_URL}" > /tmp/icon.png
+  fi
+  if [[ -e /tmp/icon.png ]]; then
+    echo "INFO: Creating PWA icon sizes"
+    convert /tmp/icon.png /usr/share/nginx/html/icon.png
+    rm -f /tmp/icon.png
+    echo "192x192 512x512" | tr ' ' '\n' | \
+      xargs -P4 -I{} convert -resize {} -size {} /usr/share/nginx/html/icon.png /usr/share/nginx/html/icon-{}.png || true
+  else
+    echo "WARN: failed to download PWA icon, PWA features may not be available: ${PWA_ICON_URL}"
   fi
 fi
 

@@ -7,10 +7,17 @@
     "background_color": "white",
     "theme_color": "white",
     "icons": [
-        {
-          "src": "icon.png",
-          "sizes": "72x72 96x96 128x128 256x256 512x512",
-          "purpose": "any maskable"
-        }
+      {
+        "src": "icon-192x192.png",
+        "sizes": "192x192",
+        "purpose": "any maskable",
+        "type": "image/png"
+      },
+      {
+        "src": "icon-512x512.png",
+        "sizes": "512x512",
+        "purpose": "any maskable",
+        "type": "image/png"
+      }
     ]
   }

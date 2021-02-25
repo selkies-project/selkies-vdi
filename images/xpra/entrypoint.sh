@@ -48,14 +48,19 @@ sudo sed -i \
 if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then
   echo "INFO: Converting icon to PWA standard"
   if [[ "${XPRA_PWA_ICON_URL}" =~ "data:image/png;base64" ]]; then
-    echo "${XPRA_PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d | sudo tee /usr/share/xpra/www/icon.png >/dev/null
+    echo "${XPRA_PWA_ICON_URL}" | cut -d ',' -f2 | base64 -d > /tmp/icon.png
   else
     curl -o /tmp/icon.png -s -f -L "${XPRA_PWA_ICON_URL}" || true
-    sudo convert -size 512x512 /tmp/icon.png /usr/share/xpra/www/icon.png || true
-    if [[ ! -f /usr/share/xpra/www/icon.png ]]; then
-      echo "WARN: failed to download PWA icon, PWA features may not be available: ${XPRA_PWA_ICON_URL}"
-    fi
+  fi
+  if [[ -e /tmp/icon.png ]]; then
+    echo "INFO: Creating PWA icon sizes"
+    sudo convert /tmp/icon.png /usr/share/xpra/www/icon.png || true
     rm -f /tmp/icon.png
+    for size in 192x192 512x512; do
+      sudo convert -resize ${size} -size ${size} /usr/share/xpra/www/icon.png /usr/share/xpra/www/icon-${size}.png || true
+    done
+  else
+    echo "WARN: failed to download PWA icon, PWA features may not be available: ${XPRA_PWA_ICON_URL}"
   fi
 fi
 
