@@ -22,6 +22,22 @@ spec:
   displayName: Xpra Desktop
   description: Xpra desktop example
   icon: https://xpra.org/trac/export/14219/xpra/trunk/osx/background.png
+
+  ###
+  # Optional list of regex users that are allowed to see this app.
+  # NOTE: Make sure to escape regex characters .^$*+?()[{\|
+  ###
+  #authorizedUsers:
+  # - "^.*@mydomain.org$"
+
+  ###
+  # Optional config map referecne to list of regex users that are allowed to see this app.
+  # Entries in config map data are one per line in regex syntax, lines that start with a # are ignored.
+  # NOTE: Make sure to escape regex characters .^$*+?()[{\|
+  ###
+  #authorization:
+  #  configMapRef:
+  #    name: selkies-app-allowed-org-users
   
   # Change type to 'deployment' to run with reservation broker. 
   type: statefulset
