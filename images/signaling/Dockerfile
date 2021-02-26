@@ -24,10 +24,14 @@ RUN \
 
 FROM python:3-alpine
 
+# Add Tini
+RUN apk add --no-cache tini
+
 WORKDIR /opt/
 
 COPY --from=build /opt/simple_server.py ./
 
 RUN pip3 install websockets
 
-CMD python3 -u simple_server.py --addr 0.0.0.0 --port 8080 --disable-ssl
+
+CMD /sbin/tini -- python3 -u simple_server.py --addr 0.0.0.0 --port 8080 --disable-ssl
