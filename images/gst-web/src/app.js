@@ -259,6 +259,12 @@ signalling.onstatus = (message) => {
 };
 signalling.onerror = (message) => { app.logEntries.push(applyTimestamp("[signalling] [ERROR] " + message)) };
 
+signalling.ondisconnect = () => {
+    console.log("signalling disconnected");
+    if (webrtc._send_channel.readyState == "closing")
+        document.location.reload();
+}
+
 // Send webrtc status and error messages to logs.
 webrtc.onstatus = (message) => { app.logEntries.push(applyTimestamp("[webrtc] " + message)) };
 webrtc.onerror = (message) => { app.logEntries.push(applyTimestamp("[webrtc] [ERROR] " + message)) };
