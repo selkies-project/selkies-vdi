@@ -13,6 +13,12 @@
 # limitations under the License.
 
 {{- if eq .AppSpec.Type "deployment" }}
+
+{{- $watchdogImage := printf "gcr.io/%s/webrtc-gpu-streaming-watchdog:latest" .ProjectID}}
+{{- if .AppParams.watchdogImage}}
+  {{- $watchdogImage = .AppParams.watchdogImage}}
+{{- end}}
+
 ###
 # TODO: figure out how to remove this service.
 # It's not needed with the deployment type brokerapp but is needed for templating patches.
@@ -147,7 +153,7 @@ spec:
         # Watchdog container
         ###
         - name: watchdog
-          image: {{printf "gcr.io/%s/webrtc-gpu-streaming-watchdog:latest" .ProjectID}}
+          image: {{$watchdogImage}}
           env: []
           volumeMounts:
             - name: x11
