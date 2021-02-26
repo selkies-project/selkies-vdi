@@ -30,4 +30,5 @@ resources:
   - gpu-sharing.yaml
   # Device plugin to allow non-privileged containers to use /dev/uinput
   # Required for virtual mouse (capture) and gamepad support.
-  - uinput-device-plugin.yaml
+  # TODO: This appears to have a memory leak, disable until resolved.
+  #- uinput-device-plugin.yaml
