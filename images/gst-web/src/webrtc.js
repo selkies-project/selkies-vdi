@@ -148,7 +148,7 @@ class WebRTCDemo {
          * @type {Input}
          */
         this.input = new Input(element, (data) => {
-            if (this._connected) {
+            if (this._connected && this._send_channel !== null && this._send_channel.readyState === 'open') {
                 this._setDebug("data channel: " + data);
                 this._send_channel.send(data);
             }
@@ -370,6 +370,9 @@ class WebRTCDemo {
 
             case "disconnected":
                 this._setError("Peer connection disconnected");
+                if (this._send_channel !== null && this._send_channel.readyState === 'open') {
+                    this._send_channel.close();
+                }
                 this.element.load();
                 break;
 

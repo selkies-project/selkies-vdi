@@ -90,6 +90,12 @@ class WebRTCDemoSignalling {
         this.onsdp = null;
 
         /**
+         * @event
+         * @type {function}
+         */
+        this.ondisconnect = null;
+
+        /**
          * @type {string}
          */
         this.state = 'disconnected';
@@ -244,6 +250,7 @@ class WebRTCDemoSignalling {
         if (this.state !== 'connecting') {
             this.state = 'disconnected';
             this._setError("Server closed connection, reconnecting.");
+            if (this.ondisconnect !== null) this.ondisconnect();
             setTimeout(() => {
                 this.connect();
             }, 3000);
