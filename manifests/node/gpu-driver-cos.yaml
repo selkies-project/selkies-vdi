@@ -126,6 +126,7 @@ spec:
               cpu: 0.15
           securityContext:
             privileged: true
+          command: ["/entrypoint.sh"]
           env:
             - name: NVIDIA_INSTALL_DIR_HOST
               value: /home/kubernetes/bin/nvidia
@@ -133,6 +134,8 @@ spec:
               value: /usr/local/nvidia
             - name: ROOT_MOUNT_DIR
               value: /root
+            - name: NVIDIA_DRIVER_VERSION
+              value: "450.80.02"
           volumeMounts:
             - name: nvidia-install-dir-host
               mountPath: /usr/local/nvidia
