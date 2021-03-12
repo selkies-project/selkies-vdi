@@ -1,0 +1,11 @@
+--- guacamole-keyboard.js	2021-03-12 20:38:38.513581535 +0000
++++ guacamole-keyboard.js2	2021-03-12 20:39:26.545544736 +0000
+@@ -745,7 +745,7 @@
+                 if (!no_repeat[keysym])
+                     key_repeat_timeout = window.setTimeout(function() {
+                         key_repeat_interval = window.setInterval(function() {
+-                            guac_keyboard.onkeyup(keysym);
++                            //guac_keyboard.onkeyup(keysym);
+                             guac_keyboard.onkeydown(keysym);
+                         }, 50);
+                     }, 500);

@@ -16,9 +16,21 @@ FROM nginx:alpine
 
 # Install dependencies
 RUN \
-    apk add -u --no-cache imagemagick bash
+    apk add -u --no-cache imagemagick bash patch
 
 WORKDIR /usr/share/nginx/html
+
+# Download and patch Guacamole Keyboard module.
+COPY fix-guacamole-keyboard-repeat.patch /tmp/
+RUN curl -o guacamole-keyboard.js -L https://raw.githubusercontent.com/padarom/guacamole-common-js/glyptodon/1.4/guacamole-common-js/src/main/webapp/modules/Keyboard.js && \
+    patch -p0 < /tmp/fix-guacamole-keyboard-repeat.patch && \
+    rm /tmp/fix-guacamole-keyboard-repeat.patch
+
+# Download CDN dependencies
+RUN curl -o webrtc-adapter.js -L https://raw.githubusercontent.com/webrtcHacks/adapter/v7.7.1/release/adapter.js
+RUN curl -o vue.min.js -L https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.9/vue.min.js
+RUN curl -o vuetify.min.js -L https://cdnjs.cloudflare.com/ajax/libs/vuetify/1.5.14/vuetify.min.js
+RUN curl -o vue-spinner.min.js -L https://cdn.jsdelivr.net/npm/vue-spinner@1.0.3/dist/vue-spinner.min.js
 
 COPY src/* ./
 
