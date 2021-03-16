@@ -300,8 +300,13 @@ class Input {
             mouseMultiY: frameH / vpHeight,
             mouseOffsetX: Math.max((windowW - vpWidth) / 2.0, 0),
             mouseOffsetY: Math.max((windowH - vpHeight) / 2.0, 0),
-            centerOffsetX: (document.documentElement.clientWidth - this.element.offsetWidth) / 2.0,
-            centerOffsetY: (document.documentElement.clientHeight - this.element.offsetHeight) / 2.0,
+
+            // TODO: determine root cause as to why this broke the offsets when window is maximized.
+            //centerOffsetX: (document.documentElement.clientWidth - this.element.offsetWidth) / 2.0,
+            //centerOffsetY: (document.documentElement.clientHeight - this.element.offsetHeight) / 2.0,
+            centerOffsetX: 0,
+            centerOffsetY: 0,
+
             scrollX: window.scrollX,
             scrollY: window.scrollY,
             frameW,
