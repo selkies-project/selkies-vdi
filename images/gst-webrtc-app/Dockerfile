@@ -20,7 +20,7 @@ RUN \
     pip3 install websockets xlib gputil python-uinput prometheus_client msgpack pynput
 
 RUN \
-    apt-get update && apt-get install -y \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         sudo \
         udev \
         xclip \
@@ -30,7 +30,12 @@ RUN \
         jq \
         x11-xserver-utils
 
-# Build app
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /tini
+RUN chmod +x /tini
+
+# Copy app
 WORKDIR /opt/app
 COPY *.py debug.sh /opt/app/
 
@@ -40,4 +45,4 @@ ENV PATH=/usr/local/nvidia/bin:${PATH}
 COPY entrypoint.sh record.sh /
 RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]

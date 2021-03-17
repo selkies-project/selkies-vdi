@@ -234,6 +234,7 @@
               <p>
                 <v-btn color="primary" v-if="!audioEnabled" small v-on:click="audioEnabled=true">Enable Audio</v-btn>
                 <v-btn color="primary" v-else small v-on:click="audioEnabled=false">Disable Audio</v-btn>
+                <v-switch v-model="resizeRemote" :label="`Resize remote to fit window: ${resizeRemote.toString()}`"></v-switch>
               </p>
               <p>
                 Debugging

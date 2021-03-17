@@ -522,6 +522,27 @@ class WebRTCDemo {
         this.signalling.connect();
     }
 
+    /**
+     * Attempts to reset the webrtc connection by:
+     *   1. Closing the data channel gracefully.
+     *   2. Closing the RTC Peer Connection gracefully.
+     *   3. Reconnecting to the signaling server.
+     */
+    reset() {
+        var signalState = this.peerConnection.signalingState;
+        if (this._send_channel.readyState === "open") {
+            this._send_channel.close();
+        }
+        this.peerConnection.close();
+        if (signalState !== "stable") {
+            setTimeout(() => {
+                this.connect();
+            }, 3000);
+        } else {
+            this.connect();
+        }
+    }
+
     capture_setup() {
         this.capture_canvas = document.getElementById("capture");
         this.capture_context = this.capture_canvas.getContext('2d');
