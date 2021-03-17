@@ -53,7 +53,13 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         xfwm4 \
         xfce4-terminal \
         gdebi-core \
-        xserver-xephyr
+        xserver-xephyr \
+        git
+
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /tini
+RUN chmod +x /tini
 
 # Printer support
 RUN sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
@@ -73,6 +79,15 @@ RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
     sudo apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         python3-requests \
         xpra
+
+# Install Xpra HTML5
+ARG XPRA_HTML5_VERSION="89552aefb1c056328ad6e6efbf5aee6111aafe92"
+RUN cd /tmp/ && \
+    git clone https://github.com/Xpra-org/xpra-html5 && \
+    cd xpra-html5 && git checkout ${XPRA_HTML5_VERSION} && \
+    sudo python3 ./setup.py install /usr/share/xpra/www && \
+    cd /tmp/ && \
+    rm -Rf /tmp/xpra-html5
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
@@ -146,4 +161,4 @@ RUN \
     rm -f Window.js.* && \
     gzip -c Window.js > Window.js.gz
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]
