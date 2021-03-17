@@ -80,7 +80,7 @@ echo "Starting Xpra"
 sudo mkdir -p /var/log/xpra
 sudo chmod 777 /var/log/xpra
 (xpra ${XPRA_START:-"start"} ${DISPLAY} \
-    --resize-display=no \
+    --resize-display=yes \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
     --html=on \
@@ -131,13 +131,8 @@ xhost +
 touch /var/run/appconfig/xserver_ready
 touch /var/run/appconfig/xpra_ready
 
-# Start script to force the window size of full desktop environments like xfdesktop
-# to match the client window size.
-/desktop_resizer.sh 2>&1 | tee /tmp/desktop-resizer.log >/dev/null &
-DRPID=$!
-
 wait $PID
 
-kill -9 $DRPID
+#kill -9 $DRPID
 
 sleep 2

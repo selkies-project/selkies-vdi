@@ -184,7 +184,7 @@ spec:
   #- name: XPRA_OPEN_FILES
   #  value: "on"
   #- name: XPRA_HTML5_DEFAULT_SETTINGS
-  #  value: "floating_menu = true\\nvideo = false\\nsound = false\\nencoding = jpeg\\nkeyboard = false"
+  #  value: "floating_menu = true\\nvideo = false\\nsound = false\\nencoding = jpeg\\nauto_fullscreen_desktop_class = xfdesktop\\nkeyboard = false"
   defaultTier: standard
   nodeTiers:
     - name: gpu

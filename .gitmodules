@@ -1,3 +1,6 @@
 [submodule "images/gst-web/guacamole-client"]
 	path = images/gst-web/guacamole-client
 	url = https://github.com/selkies-project/guacamole-client.git
+[submodule "images/xpra/xpra-html5"]
+	path = images/xpra/xpra-html5
+	url = https://github.com/selkies-project/xpra-html5.git
