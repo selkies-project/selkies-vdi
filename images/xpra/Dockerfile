@@ -80,14 +80,15 @@ RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
         python3-requests \
         xpra
 
-# Install Xpra HTML5
-ARG XPRA_HTML5_VERSION="89552aefb1c056328ad6e6efbf5aee6111aafe92"
-RUN cd /tmp/ && \
-    git clone https://github.com/Xpra-org/xpra-html5 && \
-    cd xpra-html5 && git checkout ${XPRA_HTML5_VERSION} && \
-    sudo python3 ./setup.py install /usr/share/xpra/www && \
-    cd /tmp/ && \
-    rm -Rf /tmp/xpra-html5
+# Install Xpra HTML5 client from forked submodule
+# NOTE: installer depends on working non-submodule get repo.
+COPY xpra-html5 /opt/xpra-html5
+RUN cd /opt/xpra-html5 && \
+    git config --global user.email "selkies@docker" && \
+    git config --global user.name "Selkies Builder" && \
+    git init && git checkout -b selkies-patches && \
+    git add . && git commit -m "selkies-patches" && \
+    sudo python3 ./setup.py install /usr/share/xpra/www
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
@@ -113,33 +114,10 @@ RUN usermod -a -G lpadmin app
 RUN sudo mkdir -p /run/user/1000 && sudo chown 1000:1000 /run/user/1000 && \
     sudo mkdir -p /run/xpra && sudo chown 1000:1000 /run/xpra
 
-COPY entrypoint.sh desktop_resizer.sh /
-
 # Create empty .menu file for xdg menu.
 RUN \
     mkdir -p /etc/xdg/menus && \
     echo "<Menu></Menu>" > /etc/xdg/menus/kde-debian-menu.menu
-
-# Patch to add full screen keyboard lock
-RUN \
-    sed -i 's|</body>|    <script type="application/javascript" src="js/keyboard-lock.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
-    rm -f /usr/share/xpra/www/index.html.*
-
-COPY patch-fullscreen-keyboard-lock.js /usr/share/xpra/www/js/keyboard-lock.js
-
-# Patch to add HTML5 printing fix
-RUN \
-    sed -i 's|</body>|        <script type="application/javascript" src="js/fix-printing.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
-    rm -f /usr/share/xpra/www/index.html.*
-
-COPY patch-fix-printing.js /usr/share/xpra/www/js/fix-printing.js
-
-# Patch to add HTML5 auto fullscreen feature
-RUN \
-    sed -i 's|</body>|        <script type="application/javascript" src="js/auto-fullscreen.js"></script>\n    </body>|' /usr/share/xpra/www/index.html && \
-    rm -f /usr/share/xpra/www/index.html.*
-
-COPY patch-auto-fullscreen.js /usr/share/xpra/www/js/auto-fullscreen.js
 
 # Patch HTML for PWA
 RUN \ 
@@ -154,11 +132,5 @@ RUN \
 COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
 COPY pwa/sw.js /usr/share/xpra/www/sw.js
 
-# Patch to fix broken minimize action
-RUN \
-    cd /usr/share/xpra/www/js && \
-    sed -i 's|this.wid,True|this.wid,true|g' Window.js && \
-    rm -f Window.js.* && \
-    gzip -c Window.js > Window.js.gz
-
+COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]
