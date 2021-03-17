@@ -249,11 +249,8 @@ class WebRTCDemoSignalling {
     _onServerClose() {
         if (this.state !== 'connecting') {
             this.state = 'disconnected';
-            this._setError("Server closed connection, reconnecting.");
+            this._setError("Server closed connection.");
             if (this.ondisconnect !== null) this.ondisconnect();
-            setTimeout(() => {
-                this.connect();
-            }, 3000);
         }
     }
 

@@ -97,6 +97,7 @@ class WebRTCInput:
 
         self.enable_clipboard = enable_clipboard
 
+        self.keyboard = None
         self.mouse = None
         self.joystick = None
         self.xdisplay = None
@@ -114,12 +115,17 @@ class WebRTCInput:
             'unhandled on_set_fps')
         self.on_set_enable_audio = lambda enable_audio: logger.warn(
             'unhandled on_set_enable_audio')
+        self.on_set_enable_resize = lambda enable_resize, res: logger.warn(
+            'unhandled on_set_enable_resize')
         self.on_client_fps = lambda fps: logger.warn(
             'unhandled on_client_fps')
         self.on_client_latency = lambda latency: logger.warn(
             'unhandled on_client_latency')
         self.on_resize = lambda res: logger.warn(
             'unhandled on_resize')
+
+    def __keyboard_connect(self):
+        self.keyboard = pynput.keyboard.Controller()
 
     def __mouse_connect(self):
         if self.uinput_mouse_socket_path:
@@ -182,6 +188,8 @@ class WebRTCInput:
         """
 
         self.xdisplay = display.Display()
+
+        self.__keyboard_connect()
 
         # Clear any stuck modifier keys
         self.reset_keyboard()
@@ -277,13 +285,11 @@ class WebRTCInput:
             down {bool} -- toggle key down or up (default: {True})
         """
 
-        keycode = self.xdisplay.keysym_to_keycode(keysym)
+        keycode = pynput.keyboard.KeyCode(keysym)
         if down:
-            ext.xtest.fake_input(self.xdisplay, X.KeyPress, keycode)
+            self.keyboard.press(keycode)
         else:
-            ext.xtest.fake_input(self.xdisplay, X.KeyRelease, keycode)
-
-        self.xdisplay.sync()
+            self.keyboard.release(keycode)
 
     def send_x11_mouse(self, x, y, button_mask, relative=False):
         """Sends mouse events to the X server.
@@ -465,13 +471,10 @@ class WebRTCInput:
             # resize event
             res = toks[1]
             if not re.match(re.compile(r'^\d+x\d+$'), res):
-                logger.warning("rejecting resolution change: %s" % res)
+                logger.warning("rejecting resolution change, invalid WxH resolution: %s" % res)
             # Make sure resolution is divisible by 2
-            x, y = [int(i) + int(i)%2 for i in res.split("x")]
-            # scale to min/max size for resolution
-            x = min(3840, max(100, x))
-            y = min(2160, max(100, y))
-            self.on_resize("%dx%d" % (x, y))
+            w, h = [int(i) + int(i)%2 for i in res.split("x")]
+            self.on_resize("%dx%d" % (w, h))
         elif toks[0] == "_arg_fps":
             # Set framerate
             fps = int(toks[1])
@@ -482,6 +485,24 @@ class WebRTCInput:
             enabled = toks[1].lower() == "true"
             logger.info("Setting enable_audio to: %s" % str(enabled))
             self.on_set_enable_audio(enabled)
+        elif toks[0] == "_arg_resize":
+            if len(toks) != 3:
+                logger.error("invalid _arg_resize commnad, expected 2 arguments <enabled>,<resolution>")
+            else:
+                # Set resizing enabled
+                enabled = toks[1].lower() == "true"
+                logger.info("Setting enable_resize to : %s" % str(enabled))
+
+                res = toks[2]
+                if re.match(re.compile(r'^\d+x\d+$'), res):
+                    # Make sure resolution is divisible by 2
+                    w, h = [int(i) + int(i)%2 for i in res.split("x")]
+                    enable_res = "%dx%d" % (w, h)
+                else:
+                    logger.warning("rejecting enable resize with resolution change to invalid resolution: %s" % res)
+                    enable_res = None
+
+                self.on_set_enable_resize(enabled, enable_res)
         elif toks[0] == "_f":
             # Reported FPS from client.
             fps = int(toks[1])

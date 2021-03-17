@@ -125,6 +125,8 @@ def set_json_app_argument(config_path, key, value):
     # Save the json file
     json.dump(json_data, open(config_path, 'w'))
 
+    return True
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--json_config',
@@ -172,7 +174,7 @@ if __name__ == '__main__':
                         default=os.environ.get('WEBRTC_ENCODER', 'nvh264enc'),
                         help='gstreamer encoder plugin to use')
     parser.add_argument('--enable_resize', action='store_true',
-                        default=os.environ.get('WEBRTC_ENABLE_RESIZE', 'false'),
+                        default=os.environ.get('WEBRTC_ENABLE_RESIZE', 'true'),
                         help='Enable dynamic resizing to match browser size')
     parser.add_argument('--metrics_port',
                         default=os.environ.get('METRICS_PORT', '8000'),
@@ -191,6 +193,8 @@ if __name__ == '__main__':
                     args.framerate = int(v)
                 if k == "enable_audio":
                     args.enable_audio = str((str(v).lower() == 'true')).lower()
+                if k == "enable_resize":
+                    args.enable_resize = str((str(v).lower() == 'true')).lower()
                 if k == "encoder":
                     args.ecoder = v.lower()
         except Exception as e:
@@ -235,8 +239,13 @@ if __name__ == '__main__':
     stun_server, turn_servers = fetch_coturn(
         args.coturn_web_uri, args.coturn_web_username, args.coturn_auth_header_name)
 
+    # Extract args
+    enable_audio = args.enable_audio == "true"
+    enable_resize = args.enable_resize == "true"
+    curr_fps = int(args.framerate)
+
     # Create instance of app
-    app = GSTWebRTCApp(stun_server, turn_servers, args.enable_audio == "true", int(args.framerate), args.encoder)
+    app = GSTWebRTCApp(stun_server, turn_servers, args.enable_audio == "true", curr_fps, args.encoder)
 
     # [END main_setup]
 
@@ -265,6 +274,7 @@ if __name__ == '__main__':
 
         app.send_framerate(app.framerate)
         app.send_audio_enabled(app.audio)
+        app.send_resize_enabled(enable_resize)
 
     app.on_data_open = lambda: data_channel_ready()
 
@@ -286,14 +296,31 @@ if __name__ == '__main__':
     # Send clipboard contents when requested
     webrtc_input.on_clipboard_read = lambda data: app.send_clipboard_data(data)
 
-    if args.enable_resize == 'true':
-        webrtc_input.on_resize = lambda res: resize_display(res) and app.send_reload_window()
-
     # Write framerate arg to local config and then tell client to reload.
-    webrtc_input.on_set_fps = lambda fps: set_json_app_argument(args.json_config, "framerate", fps) or app.send_reload_window() 
+    webrtc_input.on_set_fps = lambda fps: set_json_app_argument(args.json_config, "framerate", fps) and (fps != curr_fps) and app.send_reload_window() 
 
     # Write audio enabled arg to local config and then tell client to reload.
-    webrtc_input.on_set_enable_audio = lambda enabled: set_json_app_argument(args.json_config, "enable_audio", enabled) or app.send_reload_window()
+    webrtc_input.on_set_enable_audio = lambda enabled: set_json_app_argument(args.json_config, "enable_audio", enabled) and (enable != enable_audio) and app.send_reload_window()
+
+    # Initial binding of enable resize handler.
+    if enable_resize:
+        webrtc_input.on_resize = lambda res: resize_display(res) and app.send_reload_window()
+
+    # Enable resize with resolution handler
+    def enable_resize_handler(enabled, enable_res):
+        set_json_app_argument(args.json_config, "enable_resize", enabled)
+        if enabled:
+            # Bind the handler
+            webrtc_input.on_resize = lambda res: resize_display(res) and app.send_reload_window()
+
+            # Trigger resize and reload if it changed.
+            if resize_display(enable_res):
+                app.send_reload_window()
+        else:
+            logging.info("removing handler for on_resize")
+            webrtc_input.on_resize = lambda res: logging.warning("remote resize is disabled, skipping resize to %s" % res)
+
+    webrtc_input.on_set_enable_resize = enable_resize_handler
 
     # Send client FPS to metrics
     webrtc_input.on_client_fps = lambda fps: metrics.set_fps(fps)

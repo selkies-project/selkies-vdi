@@ -101,6 +101,7 @@ var app = new Vue({
             gpuLoad: 0,
             gpuMemoryTotal: 0,
             gpuMemoryUsed: 0,
+            resizeRemote: (window.localStorage.getItem("resizeRemote") === "true"),
             debug: (window.localStorage.getItem("debug") === "true"),
             turnSwitch: (window.localStorage.getItem("turnSwitch") === "true"),
             publishingAllowed: false,
@@ -201,6 +202,12 @@ var app = new Vue({
             console.log("audio enabled changed from " + oldValue + " to " + newValue);
             if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_audio,' + newValue);
         },
+        resizeRemote(newValue, oldValue) {
+            console.log("resize remote changed from " + oldValue + " to " + newValue);
+            app.windowResolution = webrtc.input.getWindowResolution();
+            var res = app.windowResolution[0] + "x" + app.windowResolution[1];
+            if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_resize,' + newValue + "," + res);
+        },
         audioBitRate(newValue) {
             webrtc.sendDataChannelMessage('ab,' + newValue);
             window.localStorage.setItem("audioBitRate", newValue.toString());
@@ -261,8 +268,8 @@ signalling.onerror = (message) => { app.logEntries.push(applyTimestamp("[signall
 
 signalling.ondisconnect = () => {
     console.log("signalling disconnected");
-    if (webrtc._send_channel.readyState == "closing")
-        document.location.reload();
+    app.status = 'connecting';
+    webrtc.reset();
 }
 
 // Send webrtc status and error messages to logs.
@@ -425,12 +432,15 @@ webrtc.onsystemaction = (action) => {
     webrtc._setStatus("Executing system action: " + action);
     if (action === 'reload') {
         setTimeout(() => {
-            document.location.reload();
+            // trigger webrtc.reset() by disconnecting from the signalling server.
+            signalling.disconnect();
         }, 700);
     } else if (action.startsWith('framerate')) {
         app.videoFramerate = parseInt(action.split(",")[1]);
     } else if (action.startsWith('audio')) {
         app.audioEnabled = (action.split(",")[1].toLowerCase() === 'true');
+    } else if (action.startsWith('resize')) {
+        app.resizeRemote = (action.split(",")[1].toLowerCase() === 'true');
     } else {
         webrtc._setStatus('Unhandled system action: ' + action);
     }

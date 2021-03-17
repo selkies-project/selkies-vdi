@@ -737,6 +737,14 @@ class GSTWebRTCApp:
         self.__send_data_channel_message(
             "system", {"action": "audio,"+str(audio_enabled)})
 
+    def send_resize_enabled(self, resize_enabled):
+        """Sends the current resize enabled state
+        """
+
+        logger.info("sending resize enabled state")
+        self.__send_data_channel_message(
+            "system", {"action": "resize,"+str(resize_enabled)})
+
     def is_data_channel_ready(self):
         """Checks to see if the data channel is open.
 
