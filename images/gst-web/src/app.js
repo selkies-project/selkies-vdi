@@ -102,6 +102,7 @@ var app = new Vue({
             gpuMemoryTotal: 0,
             gpuMemoryUsed: 0,
             resizeRemote: (window.localStorage.getItem("resizeRemote") === "true"),
+            scaleLocal: (window.localStorage.getItem("scaleLocal") === "true"),
             debug: (window.localStorage.getItem("debug") === "true"),
             turnSwitch: (window.localStorage.getItem("turnSwitch") === "true"),
             publishingAllowed: false,
@@ -207,6 +208,16 @@ var app = new Vue({
             app.windowResolution = webrtc.input.getWindowResolution();
             var res = app.windowResolution[0] + "x" + app.windowResolution[1];
             if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_resize,' + newValue + "," + res);
+        },
+        scaleLocal(newValue, oldValue) {
+            console.log("resize remote changed from " + oldValue + " to " + newValue);
+            if (oldValue !== null && newValue !== oldValue) {
+                if (newValue === true) {
+                    webrtc.element.setAttribute("class", "video scale");
+                } else {
+                    webrtc.element.setAttribute("class", "video");
+                }
+            }
         },
         audioBitRate(newValue) {
             webrtc.sendDataChannelMessage('ab,' + newValue);
