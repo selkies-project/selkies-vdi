@@ -30,10 +30,12 @@
       height: 100%;
     }
 
-    .video-container video {
+    .video {
+      position: absolute
+    }
+    .scale {
       width: 100%;
       height: 100%;
-      position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -235,6 +237,7 @@
                 <v-btn color="primary" v-if="!audioEnabled" small v-on:click="audioEnabled=true">Enable Audio</v-btn>
                 <v-btn color="primary" v-else small v-on:click="audioEnabled=false">Disable Audio</v-btn>
                 <v-switch v-model="resizeRemote" :label="`Resize remote to fit window: ${resizeRemote.toString()}`"></v-switch>
+                <v-switch v-model="scaleLocal" :label="`Scale to fit window: ${scaleLocal.toString()}`"></v-switch>
               </p>
               <p>
                 Debugging
@@ -276,7 +279,7 @@
       </v-navigation-drawer>
 
       <div id="video_container" class="video-container">
-        <video id="stream" preload="none" playsinline>
+        <video id="stream" class="video" preload="none" playsinline>
           Your browser doesn't support video
         </video>
       </div>
