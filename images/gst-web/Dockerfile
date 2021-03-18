@@ -18,9 +18,11 @@ FROM nginx:alpine
 RUN \
     apk add -u --no-cache imagemagick bash
 
-WORKDIR /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html/lib
+COPY src/lib/*.js ./
 
-COPY src/* ./
+WORKDIR /usr/share/nginx/html
+COPY src/*.js src/*.html src/manifest.json ./
 
 # Patch index.html to fetch latest version of javascript source
 RUN sed -i 's|script src="\(.*\)?ts=.*"|script src="\1?ts='$(date +%s)'"|g' index.html
