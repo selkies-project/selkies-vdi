@@ -83,13 +83,14 @@ RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
 
 # Install Xpra HTML5 client from forked submodule
 # NOTE: installer depends on working non-submodule get repo.
+ARG MINIFIER=uglifyjs
 COPY xpra-html5 /opt/xpra-html5
 RUN cd /opt/xpra-html5 && \
     git config --global user.email "selkies@docker" && \
     git config --global user.name "Selkies Builder" && \
     git init && git checkout -b selkies-patches && \
     git add . && git commit -m "selkies-patches" && \
-    sudo python3 ./setup.py install /usr/share/xpra/www
+    sudo python3 ./setup.py install /usr/share/xpra/www ${MINIFIER}
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
