@@ -68,7 +68,13 @@ gcloud container node-pools list --cluster broker-${REGION?} --region ${REGION?}
 
 ## Deploy infrastructure and manifests
 
-1. Build build-images and install infrastructure:
+1. Verify that submodules are up to date:
+
+```bash
+git submodule update --recursive
+```
+
+2. Build build-images and install infrastructure:
 
 ```bash
 gcloud builds submit --substitutions=_REGION=${REGION}
