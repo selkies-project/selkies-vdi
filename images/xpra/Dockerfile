@@ -129,6 +129,9 @@ RUN \
         -e 's|</body>|        <script type="application/javascript">window.onload = () => {"use strict"; if ("serviceWorker" in navigator) { navigator.serviceWorker.register("./sw.js");}}</script>\n    </body>|' /usr/share/xpra/www/index.html && \
     rm -f /usr/share/xpra/www/index.html.*
 
+# Replace connect.html with redirect to Selkies App Launcher
+COPY connect.html /usr/share/xpra/www/connect.html
+
 # Copy PWA source files
 COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
 COPY pwa/sw.js /usr/share/xpra/www/sw.js
