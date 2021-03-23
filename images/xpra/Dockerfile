@@ -54,7 +54,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         xfce4-terminal \
         gdebi-core \
         xserver-xephyr \
-        git
+        git \
+        uglifyjs
 
 # Add Tini
 ARG TINI_VERSION=v0.19.0
