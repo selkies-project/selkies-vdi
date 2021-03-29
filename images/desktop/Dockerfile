@@ -64,6 +64,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
         vainfo \
         vdpauinfo
 
+# Install VirtualGL for off-screen rendering with Xpra
+ARG VIRTUALGL_VERSION=2.6.80
+RUN \
+    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/dev/linux/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
+    apt-get update && gdebi -n /tmp/virtualgl.deb
+
 # Install socat for uinput control socket forwarding
 RUN apt-get install -y \
     jstest-gtk \
@@ -130,7 +136,7 @@ RUN gcloud config set disable_usage_reporting true
 # Use bash as default shell
 ENV SHELL /bin/bash
 ENV USER app
-ENV PATH ${PATH}:/usr/local/nvidia/bin:/home/app/bin
+ENV PATH ${PATH}:/usr/local/nvidia/bin:/opt/VirtualGL/bin:/home/app/bin
 
 # Export library path for NVIDIA libs
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64

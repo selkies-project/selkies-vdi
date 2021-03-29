@@ -22,6 +22,11 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install \
     xlib
 
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /tini
+RUN chmod +x /tini
+
 WORKDIR /opt/app
 
 COPY *.py *.sh /opt/app/
@@ -31,4 +36,4 @@ RUN groupadd --gid 1000 app && \
 
 USER app
 
-ENTRYPOINT ["/opt/app/entrypoint.sh"]
+ENTRYPOINT ["/tini", "--", "/opt/app/entrypoint.sh"]

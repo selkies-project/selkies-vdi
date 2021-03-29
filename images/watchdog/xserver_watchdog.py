@@ -228,7 +228,14 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     else:
-        w = XServerWatchdog(idle=args.idle, timeout=args.timeout)
+        w = None
+        while w is None:
+            try:
+                w = XServerWatchdog(idle=args.idle, timeout=args.timeout)
+            except Exception as e:
+                logger.warning("X server was notready: %s"  % str(e))
+                time.sleep(2)
+
         w.on_idle = lambda: os.system(args.on_idle)
         w.on_timeout = lambda: os.system(args.on_timeout)
 

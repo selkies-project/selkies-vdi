@@ -85,7 +85,11 @@ echo "INFO: Setting mode to: ${RESOLUTION}"
 xrandr -s "${RESOLUTION}"
 
 # Notify sidecar containers
-touch /var/run/appconfig/xserver_ready
+if [[ ${DISPLAY} == ":0" ]]; then
+    touch /var/run/appconfig/xserver_ready
+else
+    touch /var/run/appconfig/xserver_${DISPLAY}_ready
+fi
 
 # Wait for background process
 wait $PID

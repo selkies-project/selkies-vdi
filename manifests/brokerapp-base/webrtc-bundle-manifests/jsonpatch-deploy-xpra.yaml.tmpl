@@ -91,11 +91,25 @@
     name: xpra-uploads
     mountPath: {{ $xpraUploadDir }}
 
+{{- if eq .NodeTier.Name "gpu" }}
+###
+# Change accelerated xserver display to :1 for off-screen rendering with VGL
+###
+- op: add
+  path: "/spec/template/spec/containers/3/env/-"
+  value:
+    name: DISPLAY
+    value: ":1"
+
+- op: add
+  path: "/spec/template/spec/containers/-"
+{{- else}}
 ###
 # Replace xserver container with xpra container.
 ###
 - op: replace
   path: "/spec/template/spec/containers/3"
+{{- end}}
   value:
     name: xpra
     image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra:latest
@@ -105,6 +119,10 @@
     env:
       - name: DISPLAY
         value: ":0"
+      {{- if eq .NodeTier.Name "gpu" }}
+      - name: VGL_DISPLAY
+        value: ":1"
+      {{- end}}
       - name: PULSE_SERVER
         value: "127.0.0.1:4713"
       - name: XPRA_PORT

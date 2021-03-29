@@ -46,8 +46,17 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         sudo \
         procps \
         vim \
-        xfwm4 && \
+        xfwm4 \
+        gdebi-core && \
     rm -rf /var/lib/apt/lists/*
+
+# Install VirtualGL for off-screen rendering with Xpra
+ARG VIRTUALGL_VERSION=2.6.80
+RUN \
+    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/dev/linux/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
+    apt-get update && gdebi -n /tmp/virtualgl.deb
+
+ENV PATH=${PATH}:/opt/VirtualGL/bin
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
