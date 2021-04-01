@@ -56,6 +56,15 @@
       mkdir -p ${HOME}/.config/autostart
       find /etc/skel/Autostart -name "*.desktop" -exec ln -sf {} ${HOME}/.config/autostart/ \; 2>/dev/null|| true
 
+      # Configure docker unix socket proxy
+      if [[ "${USE_DIND,,}" == "true" ]]; then
+          echo "INFO: Waiting for docker sidecar"
+          CERTFILE="/var/run/docker-certs/cert.pem"
+          until [[ -f ${CERTFILE} ]]; do sleep 1; done
+          echo "INFO: Docker sidecar is ready, starting unix socket proxy"
+          sudo /usr/share/cloudshell/start-docker-unix-proxy.sh
+      fi
+
       while true; do
         eval ${XPRA_ENTRYPOINT:-"xfdesktop --sm-client-disable -A"} &
         PID=$!

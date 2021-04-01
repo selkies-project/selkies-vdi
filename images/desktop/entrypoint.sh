@@ -44,6 +44,15 @@ RESOLUTION=${RESOLUTION:-1920x1080}
 xrandr -s ${RESOLUTION}
 xrandr --fb ${RESOLUTION}
 
+# Configure docker unix socket proxy
+if [[ "${USE_DIND,,}" == "true" ]]; then
+    echo "INFO: Waiting for docker sidecar"
+    CERTFILE="/var/run/docker-certs/cert.pem"
+    until [[ -f ${CERTFILE} ]]; do sleep 1; done
+    echo "INFO: Docker sidecar is ready, starting unix socket proxy"
+    sudo /usr/share/cloudshell/start-docker-unix-proxy.sh
+fi
+
 echo "Starting apps"
 while true; do
     # Create default desktop shortcuts.

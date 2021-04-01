@@ -35,6 +35,8 @@
   {{- end}}
 {{- end}}
 
+{{- $persistStorageMountPath := default "/home/coder" .AppParams.persistStorageMountPath }}
+
 {{- if and ($persistEnabled) ($dindEnabled) }}
 ###
 # Add shared volume for docker-certs
@@ -87,6 +89,11 @@
   value:
     name: DOCKER_HOST
     value: "tcp://127.0.0.1:2376"
+- op: add
+  path: "/spec/template/spec/containers/0/env/-"
+  value:
+    name: USE_DIND
+    value: "true"
 
 ###
 # Add Docker in Docker container
@@ -112,7 +119,7 @@
         mountPath: /var/lib/docker
         subPath: var/lib/docker
       - name: persist
-        mountPath: /home/coder
+        mountPath: {{$persistStorageMountPath}}
     resources:
       limits:
         cpu: 4
