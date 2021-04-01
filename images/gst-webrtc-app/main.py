@@ -300,7 +300,7 @@ if __name__ == '__main__':
     webrtc_input.on_set_fps = lambda fps: set_json_app_argument(args.json_config, "framerate", fps) and (fps != curr_fps) and app.send_reload_window() 
 
     # Write audio enabled arg to local config and then tell client to reload.
-    webrtc_input.on_set_enable_audio = lambda enabled: set_json_app_argument(args.json_config, "enable_audio", enabled) and (enable != enable_audio) and app.send_reload_window()
+    webrtc_input.on_set_enable_audio = lambda enabled: set_json_app_argument(args.json_config, "enable_audio", enabled) and (enabled != enable_audio) and app.send_reload_window()
 
     # Initial binding of enable resize handler.
     if enable_resize:
