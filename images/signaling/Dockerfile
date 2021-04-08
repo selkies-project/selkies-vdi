@@ -33,5 +33,6 @@ COPY --from=build /opt/simple_server.py ./
 
 RUN pip3 install websockets
 
+ENV PORT=8081
 
-CMD /sbin/tini -- python3 -u simple_server.py --addr 0.0.0.0 --port 8080 --disable-ssl
+CMD /sbin/tini -- python3 -u simple_server.py --addr 0.0.0.0 --port ${PORT} --disable-ssl

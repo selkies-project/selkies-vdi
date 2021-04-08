@@ -29,13 +29,10 @@ spec:
   ports:
     # Port 80 is the default port routed by the pod broker.
     - port: 80
-      name: web
+      name: http-web
       targetPort: 8082
-    - port: 8080
-      name: signalling
-      targetPort: 8080
     - port: 8081
-      name: xpra
+      name: http-signaling
       targetPort: 8081
 ---
 apiVersion: apps/v1
@@ -237,10 +234,12 @@ spec:
               value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
             - name: DISPLAY
               value: ":0"
+            - name: METRICS_PORT
+              value: "8008"
             - name: "PULSE_SERVER"
               value: "127.0.0.1:4713"
             - name: SIGNALLING_SERVER
-              value: "ws://127.0.0.1:8080"
+              value: "ws://127.0.0.1:8081"
             - name: "COTURN_AUTH_HEADER_NAME"
               value: "x-goog-authenticated-user-email"
             - name: COTURN_WEB_URI
@@ -278,7 +277,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - name: signalling
-              containerPort: 8080
+              containerPort: 8081
           readinessProbe:
             tcpSocket:
               port: signalling
@@ -316,7 +315,7 @@ spec:
         #  image: gcr.io/google-containers/prometheus-to-sd:v0.7.2
         #  command:
         #    - /monitor
-        #    - --source=:http://localhost:8000
+        #    - --source=:http://localhost:8008
         #    - --stackdriver-prefix=custom.googleapis.com
         #    - --pod-id=$(POD_NAME)
         #    - --namespace-id=$(POD_NAMESPACE)
