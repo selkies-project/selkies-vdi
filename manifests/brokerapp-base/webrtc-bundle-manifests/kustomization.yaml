@@ -34,6 +34,7 @@ configMapGenerator:
       - resource-vdi-shared-storage-ceph-secret.yaml.tmpl
       - resource-vdi-shared-storage-smb-secret.yaml.tmpl
       - resource-vdi-virtual-service.yaml.tmpl
+      - resource-vdi-web-preview-ports.yaml.tmpl
       - jsonpatch-deploy-cpu-memory.yaml.tmpl
       - jsonpatch-deploy-dind.yaml.tmpl
       - jsonpatch-deploy-file-manager.yaml.tmpl
@@ -41,6 +42,7 @@ configMapGenerator:
       - jsonpatch-deploy-isolated-network.yaml.tmpl
       - jsonpatch-deploy-persist.yaml.tmpl
       - jsonpatch-deploy-virtual-mouse.yaml.tmpl
+      - jsonpatch-deploy-web-preview-ports.yaml.tmpl
       - jsonpatch-deploy-xpra.yaml.tmpl
       - jsonpatch-deploy-recording.yaml.tmpl
       - jsonpatch-deploy-squid-proxy.yaml.tmpl
@@ -53,5 +55,7 @@ configMapGenerator:
       - jsonpatch-service-selectors.yaml.tmpl
       - jsonpatch-service-app-proxy.yaml.tmpl
       - jsonpatch-service-file-manager.yaml.tmpl
+      - jsonpatch-service-web-preview.yaml.tmpl
+      - jsonpatch-service-xpra.yaml.tmpl
       - jsonpatch-virtualservice-app-proxy.yaml.tmpl
       - jsonpatch-virtualservice-file-manager.yaml.tmpl

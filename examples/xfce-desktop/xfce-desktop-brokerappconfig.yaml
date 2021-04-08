@@ -114,6 +114,24 @@ spec:
       default: "3600" # seconds
 
     ###
+    # Web Preview feature
+    ###
+    #- name: enableWebPreview
+    #  default: "true"
+
+    ###
+    # Web Preview endpoint URLs.
+    # Default: APP_NAME-port-NNNN.endpints.PROJECT_ID.cloud.goog
+    # Set these if you are not using Cloud Endpoints DNS.
+    ###
+    #- name: WebPreview3000
+    #  default: "xfce-desktop-port-3000.endpoints.PROJECT_ID.cloud.goog"
+    #- name: WebPreview8000
+    #  default: "xfce-desktop-port-8000.endpoints.PROJECT_ID.cloud.goog"
+    #- name: WebPreview8080
+    #  default: "xfce-desktop-port-8080.endpoints.PROJECT_ID.cloud.goog"
+
+    ###
     # Screen recording feaure
     ###
     #- name: enableRecording

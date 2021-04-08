@@ -1,0 +1,105 @@
+# Copyright 2021 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $webPreviewEnabled := false }}
+{{- if .AppParams.enableWebPreview }}
+  {{- if eq .AppParams.enableWebPreview "true"}}
+    {{- $webPreviewEnabled = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $webPreviewEnabled }}
+
+{{- $endpoint := printf "endpoints.%s.cloud.goog" .ProjectID }}
+{{- $defaultPort3000 := printf "%s-port-3000.%s" .App $endpoint }}
+{{- $defaultPort8000 := printf "%s-port-8000.%s" .App $endpoint }}
+{{- $defaultPort8080 := printf "%s-port-8080.%s" .App $endpoint }}
+
+{{- $hostPorts := dict 3000 (default $defaultPort3000 .AppParams.WebPreview3000) 8000 (default $defaultPort8000 .AppParams.WebPreview8000) 8080 (default $defaultPort8080 .AppParams.WebPreview8080) }}
+
+###
+# ServiceEntry for web-preview URLs.
+# Required to do route based destinations and set-cookie redirect.
+###
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: {{.ServiceName}}-web-preview
+spec:
+  hosts:
+  {{- range $port, $host := $hostPorts}}
+    - "{{$host}}"
+  {{- end}}
+  location: MESH_EXTERNAL
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{.ServiceName}}-web-preview
+spec:
+  hosts:
+    # web preview hosts
+    {{- range $port, $host := $hostPorts}}
+    - "{{$host}}"
+    {{- end}}
+  gateways:
+    - pod-broker-system/{{.App}}-vdi-web-preview-gateway
+  http:
+    {{- range $port, $host := $hostPorts}}
+    ###
+    # web preview for port {{$port}} with cookie.
+    ###
+    - match:
+        - authority:
+            exact: "{{$host}}"
+          headers:
+            cookie:
+              regex: ".*{{$.App}}-web-preview-{{$port}}={{$.CookieValue}}.*"
+      route:
+        - destination:
+            host: {{$.FullName}}-{{$.ServiceName}}
+            port:
+              number: {{$port}}
+      corsPolicy:
+        allowCredentials: true
+        allowMethods:
+          - POST
+          - GET
+        allowOrigin:
+          - "*"
+
+    ###
+    # web preview port {{$port}} fall-through with auth cookie.
+    ###
+    - match:
+        - authority:
+            exact: "{{$host}}"
+          headers:
+            {{$.SysParams.AuthHeader}}:
+              regex: ".*{{$.User}}.*"
+      headers:
+        response:
+          set:
+            set-cookie: {{$.App}}-web-preview-{{$port}}={{$.CookieValue}}; SameSite=None; Secure; HttpOnly
+            location: /
+      route:
+        - destination:
+            host: {{$host}}
+    {{- end}}
+{{- end}}
