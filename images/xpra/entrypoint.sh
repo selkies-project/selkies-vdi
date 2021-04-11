@@ -42,7 +42,7 @@ sudo sed -i \
   -e "s|XPRA_PWA_APP_PATH|${XPRA_PWA_APP_PATH:-xpra-desktop}|g" \
   '/usr/share/xpra/www/manifest.json'
 sudo sed -i \
-  -e "s|XPRA_PWA_CACHE|${XPRA_PWA_APP_PATH:-xpra-desktop}-pwa|g" \
+  -e "s|XPRA_PWA_CACHE|${XPRA_PWA_APP_PATH:-xpra-desktop}-xpra-pwa|g" \
   '/usr/share/xpra/www/sw.js'
 
 if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then

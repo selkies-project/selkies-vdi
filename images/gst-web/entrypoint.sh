@@ -22,7 +22,7 @@ sed -i \
     -e "s|PWA_APP_PATH|${PWA_APP_PATH:-webrtc-desktop}|g" \
   /usr/share/nginx/html/manifest.json
 sed -i \
-  -e "s|PWA_CACHE|${PWA_APP_PATH:-webrtc-desktop}-pwa|g" \
+  -e "s|PWA_CACHE|${PWA_APP_PATH:-webrtc-desktop}-webrtc-pwa|g" \
   /usr/share/nginx/html/sw.js
 
 if [[ -n "${PWA_ICON_URL}" ]]; then

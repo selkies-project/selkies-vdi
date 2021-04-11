@@ -81,6 +81,12 @@ RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
         python3-requests \
         xpra
 
+# Apply xpra patches
+COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
+RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
+    sudo patch -p3 < xpra-prop-conv-py.patch && \
+    sudo rm xpra-prop-conv-py.patch
+
 # Install Xpra HTML5 client from forked submodule
 # NOTE: installer depends on working non-submodule get repo.
 ARG MINIFIER=uglifyjs
@@ -136,6 +142,9 @@ COPY connect.html /usr/share/xpra/www/connect.html
 # Copy PWA source files
 COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
 COPY pwa/sw.js /usr/share/xpra/www/sw.js
+
+# Patch the service worker with a new cache version so that it is refreshed.
+RUN sudo sed -i -e "s|CACHE_VERSION|$(date +%s)|g" '/usr/share/xpra/www/sw.js'
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]
