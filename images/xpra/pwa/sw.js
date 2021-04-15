@@ -31,19 +31,21 @@ function getCacheName() {
   return cacheName + "_" + cacheVersion;
 }
 
+function deleteCache() {
+  caches.keys().then(cacheNames => {
+    return Promise.all(
+      cacheNames.map(name => {
+        if (name.startsWith(cacheName) && name !== getCacheName()) {
+          return caches.delete(name);
+        }
+      })
+    );
+  });
+}
+
 // on activation we clean up the previously registered service workers
 self.addEventListener('activate', evt => {
-  evt.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(name => {
-          if (name.startsWith(cacheName) && name !== getCacheName()) {
-            return caches.delete(name);
-          }
-        })
-      );
-    })
-  )
+  evt.waitUntil(deleteCache());
 });
 
 /* Start the service worker and cache all of the app's content */
@@ -57,13 +59,38 @@ self.addEventListener('install', function(e) {
 
 /* Serve cached content when offline */
 self.addEventListener('fetch', function(e) {
+  const clientId = e.clientId || e.resultingClientId;
   e.respondWith(
     caches.match(e.request)
       .then(function(response) {
         return response || fetch(e.request, {
           credentials: 'include',
+          redirect: 'manual',
+          mode: 'no-cors',
         })
       })
-      .catch(function(e) { return new Response() })
+      .then( (response) => {
+        if (response.type === "opaqueredirect" && !e.request.url.match("favicon.png")) {
+          console.log("saw opaqueredirect response when fetching " + e.request.url + ", deleting cache and sending reload to client: " + e.clientId);
+
+          // Notify client that network is offline.
+          if (clientId) {
+            clients.get(clientId).then((client) => {
+              var msg = {
+                msg: "reload",
+              };
+              console.log("sending message to client: " + client.id, msg);
+              client.postMessage(msg);
+            });
+          }
+          deleteCache();
+        }
+        return response;
+      })
+      .catch(function(err) {
+        // Attempt to fetch non-cached resource failed.
+        // Hack to make this PWA installable, always return valid Response object.
+        return new Response();
+      })
     );
 });
