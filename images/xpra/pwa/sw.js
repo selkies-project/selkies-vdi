@@ -20,11 +20,10 @@ Initialize the cache but don't cache any resources since this is a streaming app
 const cacheVersion = "CACHE_VERSION";
 var cacheName = 'XPRA_PWA_CACHE';
 var filesToCache = [
-  '/',
-  '/index.html',
-  '/connect.html',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  'index.html',
+  'connect.html',
+  'icon-192x192.png',
+  'icon-512x512.png'
 ];
 
 function getCacheName() {
