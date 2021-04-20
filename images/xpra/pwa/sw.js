@@ -23,7 +23,11 @@ var filesToCache = [
   'index.html',
   'connect.html',
   'icon-192x192.png',
-  'icon-512x512.png'
+  'icon-512x512.png',
+  /* cache assets from app launcher */
+  '/index.html',
+  '/app.js',
+  '/pod_broker.js'
 ];
 
 function getCacheName() {
