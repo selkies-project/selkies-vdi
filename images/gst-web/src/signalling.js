@@ -99,6 +99,11 @@ class WebRTCDemoSignalling {
          * @type {string}
          */
         this.state = 'disconnected';
+
+        /**
+         * @type {number}
+         */
+        this.retry_count = 0;
     }
 
     /**
@@ -171,6 +176,7 @@ class WebRTCDemoSignalling {
         this.state = 'connected';
         this._ws_conn.send('HELLO ' + this._peer_id);
         this._setStatus("Registering with server, peer ID: " + this._peer_id);
+        this.retry_count = 0;
     }
 
     /**
@@ -182,9 +188,14 @@ class WebRTCDemoSignalling {
      */
     _onServerError() {
         this._setStatus("Connection error, retry in 3 seconds.");
+        this.retry_count++;
         if (this._ws_conn.readyState === this._ws_conn.CLOSED) {
             setTimeout(() => {
-                this.connect();
+                if (this.retry_count > 3) {
+                    window.location.replace(window.location.href.replace(window.location.pathname, "/"));
+                } else {
+                    this.connect();
+                }
             }, 3000);
         }
     }
