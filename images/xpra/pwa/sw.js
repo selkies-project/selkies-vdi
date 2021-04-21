@@ -20,14 +20,14 @@ Initialize the cache but don't cache any resources since this is a streaming app
 const cacheVersion = "CACHE_VERSION";
 var cacheName = 'XPRA_PWA_CACHE';
 var filesToCache = [
-  'index.html',
-  'connect.html',
-  'icon-192x192.png',
-  'icon-512x512.png',
+  'index.html?ts=CACHE_VERSION',
+  'connect.html?ts=CACHE_VERSION',
+  'icon-192x192.png?ts=CACHE_VERSION',
+  'icon-512x512.png?ts=CACHE_VERSION',
   /* cache assets from app launcher */
-  '/index.html',
-  '/app.js',
-  '/pod_broker.js'
+  '/index.html?ts=CACHE_VERSION',
+  '/app.js?ts=CACHE_VERSION',
+  '/pod_broker.js?ts=CACHE_VERSION'
 ];
 
 function getCacheName() {
@@ -82,7 +82,7 @@ self.addEventListener('fetch', function(e) {
               var msg = {
                 msg: "reload",
               };
-              console.log("sending message to client: " + client.id, msg);
+              console.log("sending message to client: " + clientId, msg);
               client.postMessage(msg);
             });
           }
