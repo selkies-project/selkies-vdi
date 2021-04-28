@@ -642,10 +642,10 @@ class WebRTCDemo {
      */
     reset() {
         var signalState = this.peerConnection.signalingState;
-        if (this._send_channel.readyState === "open") {
+        if (this._send_channel !== null && this._send_channel.readyState === "open") {
             this._send_channel.close();
         }
-        this.peerConnection.close();
+        if (this.peerConnection !== null) this.peerConnection.close();
         if (signalState !== "stable") {
             setTimeout(() => {
                 this.connect();
