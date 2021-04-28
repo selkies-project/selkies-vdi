@@ -45,7 +45,7 @@ var app = new Vue({
     data() {
         return {
             appName: window.location.pathname.split("/")[1] || "webrtc",
-            videoBitRate: (parseInt(window.localStorage.getItem("videoBitRate")) || 2000),
+            videoBitRate: 2000,
             videoBitRateOptions: [
                 { text: '500 kb/s', value: 500 },
                 { text: '1 mbps', value: 1000 },
@@ -58,14 +58,15 @@ var app = new Vue({
                 { text: '150 mbps', value: 150000 },
                 { text: '200 mbps', value: 200000 },
             ],
-            videoFramerate: (parseInt(window.localStorage.getItem("videoFramerate")) || 30),
+            videoFramerate: 30,
             videoFramerateOptions: [
                 { text: '15 fps', value: 15 },
                 { text: '30 fps', value: 30 },
                 { text: '60 fps', value: 60 },
                 { text: '100 fps', value: 100 },
             ],
-            audioBitRate: (parseInt(window.localStorage.getItem("audioBitRate")) || 32000),
+            audioEnabled: false,
+            audioBitRate: 32000,
             audioBitRateOptions: [
                 { text: '32 kb/s', value: 32000 },
                 { text: '64 kb/s', value: 64000 },
@@ -82,29 +83,35 @@ var app = new Vue({
             clipboardStatus: 'disabled',
             gamepadState: 'disconnected',
             gamepadName: 'none',
-            audioEnabled: null,
             windowResolution: "",
             connectionStatType: "unknown",
             connectionLatency: 0,
             connectionVideoLatency: 0,
             connectionAudioLatency: 0,
-            connectionAudioCodecName: "unknown",
+            connectionAudioCodecName: "NA",
             connectionAudioBitrate: 0,
             connectionPacketsReceived: 0,
             connectionPacketsLost: 0,
+            connectionBytesReceived: 0,
+            connectionBytesSent: 0,
             connectionCodec: "unknown",
             connectionVideoDecoder: "unknown",
             connectionResolution: "",
             connectionFrameRate: 0,
             connectionVideoBitrate: 0,
             connectionAvailableBandwidth: 0,
+            encoderName: "",
+            serverCPUUsage: 0,
             gpuLoad: 0,
             gpuMemoryTotal: 0,
             gpuMemoryUsed: 0,
-            resizeRemote: (window.localStorage.getItem("resizeRemote") === "true"),
-            scaleLocal: (window.localStorage.getItem("scaleLocal") === "true"),
-            debug: (window.localStorage.getItem("debug") === "true"),
-            turnSwitch: (window.localStorage.getItem("turnSwitch") === "true"),
+            serverMemoryTotal: 0,
+            serverMemoryUsed: 0,
+            serverLatency: 0,
+            resizeRemote: true,
+            scaleLocal: false,
+            debug: false,
+            turnSwitch: false,
             publishingAllowed: false,
             publishingIdle: false,
             publishingError: "",
@@ -137,6 +144,29 @@ var app = new Vue({
     },
 
     methods: {
+        getIntParam: (key, default_value) => {
+            const prefixedKey = app.appName + "_" + key;
+            return (parseInt(window.localStorage.getItem(prefixedKey)) || default_value);
+        },
+        setIntParam: (key, value) => {
+            if (value === null) return;
+            const prefixedKey = app.appName + "_" + key;
+            window.localStorage.setItem(prefixedKey, value.toString());
+        },
+        getBoolParam: (key, default_value) => {
+            const prefixedKey = app.appName + "_" + key;
+            var v = window.localStorage.getItem(prefixedKey);
+            if (v === null) {
+                return default_value;
+            } else {
+                return (v.toString().toLowerCase() === "true");
+            }
+        },
+        setBoolParam: (key, value) => {
+            if (value === null) return;
+            const prefixedKey = app.appName + "_" + key;
+            window.localStorage.setItem(prefixedKey, value.toString());
+        },
         getUsername: () => {
             if (app === undefined) return "webrtc";
             return (getCookieValue("broker_" + app.appName) || "webrtc").split("#")[0];
@@ -191,25 +221,32 @@ var app = new Vue({
 
     watch: {
         videoBitRate(newValue) {
+            if (newValue === null) return;
             webrtc.sendDataChannelMessage('vb,' + newValue);
-            window.localStorage.setItem("videoBitRate", newValue.toString());
+            this.setIntParam("videoBitRate", newValue);
         },
         videoFramerate(newValue) {
+            if (newValue === null) return;
             console.log("video frame rate changed to " + newValue);
             webrtc.sendDataChannelMessage('_arg_fps,' + newValue);
-            window.localStorage.setItem("videoFramerate", newValue.toString());
+            this.setIntParam("videoFramerate", newValue);
         },
         audioEnabled(newValue, oldValue) {
+            if (newValue === null) return;
             console.log("audio enabled changed from " + oldValue + " to " + newValue);
             if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_audio,' + newValue);
+            this.setBoolParam("audioEnabled", newValue);
         },
         resizeRemote(newValue, oldValue) {
+            if (newValue === null) return;
             console.log("resize remote changed from " + oldValue + " to " + newValue);
             app.windowResolution = webrtc.input.getWindowResolution();
             var res = app.windowResolution[0] + "x" + app.windowResolution[1];
             if (oldValue !== null && newValue !== oldValue) webrtc.sendDataChannelMessage('_arg_resize,' + newValue + "," + res);
+            this.setBoolParam("resizeRemote", newValue);
         },
         scaleLocal(newValue, oldValue) {
+            if (newValue === null) return;
             console.log("resize remote changed from " + oldValue + " to " + newValue);
             if (oldValue !== null && newValue !== oldValue) {
                 if (newValue === true) {
@@ -218,21 +255,27 @@ var app = new Vue({
                     webrtc.element.setAttribute("class", "video");
                 }
             }
+            this.setBoolParam("scaleLocal", newValue);
         },
         audioBitRate(newValue) {
+            if (newValue === null) return;
             webrtc.sendDataChannelMessage('ab,' + newValue);
-            window.localStorage.setItem("audioBitRate", newValue.toString());
+            this.setIntParam("audioBitRate", newValue);
         },
-        turnSwitch(newValue) {
-            window.localStorage.setItem("turnSwitch", newValue.toString());
+        turnSwitch(newValue, oldValue) {
+            if (newValue === null) return;
+            this.setBoolParam("turnSwitch", newValue);
             // Reload the page to force read of stored value on first load.
+            if (webrtc === undefined || webrtc.peerConnection === null) return;
             setTimeout(() => {
                 document.location.reload();
             }, 700);
         },
-        debug(newValue) {
-            window.localStorage.setItem("debug", newValue.toString());
+        debug(newValue, oldValue) {
+            if (newValue === null) return;
+            this.setBoolParam("debug", newValue);
             // Reload the page to force read of stored value on first load.
+            if (webrtc === undefined || webrtc.peerConnection === null) return;
             setTimeout(() => {
                 document.location.reload();
             }, 700);
@@ -256,7 +299,16 @@ var app = new Vue({
 
 });
 
+// Fetch debug setting
+app.debug = app.getBoolParam("debug", false);
+
+// Fetch turn setting
+app.turnSwitch = app.getBoolParam("turnSwitch", false);
+
 var videoElement = document.getElementById("stream");
+if (videoElement === null) {
+    throw 'videoElement not found on page';
+}
 
 // WebRTC entrypoint, connect to the signalling server
 /*global WebRTCDemoSignalling, WebRTCDemo*/
@@ -304,40 +356,57 @@ webrtc.onconnectionstatechange = (state) => {
 
     if (state === "connected") {
         // Start watching stats.
-        var bytesReceivedStart = 0;
-        var audiobytesReceivedStart = 0;
+        var videoBytesReceivedStart = 0;
+        var audioBytesReceivedStart = 0;
         var statsStart = new Date().getTime() / 1000;
         var statsLoop = () => {
+
             webrtc.getConnectionStats().then((stats) => {
-                //app.audioEnabled = (app.state === 'connected' && stats.audioCodecName) ? true : false;
-                if (app.audioEnabled) {
-                    app.connectionAudioLatency = parseInt(stats.audioCurrentDelayMs);
-                    app.connectionAudioCodecName = stats.audioCodecName;
-                    app.connectionLatency = Math.max(app.connectionAudioLatency, app.connectionVideoLatency);
-                } else {
-                    stats.audiobytesReceived = 0;
-                    app.connectionLatency = app.connectionVideoLatency;
-                }
-                app.connectionStatType = stats.videoLocalCandidateType;
-                app.connectionVideoLatency = parseInt(stats.videoCurrentDelayMs);
-                app.connectionPacketsReceived = parseInt(stats.videopacketsReceived);
-                app.connectionPacketsLost = parseInt(stats.videopacketsLost);
-                app.connectionCodec = stats.videoCodecName;
-                app.connectionVideoDecoder = stats.videocodecImplementationName;
-                app.connectionResolution = stats.videoFrameWidthReceived + "x" + stats.videoFrameHeightReceived;
-                app.connectionFrameRate = stats.videoFrameRateOutput;
-                app.connectionAvailableBandwidth = (parseInt(stats.videoAvailableReceiveBandwidth) / 1e+6).toFixed(2) + " mbps";
-
-                // Compute current video bitrate in mbps
                 var now = new Date().getTime() / 1000;
-                app.connectionVideoBitrate = (((parseInt(stats.videobytesReceived) - bytesReceivedStart) / (now - statsStart)) * 8 / 1e+6).toFixed(2);
-                bytesReceivedStart = parseInt(stats.videobytesReceived);
 
-                // Compute current audio bitrate in kbps
+                // Sum of video+audio+server latency in ms.
+                app.connectionLatency = 0;
+                app.connectionLatency += app.serverLatency;
+
+                // Sum of video+audio packets.
+                app.connectionPacketsReceived = 0;
+                app.connectionPacketsLost = 0;
+
+                // Connection stats
+                app.connectionStatType = stats.general.connectionType;
+                app.connectionBytesReceived = (stats.general.bytesReceived * 1e-6).toFixed(2) + " MBytes";
+                app.connectionBytesSent = (stats.general.bytesSent * 1e-6).toFixed(2) + " MBytes";
+                app.connectionAvailableBandwidth = (parseInt(stats.general.availableReceiveBandwidth) / 1e+6).toFixed(2) + " mbps";
+
+                // Video stats.
+                app.connectionVideoLatency = parseInt(stats.video.jitterBufferDelay * 1000);
+                app.connectionLatency += stats.video.jitterBufferDelay * 1000;
+                app.connectionPacketsReceived += stats.video.packetsReceived;
+                app.connectionPacketsLost += stats.video.packetsLost;
+                app.connectionCodec = stats.video.codecName;
+                app.connectionVideoDecoder = stats.video.decoder;
+                app.connectionResolution = stats.video.frameWidth + "x" + stats.video.frameHeight;
+                app.connectionFrameRate = stats.video.framesPerSecond;
+                app.connectionVideoBitrate = (((stats.video.bytesReceived - videoBytesReceivedStart) / (now - statsStart)) * 8 / 1e+6).toFixed(2);
+                videoBytesReceivedStart = stats.video.bytesReceived;
+
+                // Audio stats.
                 if (app.audioEnabled) {
-                    app.connectionAudioBitrate = (((parseInt(stats.audiobytesReceived) - audiobytesReceivedStart) / (now - statsStart)) * 8 / 1e+3).toFixed(2);
-                    audiobytesReceivedStart = parseInt(stats.audiobytesReceived);
+                    app.connectionLatency += stats.audio.jitterBufferDelay * 1000;
+                    app.connectionPacketsReceived += stats.audio.packetsReceived;
+                    app.connectionPacketsLost += stats.audio.packetsLost;
+                    app.connectionAudioLatency = parseInt(stats.audio.jitterBufferDelay * 1000);
+                    app.connectionAudioCodecName = stats.audio.codecName;
+                    app.connectionAudioBitrate = (((stats.audio.bytesReceived - audioBytesReceivedStart) / (now - statsStart)) * 8 / 1e+3).toFixed(2);
+                    audioBytesReceivedStart = stats.audio.bytesReceived;
+                } else {
+                    app.connectionAudioBitrate = 0;
+                    app.connectionAudioCodecName = "NA";
+                    app.connectionAudioLatency = "NA";
                 }
+
+                // Format latency
+                app.connectionLatency = parseInt(app.connectionLatency);
 
                 statsStart = now;
 
@@ -350,42 +419,25 @@ webrtc.onconnectionstatechange = (state) => {
 };
 
 webrtc.ondatachannelopen = () => {
-    app.windowResolution = webrtc.input.getWindowResolution();
-    console.log(`Initial window resolution: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
-    webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
-
-    var video_bit_rate = app.videoBitRate || (parseInt(window.localStorage.getItem("videoBitRate")) || 2000)
-    console.log("Setting initial video bit rate to: " + video_bit_rate);
-    try {
-        webrtc.sendDataChannelMessage('vb,' + video_bit_rate);
-    } catch (e) {
-        console.log("Failed to set bit rate: ", e);
-    }
-
-    var audio_bit_rate = app.audioBitRate || (parseInt(window.localStorage.getItem("audioBitRate")) || 64000)
-    console.log("Setting initial audio bit rate to: " + audio_bit_rate);
-    try {
-        webrtc.sendDataChannelMessage('ab,' + audio_bit_rate);
-    } catch (e) {
-        console.log("Failed to set audio bit rate: ", e);
-    }
-
+    // Bind gamepad connected handler.
     webrtc.input.ongamepadconnected = (gamepad_id) => {
         app.gamepadState = "connected";
         app.gamepadName = gamepad_id;
     }
 
+    // Bind gamepad disconnect handler.
     webrtc.input.ongamepaddisconnected = () => {
         app.gamepadState = "disconnected";
         app.gamepadName = "none";
     }
 
+    // Bind input handlers.
     webrtc.input.attach();
 
     // Send client-side metrics over data channel every 5 seconds
     setInterval(() => {
-        webrtc.sendDataChannelMessage('_f,' + app.connectionFrameRate);
-        webrtc.sendDataChannelMessage('_l,' + app.connectionLatency);
+        if (app.connectionFrameRate === parseInt(app.connectionFrameRate, 10)) webrtc.sendDataChannelMessage('_f,' + app.connectionFrameRate);
+        if (app.connectionLatency === parseInt(app.connectionLatency, 10)) webrtc.sendDataChannelMessage('_l,' + app.connectionLatency);
     }, 5000)
 }
 
@@ -447,14 +499,80 @@ webrtc.onsystemaction = (action) => {
             signalling.disconnect();
         }, 700);
     } else if (action.startsWith('framerate')) {
-        app.videoFramerate = parseInt(action.split(",")[1]);
+        // Server received framerate setting.
+        const framerateSetting = app.getIntParam("videoFramerate", null);
+        if (framerateSetting !== null) {
+            app.videoFramerate = framerateSetting;
+        } else {
+            // Use the server setting.
+            app.videoFramerate = parseInt(action.split(",")[1]);
+        }
+    } else if (action.startsWith('video_bitrate')) {
+        // Server received video bitrate setting.
+        const videoBitrateSetting = app.getIntParam("videoBitRate", null);
+        if (videoBitrateSetting !== null) {
+            // Prefer the user saved value.
+            app.videoBitRate = videoBitrateSetting;
+        } else {
+            // Use the server setting.
+            app.videoBitRate = parseInt(action.split(",")[1]);
+        }
+    } else if (action.startsWith('audio_bitrate')) {
+        // Server received audio bitrate setting.
+        const audioBitrateSetting = app.getIntParam("audioBitRate", null);
+        if (audioBitrateSetting !== null) {
+            // Prefer the user saved value.
+            app.audioBitRate = audioBitrateSetting
+        } else {
+            // Use the server setting.
+            app.audioBitRate = parseInt(action.split(",")[1]);
+        }
     } else if (action.startsWith('audio')) {
-        app.audioEnabled = (action.split(",")[1].toLowerCase() === 'true');
+        // Server received audio enabled setting.
+        const audioEnabledSetting = app.getBoolParam("audioEnabled" , null);
+        if (audioEnabledSetting !== null) {
+            // Prefer the user saved value.
+            app.audioEnabled = audioEnabledSetting;
+        } else {
+            // Use the server setting.
+            app.audioEnabled = (action.split(",")[1].toLowerCase() === 'true');
+        }
     } else if (action.startsWith('resize')) {
-        app.resizeRemote = (action.split(",")[1].toLowerCase() === 'true');
+        // Remote resize enabled/disabled action.
+        const resizeSetting = app.getBoolParam("resize", null);
+        if (resizeSetting !== null) {
+            // Prefer the user saved value.
+            app.resizeRemote = resizeSetting;
+        } else {
+            // Use server setting.
+            app.resizeRemote = (action.split(",")[1].toLowerCase() === 'true');
+        }
+
+        // Send initial window size.
+        if (app.resizeRemote === true) {
+            app.windowResolution = webrtc.input.getWindowResolution();
+            console.log(`Initial window resolution: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
+            webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
+        }
+    } else if (action.startsWith("encoder")) {
+        if (action.split(",")[1].startsWith("x264")) {
+            app.encoderName = "software";
+        } else {
+            app.encoderName = "hardware";
+        }
     } else {
         webrtc._setStatus('Unhandled system action: ' + action);
     }
+}
+
+webrtc.onlatencymeasurement = (latency_ms) => {
+    app.serverLatency = latency_ms;
+}
+
+webrtc.onsystemstats = (stats) => {
+    if (stats.cpu_percent !== undefined) app.serverCPUUsage = stats.cpu_percent.toFixed(0);
+    if (stats.mem_total !== undefined) app.serverMemoryTotal = stats.mem_total;
+    if (stats.mem_used !== undefined) app.serverMemoryUsed = stats.mem_used;
 }
 
 navigator.permissions.query({

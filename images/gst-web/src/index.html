@@ -169,23 +169,34 @@
 
                   <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
-                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                      <v-progress-circular v-if="encoderName === 'hardware'" class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
                         :width="4" :value="gpuLoad" color="blue">
                         {{ gpuLoad }}
                       </v-progress-circular>
+                      <v-progress-circular v-else class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="serverCPUUsage" color="blue">
+                        {{ serverCPUUsage }}
+                      </v-progress-circular>
                     </template>
-                    <span>Current GPU load</span>
+                    <span v-if="encoderName === 'hardware'">Current GPU load</span>
+                    <span v-else>Server CPU Usage</span>
                   </v-tooltip>
 
                   <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
-                      <v-progress-circular class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                      <v-progress-circular v-if="encoderName === 'hardware'" class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
                         :width="4" :value="gpuMemoryTotal === 0 ? 0 : (gpuMemoryUsed / gpuMemoryTotal) * 100"
                         color="blue-grey">
                         {{ (gpuMemoryUsed / 1024).toFixed(2) }}
                       </v-progress-circular>
+                      <v-progress-circular v-else class="mx-2" v-on="on" :rotate="360" :size="50" style="font-size: 10"
+                        :width="4" :value="serverMemoryTotal === 0 ? 0 : (serverMemoryUsed / serverMemoryTotal) * 100"
+                        color="blue-grey">
+                        {{ (serverMemoryUsed / 1024 / 1024 / 1024).toFixed(2) }}
+                      </v-progress-circular>
                     </template>
-                    <span>Current GPU memory GB used of the {{ (gpuMemoryTotal / 1024).toFixed(0) }}GB available</span>
+                    <span v-if="encoderName === 'hardware'">Current GPU memory GB used of the {{ (gpuMemoryTotal / 1024).toFixed(0) }}GB available</span>
+                    <span v-else>Server Memory GB used of the {{ (serverMemoryTotal / 1024 / 1024 / 1024).toFixed(0) }}GB available</span>
                   </v-tooltip>
 
                   <v-divider class="mr-1" vertical></v-divider>
@@ -269,20 +280,19 @@
                 <li>Peer connection type: <b>{{ connectionStatType }}</b></li>
                 <li>Packets received: <b>{{ connectionPacketsReceived }}</b></li>
                 <li>Packets lost: <b>{{ connectionPacketsLost }}</b></li>
-              </ul>
-              Bandwidth Stats:
-              <ul>
-                <li>Video receive rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
-                <li>Available receive bandwith: <b>{{ connectionAvailableBandwidth }}</b></li>
+                <li>Bytes received: <b>{{ connectionBytesReceived }}</b></li>
+                <li>Bytes sent: <b>{{ connectionBytesSent }}</b></li>
               </ul>
               Video Stats
               <ul>
                 <li>Latency: <b>{{ connectionVideoLatency }} ms</b></li>
                 <li>Video: <b>{{ connectionCodec }} {{ connectionResolution }}</b></li>
+                <li>Video encoder: <b>{{ encoderName }}</b></li>
                 <li>Window size: <b>{{ windowResolution[0] }}x{{ windowResolution[1] }}</b></li>
                 <li>Video decoder: <b>{{ connectionVideoDecoder }}</b></li>
                 <li>Frame rate: <b>{{ connectionFrameRate }} fps</b></li>
                 <li>Bit rate: <b>{{ connectionVideoBitrate }} mbps</b></li>
+                <li>Available receive bandwith: <b>{{ connectionAvailableBandwidth }}</b></li>
               </ul>
               Audio Stats
               <ul>
@@ -350,7 +360,6 @@
       <canvas id="capture"></canvas>
 
       <v-btn class="fab-container" v-on:click="showDrawer=!showDrawer" color="grey" fab dark fixed right>
-        <!-- <v-icon>chevron_left</v-icon> -->
       </v-btn>
 
       <div class="loading">

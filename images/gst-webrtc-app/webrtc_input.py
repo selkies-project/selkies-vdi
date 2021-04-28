@@ -103,6 +103,8 @@ class WebRTCInput:
         self.xdisplay = None
         self.button_mask = 0
 
+        self.ping_start = None
+
         self.on_video_encoder_bit_rate = lambda bitrate: logger.warn(
             'unhandled on_video_encoder_bit_rate')
         self.on_audio_encoder_bit_rate = lambda bitrate: logger.warn(
@@ -123,6 +125,8 @@ class WebRTCInput:
             'unhandled on_client_latency')
         self.on_resize = lambda res: logger.warn(
             'unhandled on_resize')
+        self.on_ping_response = lambda latency: logger.warn(
+            'unhandled on_ping_response')
 
     def __keyboard_connect(self):
         self.keyboard = pynput.keyboard.Controller()
@@ -393,7 +397,16 @@ class WebRTCInput:
         """
 
         toks = msg.split(",")
-        if toks[0] == "kd":
+        if toks[0] == "pong":
+            if self.ping_start is None:
+                logger.warning('received pong before ping')
+                return
+
+            roundtrip = time.time() - self.ping_start
+            latency = (roundtrip / 2) * 1000
+            latency = float("%.3f" % latency)
+            self.on_ping_response(latency)
+        elif toks[0] == "kd":
             # Key down
             self.send_x11_keypress(int(toks[1]), down=True)
         elif toks[0] == "ku":
@@ -505,11 +518,17 @@ class WebRTCInput:
                 self.on_set_enable_resize(enabled, enable_res)
         elif toks[0] == "_f":
             # Reported FPS from client.
-            fps = int(toks[1])
-            self.on_client_fps(fps)
+            try:
+                fps = int(toks[1])
+                self.on_client_fps(fps)
+            except:
+                logger.error("failed to parse fps from client: " + str(toks))
         elif toks[0] == "_l":
             # Reported latency from client.
-            latencty_ms = int(toks[1])
-            self.on_client_latency(latencty_ms)
+            try:
+                latencty_ms = int(toks[1])
+                self.on_client_latency(latencty_ms)
+            except:
+                logger.error("failed to parse latency report from client" + str(toks))
         else:
             logger.info('unknown data channel message: %s' % msg)

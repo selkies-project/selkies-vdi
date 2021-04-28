@@ -33,7 +33,7 @@ class GSTWebRTCAppError(Exception):
 
 
 class GSTWebRTCApp:
-    def __init__(self, stun_server=None, turn_servers=None, audio=True, framerate=30, encoder=None):
+    def __init__(self, stun_server=None, turn_servers=None, audio=True, framerate=30, encoder=None, video_bitrate=2000, audio_bitrate=64000):
         """Initialize gstreamer webrtc app.
 
         Initializes GObjects and checks for required plugins.
@@ -54,6 +54,8 @@ class GSTWebRTCApp:
         self.encoder = encoder
 
         self.framerate = framerate
+        self.video_bitrate = video_bitrate
+        self.audio_bitrate = audio_bitrate
 
         # WebRTC ICE and SDP events
         self.on_ice = lambda mlineindex, candidate: logger.warn(
@@ -198,7 +200,7 @@ class GSTWebRTCApp:
             # set_video_bitrate() method. This helps to match the available
             # bandwidth. If set too high, the cliend side jitter buffer will
             # not be unable to lock on to the stream and it will fail to render.
-            nvh264enc.set_property("bitrate", 2000)
+            nvh264enc.set_property("bitrate", self.video_bitrate)
 
             # Rate control mode tells the encoder how to compress the frames to
             # reach the target bitrate. A Constant Bit Rate (CBR) setting is best
@@ -358,7 +360,7 @@ class GSTWebRTCApp:
             vpenc.set_property("error-resilient", "partitions")
             vpenc.set_property("keyframe-max-dist", 10)
             vpenc.set_property("auto-alt-ref", True)
-            vpenc.set_property("target-bitrate", 2000*1000)
+            vpenc.set_property("target-bitrate", self.video_bitrate*1000)
 
         else:
             raise GSTWebRTCAppError("Unsupported encoder for pipeline: %s" % self.encoder)
@@ -517,7 +519,7 @@ class GSTWebRTCApp:
 
         # Set audio bitrate to 64kbps.
         # This can be dynamically changed using set_audio_bitrate()
-        opusenc.set_property("bitrate", 64000)
+        opusenc.set_property("bitrate", self.audio_bitrate)
 
         # Create the rtpopuspay element to convert buffers into
         # RTP packets that are sent over the connection transport.
@@ -674,6 +676,10 @@ class GSTWebRTCApp:
         else:
             logger.warning("set_video_bitrate not supported with encoder: %s" % self.encoder)
 
+        logger.info("video bitrate set to: %d" % bitrate)
+
+        self.video_bitrate = bitrate
+
         self.__send_data_channel_message(
             "pipeline", {"status": "Video bitrate set to: %d" % bitrate})
 
@@ -687,6 +693,9 @@ class GSTWebRTCApp:
         if self.audio:
             element = Gst.Bin.get_by_name(self.pipeline, "opusenc")
             element.set_property("bitrate", bitrate)
+
+            logger.info("audio bitrate set to: %d" % bitrate)
+            self.audio_bitrate = bitrate
             self.__send_data_channel_message(
                 "pipeline", {"status": "Audio bitrate set to: %d" % bitrate})
 
@@ -737,6 +746,28 @@ class GSTWebRTCApp:
         self.__send_data_channel_message(
             "system", {"action": "framerate,"+str(framerate)})
 
+    def send_video_bitrate(self, bitrate):
+        """Sends the current video bitrate to the data channel
+        """
+        logger.info("sending video bitrate")
+        self.__send_data_channel_message(
+            "system", {"action": "video_bitrate,%d" % bitrate})
+
+    def send_audio_bitrate(self, bitrate):
+        """Sends the current audio bitrate to the data channel
+        """
+        logger.info("sending audio bitrate")
+        self.__send_data_channel_message(
+            "system", {"action": "audio_bitrate,%d" % bitrate})
+
+    def send_encoder(self, encoder):
+        """Sends the encoder name to the data channel
+        """
+
+        logger.info("sending encoder: " + encoder)
+        self.__send_data_channel_message(
+            "system", {"action": "encoder,%s" % encoder})
+
     def send_audio_enabled(self, audio_enabled):
         """Sends the current audio state
         """
@@ -752,6 +783,31 @@ class GSTWebRTCApp:
         logger.info("sending resize enabled state")
         self.__send_data_channel_message(
             "system", {"action": "resize,"+str(resize_enabled)})
+
+    def send_ping(self, t):
+        """Sends a ping request over the data channel to measure latency
+        """
+
+        self.__send_data_channel_message(
+            "ping", {"start_time": float("%.3f" % t)})
+
+    def send_latency_time(self, latency):
+        """Sends measured latency response time in ms
+        """
+
+        self.__send_data_channel_message(
+            "latency_measurement", {"latency_ms": latency})
+
+    def send_system_stats(self, cpu_percent, mem_total, mem_used):
+        """Sends system stats
+        """
+
+        self.__send_data_channel_message(
+            "system_stats", {
+                "cpu_percent": cpu_percent,
+                "mem_total": mem_total,
+                "mem_used": mem_used,
+            })
 
     def is_data_channel_ready(self):
         """Checks to see if the data channel is open.

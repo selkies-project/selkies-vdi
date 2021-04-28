@@ -118,6 +118,11 @@ class WebRTCDemo {
         /**
          * @type {function}
          */
+        this.onlatencymeasurement = null;
+
+        /**
+         * @type {function}
+         */
         this.onplayvideorequired = null;
 
         /**
@@ -129,6 +134,11 @@ class WebRTCDemo {
          * @type {function}
          */
         this.onsystemaction = null;
+
+        /**
+         * @type {function}
+         */
+        this.onsystemstats = null;
 
         // Bind signalling server callbacks.
         this.signalling.onsdp = this._onSDP.bind(this);
@@ -147,7 +157,7 @@ class WebRTCDemo {
         /**
          * @type {Input}
          */
-        this.input = new Input(element, (data) => {
+        this.input = new Input(this.element, (data) => {
             if (this._connected && this._send_channel !== null && this._send_channel.readyState === 'open') {
                 this._setDebug("data channel: " + data);
                 this._send_channel.send(data);
@@ -347,6 +357,18 @@ class WebRTCDemo {
                     this.onsystemaction(action);
                 }
             }
+        } else if (msg.type === 'ping') {
+            this._setDebug("received server ping: " + JSON.stringify(msg.data));
+            this.sendDataChannelMessage("pong," + new Date().getTime() / 1000);
+        } else if (msg.type === 'system_stats') {
+            this._setDebug("received systems stats: " + JSON.stringify(msg.data));
+            if (this.onsystemstats !== null) {
+                this.onsystemstats(msg.data);
+            }
+        } else if (msg.type === 'latency_measurement') {
+            if (this.onlatencymeasurement !== null) {
+                this.onlatencymeasurement(msg.data.latency_ms);
+            }
         } else {
             this._setError("Unhandled message recevied: " + msg.type);
         }
@@ -407,68 +429,158 @@ class WebRTCDemo {
     }
 
     /**
-     * Returns promise that resolves with connection stats.
+     * Gets connection stats. returns new promise.
      */
     getConnectionStats() {
         var pc = this.peerConnection;
+        var connectionDetails = {
+            // General connection stats
+            general: {
+                bytesReceived: 0, // from the transport
+                bytesSent: 0, // from the transport
+                connectionType: "NA", // from the transport.candiate-pair.remote-candidate
+                availableReceiveBandwidth: 0, // from transport.candidate-pair
+            },
 
-        var connectionDetails = {};   // the final result object.
+            // Video stats
+            video: {
+                bytesReceived: 0, //from incoming-rtp
+                decoder: "NA", // from incoming-rtp
+                frameHeight: 0, // from incoming-rtp
+                frameWidth: 0, // from incoming-rtp
+                framesPerSecond: 0, // from incoming-rtp
+                packetsReceived: 0, // from incoming-rtp
+                packetsLost: 0, // from incoming-rtp
+                codecName: "NA", // from incoming-rtp.codec
+                jitterBufferDelay: 0, // from track.jitterBufferDelay / track.jitterBuffferEmittedCount in seconds.
+            },
 
-        if (window.chrome) {  // checking if chrome
+            // Audio stats
+            audio: {
+                bytesReceived: 0, // from incomine-rtp
+                packetsReceived: 0, // from incoming-rtp
+                packetsLost: 0, // from incoming-rtp
+                codecName: "NA", // from incoming-rtp.codec
+                jitterBufferDelay: 0, // from track.jitterBufferDelay / track.jitterBuffferEmittedCount in seconds.
+            }
+        };
 
-            var reqFields = [
-                'googLocalCandidateType',
-                'googRemoteCandidateType',
-                'packetsReceived',
-                'packetsLost',
-                'bytesReceived',
-                'googFrameRateReceived',
-                'googFrameRateOutput',
-                'googCurrentDelayMs',
-                'googFrameHeightReceived',
-                'googFrameWidthReceived',
-                'codecImplementationName',
-                'googCodecName',
-                'googAvailableReceiveBandwidth'
-            ];
+        return new Promise(function (resolve, reject) {
+            // Statistics API:
+            // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_Statistics_API
+            pc.getStats(null).then( (stats) => {
+                var reports = {
+                    transports: {},
+                    candidatePairs: {},
+                    remoteCandidates: {},
+                    codecs: {},
+                    videoRTP: null,
+                    videoTrack: null,
+                    audioRTP: null,
+                    audioTrack: null,
+                }
 
-            return new Promise(function (resolve, reject) {
-                pc.getStats(function (stats) {
-                    var filteredVideo = stats.result().filter(function (e) {
-                        if ((e.id.indexOf('Conn-video') === 0 && e.stat('googActiveConnection') === 'true') ||
-                            (e.id.indexOf('ssrc_') === 0 && e.stat('mediaType') === 'video') ||
-                            (e.id == 'bweforvideo')) return true;
-                    });
-                    if (!filteredVideo) return reject('Something is wrong...');
-                    filteredVideo.forEach((f) => {
-                        reqFields.forEach((e) => {
-                            var statValue = f.stat(e);
-                            if (statValue != "") {
-                                connectionDetails['video' + e.replace('goog', '')] = statValue;
-                            }
-                        });
-                    });
-                    var filteredAudio = stats.result().filter(function (e) {
-                        if ((e.id.indexOf('Conn-audio') === 0 && e.stat('googActiveConnection') === 'true') ||
-                            (e.id.indexOf('ssrc_') === 0 && e.stat('mediaType') === 'audio') ||
-                            (e.id == 'bweforaudio')) return true;
-                    });
-                    if (!filteredAudio) return reject('Something is wrong...');
-                    filteredAudio.forEach((f) => {
-                        reqFields.forEach((e) => {
-                            var statValue = f.stat(e);
-                            if (statValue != "") {
-                                connectionDetails['audio' + e.replace('goog', '')] = statValue;
-                            }
-                        });
-                    });
-                    resolve(connectionDetails);
+                var allReports = [];
+
+                stats.forEach( (report) => {
+                    allReports.push(report);
+                    if (report.type === "transport") {
+                        reports.transports[report.id] = report;
+                    } else if (report.type === "candidate-pair") {
+                        reports.candidatePairs[report.id] = report;
+                    } else if (report.type === "inbound-rtp") {
+                        // Audio or video stat
+                        // https://w3c.github.io/webrtc-stats/#streamstats-dict*
+                        if (report.kind === "video") {
+                            reports.videoRTP = report;
+                        } else if (report.kind === "audio") {
+                            reports.audioRTP = report;
+                        }
+                    } else if (report.type === "track") {
+                        // Audio or video track
+                        // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-slicount
+                        if (report.kind === "video") {
+                            reports.videoTrack = report;
+                        } else if (report.kind === "audio") {
+                            reports.audioTrack = report;
+                        }
+                    } else if (report.type === "remote-candidate") {
+                        reports.remoteCandidates[report.id] = report;
+                    } else if (report.type === "codec") {
+                        reports.codecs[report.id] = report;
+                    }
                 });
-            });
 
-        } else {
-            this._setError("unable to fetch connection stats for brower, only Chrome is supported.");
-        }
+                // Extract video related stats.
+                var videoRTP = reports.videoRTP;
+                if (videoRTP !== null) {
+                    connectionDetails.video.bytesReceived = videoRTP.bytesReceived;
+                    connectionDetails.video.decoder = videoRTP.decoderImplementation;
+                    connectionDetails.video.frameHeight = videoRTP.frameHeight;
+                    connectionDetails.video.frameWidth = videoRTP.frameWidth;
+                    connectionDetails.video.framesPerSecond = videoRTP.framesPerSecond;
+                    connectionDetails.video.packetsReceived = videoRTP.packetsReceived;
+                    connectionDetails.video.packetsLost = videoRTP.packetsLost;
+
+                    // Extract video codec from found codecs.
+                    var codec = reports.codecs[videoRTP.codecId];
+                    if (codec !== undefined) {
+                        connectionDetails.video.codecName = codec.mimeType.split("/")[1];
+                    }
+                }
+
+                // Extract audio related stats.
+                var audioRTP = reports.audioRTP;
+                if (audioRTP !== null) {
+                    connectionDetails.audio.bytesReceived = audioRTP.bytesReceived;
+                    connectionDetails.audio.packetsReceived = audioRTP.packetsReceived;
+                    connectionDetails.audio.packetsLost = audioRTP.packetsLost;
+
+                    // Extract audio codec from found codecs.
+                    var codec = reports.codecs[audioRTP.codecId];
+                    if (codec !== undefined) {
+                        connectionDetails.audio.codecName = codec.mimeType.split("/")[1];
+                    }
+                }
+
+                // Extract transport stats.
+                if (Object.keys(reports.transports).length > 0) {
+                    var transport = reports.transports[Object.keys(reports.transports)[0]];
+                    connectionDetails.general.bytesReceived = transport.bytesReceived;
+                    connectionDetails.general.bytesSent = transport.bytesSent;
+
+                    // Get the connection-pair
+                    var candidatePair = reports.candidatePairs[transport.selectedCandidatePairId];
+                    if (candidatePair !== undefined) {
+                        connectionDetails.general.availableReceiveBandwidth = candidatePair.availableIncomingBitrate;
+                        var remoteCandidate = reports.remoteCandidates[candidatePair.remoteCandidateId]
+                        if (remoteCandidate !== undefined) {
+                            connectionDetails.general.connectionType = remoteCandidate.candidateType;
+                        }
+                    }
+                }
+
+                // Compute total packets received and lost
+                connectionDetails.general.packetsReceived = connectionDetails.video.packetsReceived + connectionDetails.audio.packetsReceived;
+                connectionDetails.general.packetsLost = connectionDetails.video.packetsLost + connectionDetails.audio.packetsLost;
+
+                // Compute jitter buffer delay for video
+                if (reports.videoTrack !== null) {
+                    connectionDetails.video.jitterBufferDelay = reports.videoTrack.jitterBufferDelay / reports.videoTrack.jitterBufferEmittedCount;
+                }
+
+                // Compute jitter buffer delay for audio
+                if (reports.audioTrack !== null) {
+                    connectionDetails.audio.jitterBufferDelay = reports.audioTrack.jitterBufferDelay / reports.audioTrack.jitterBufferEmittedCount;
+                }
+
+                // DEBUG
+                connectionDetails.reports = reports;
+                connectionDetails.allReports = allReports;
+
+                resolve(connectionDetails);
+            }).catch( (e) => reject(e));
+        });
     }
 
     /**

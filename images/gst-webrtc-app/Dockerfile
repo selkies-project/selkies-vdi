@@ -17,7 +17,7 @@ ARG BASE_IMAGE=gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-base:lates
 FROM ${BASE_IMAGE}
 
 RUN \
-    pip3 install websockets xlib gputil python-uinput prometheus_client msgpack pynput
+    pip3 install websockets xlib gputil python-uinput prometheus_client msgpack pynput psutil
 
 RUN \
     apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \

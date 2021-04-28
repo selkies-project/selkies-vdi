@@ -27,6 +27,7 @@ from webrtc_input import WebRTCInput
 from webrtc_signalling import WebRTCSignalling, WebRTCSignallingErrorNoPeer
 from gstwebrtc_app import GSTWebRTCApp
 from gpu_monitor import GPUMonitor
+from system_monitor import SystemMonitor
 from metrics import Metrics
 from resize import resize_display
 
@@ -170,6 +171,12 @@ if __name__ == '__main__':
     parser.add_argument('--framerate',
                         default=os.environ.get('WEBRTC_FRAMERATE', '30'),
                         help='framerate of streaming pipeline')
+    parser.add_argument('--video_bitrate',
+                        default=os.environ.get('WEBRTC_VIDEO_BITRATE', '2000'),
+                        help='default video bitrate')
+    parser.add_argument('--audio_bitrate',
+                        default=os.environ.get('WEBRTC_AUDIO_BITRATE', '64000'),
+                        help='default audio bitrate')
     parser.add_argument('--encoder',
                         default=os.environ.get('WEBRTC_ENCODER', 'nvh264enc'),
                         help='gstreamer encoder plugin to use')
@@ -191,6 +198,10 @@ if __name__ == '__main__':
             for k, v in json_args.items():
                 if k == "framerate":
                     args.framerate = int(v)
+                if k == "video_bitrate":
+                    args.video_bitrate = int(v)
+                if k == "audio_bitrate":
+                    args.audio_bitrate = int(v)
                 if k == "enable_audio":
                     args.enable_audio = str((str(v).lower() == 'true')).lower()
                 if k == "enable_resize":
@@ -243,9 +254,11 @@ if __name__ == '__main__':
     enable_audio = args.enable_audio == "true"
     enable_resize = args.enable_resize == "true"
     curr_fps = int(args.framerate)
+    curr_video_bitrate = int(args.video_bitrate)
+    curr_audio_bitrate = int(args.audio_bitrate)
 
     # Create instance of app
-    app = GSTWebRTCApp(stun_server, turn_servers, args.enable_audio == "true", curr_fps, args.encoder)
+    app = GSTWebRTCApp(stun_server, turn_servers, args.enable_audio == "true", curr_fps, args.encoder, curr_video_bitrate, curr_audio_bitrate)
 
     # [END main_setup]
 
@@ -273,8 +286,11 @@ if __name__ == '__main__':
             "opened peer data channel for user input to X11")
 
         app.send_framerate(app.framerate)
+        app.send_video_bitrate(app.video_bitrate)
+        app.send_audio_bitrate(app.audio_bitrate)
         app.send_audio_enabled(app.audio)
         app.send_resize_enabled(enable_resize)
+        app.send_encoder(app.encoder)
 
     app.on_data_open = lambda: data_channel_ready()
 
@@ -282,12 +298,10 @@ if __name__ == '__main__':
     app.on_data_message = webrtc_input.on_message
 
     # Send video bitrate messages to app
-    webrtc_input.on_video_encoder_bit_rate = lambda bitrate: app.set_video_bitrate(
-        int(bitrate))
+    webrtc_input.on_video_encoder_bit_rate = lambda bitrate: set_json_app_argument(args.json_config, "video_bitrate", bitrate) and (app.set_video_bitrate(int(bitrate)))
 
     # Send audio bitrate messages to app
-    webrtc_input.on_audio_encoder_bit_rate = lambda bitrate: app.set_audio_bitrate(
-        int(bitrate))
+    webrtc_input.on_audio_encoder_bit_rate = lambda bitrate: set_json_app_argument(args.json_config, "audio_bitrate", bitrate) and app.set_audio_bitrate(int(bitrate))
 
     # Send pointer visibility setting to app
     webrtc_input.on_mouse_pointer_visible = lambda visible: app.set_pointer_visible(
@@ -305,6 +319,8 @@ if __name__ == '__main__':
     # Initial binding of enable resize handler.
     if enable_resize:
         webrtc_input.on_resize = lambda res: resize_display(res) and app.send_reload_window()
+
+    webrtc_input.on_ping_response = lambda latency: app.send_latency_time(latency)
 
     # Enable resize with resolution handler
     def enable_resize_handler(enabled, enable_res):
@@ -338,6 +354,16 @@ if __name__ == '__main__':
 
     gpu_mon.on_stats = on_gpu_stats
 
+    # Initialize the system monitor
+    system_mon = SystemMonitor()
+
+    def on_sysmon_timer(t):
+        webrtc_input.ping_start = t
+        app.send_system_stats(system_mon.cpu_percent, system_mon.mem_total, system_mon.mem_used)
+        app.send_ping(t)
+
+    system_mon.on_timer = on_sysmon_timer
+
     # [START main_start]
     # Connect to the signalling server and process messages.
     loop = asyncio.get_event_loop()
@@ -346,6 +372,7 @@ if __name__ == '__main__':
         loop.run_until_complete(webrtc_input.connect())
         loop.run_in_executor(None, lambda: webrtc_input.start_clipboard())
         loop.run_in_executor(None, lambda: gpu_mon.start())
+        loop.run_in_executor(None, lambda: system_mon.start())
         loop.run_until_complete(signalling.connect())
         loop.run_until_complete(signalling.start())
     except Exception as e:
@@ -355,5 +382,6 @@ if __name__ == '__main__':
         webrtc_input.stop_clipboard()
         webrtc_input.disconnect()
         gpu_mon.stop()
+        system_mon.stop()
         sys.exit(0)
     # [END main_start]
