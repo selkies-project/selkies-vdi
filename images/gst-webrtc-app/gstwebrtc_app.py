@@ -267,6 +267,11 @@ class GSTWebRTCApp:
             #   https://tools.ietf.org/html/rfc6184#section-8.2.1
             rtph264pay_caps.set_value("payload", 123)
 
+            # Set caps that help with frame retransmits that will avoid screen freezing on packet loss.
+            rtph264pay_caps.set_value("rtcp-fb-nack-pli", True)
+            rtph264pay_caps.set_value("rtcp-fb-ccm-fir", True)
+            rtph264pay_caps.set_value("rtcp-fb-x-gstreamer-fir-as-repair", True)
+
             # Create a capability filter for the rtph264pay_caps.
             rtph264pay_capsfilter = Gst.ElementFactory.make("capsfilter")
             rtph264pay_capsfilter.set_property("caps", rtph264pay_caps)
@@ -282,12 +287,12 @@ class GSTWebRTCApp:
             x264enc = Gst.ElementFactory.make("x264enc", "x264enc")
             x264enc.set_property("threads", 4)
             x264enc.set_property("bframes", 0)
-            x264enc.set_property("key-int-max", 60)
+            x264enc.set_property("key-int-max", 0)
             x264enc.set_property("byte-stream", True)
             x264enc.set_property("tune", "zerolatency")
             x264enc.set_property("speed-preset", "veryfast")
-            x264enc.set_property("bitrate", 2000)
-            x264enc.set_property("pass", "cbr")
+            x264enc.set_property("bitrate", self.video_bitrate)
+            x264enc.set_property("pass", "pass1")
 
             # capsfilter
             x264enc_caps = Gst.caps_from_string("video/x-h264")
@@ -302,6 +307,9 @@ class GSTWebRTCApp:
             rtph264pay_caps.set_value("media", "video")
             rtph264pay_caps.set_value("encoding-name", "H264")
             rtph264pay_caps.set_value("payload", 123)
+            rtph264pay_caps.set_value("rtcp-fb-nack-pli", True)
+            rtph264pay_caps.set_value("rtcp-fb-ccm-fir", True)
+            rtph264pay_caps.set_value("rtcp-fb-x-gstreamer-fir-as-repair", True)
 
             # Create a capability filter for the rtph264pay_caps.
             rtph264pay_capsfilter = Gst.ElementFactory.make("capsfilter")
