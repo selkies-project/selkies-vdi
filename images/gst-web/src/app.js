@@ -247,7 +247,7 @@ var app = new Vue({
         },
         scaleLocal(newValue, oldValue) {
             if (newValue === null) return;
-            console.log("resize remote changed from " + oldValue + " to " + newValue);
+            console.log("scaleLocal changed from " + oldValue + " to " + newValue);
             if (oldValue !== null && newValue !== oldValue) {
                 if (newValue === true) {
                     webrtc.element.setAttribute("class", "video scale");
@@ -455,8 +455,9 @@ webrtc.input.onfullscreenhotkey = () => {
 
 webrtc.input.onresizeend = () => {
     app.windowResolution = webrtc.input.getWindowResolution();
-    console.log(`Window size changed: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
-    webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
+    var newRes = parseInt(app.windowResolution[0]/window.devicePixelRatio) + "x" + parseInt(app.windowResolution[1]/window.devicePixelRatio);
+    console.log(`Window size changed: ${app.windowResolution[0]}x${app.windowResolution[1]}, scaled to: ${newRes}`);
+    webrtc.sendDataChannelMessage("r," + newRes);
 }
 
 webrtc.onplayvideorequired = () => {
@@ -551,8 +552,9 @@ webrtc.onsystemaction = (action) => {
         // Send initial window size.
         if (app.resizeRemote === true) {
             app.windowResolution = webrtc.input.getWindowResolution();
-            console.log(`Initial window resolution: ${app.windowResolution[0]}x${app.windowResolution[1]}`);
-            webrtc.sendDataChannelMessage("r," + app.windowResolution[0] + "x" + app.windowResolution[1]);
+            var newRes = parseInt(app.windowResolution[0]/window.devicePixelRatio) + "x" + parseInt(app.windowResolution[1]/window.devicePixelRatio);
+            console.log(`Initial window resolution: ${app.windowResolution[0]}x${app.windowResolution[1]}, scaled to: ${newRes}`);
+            webrtc.sendDataChannelMessage("r," + newRes);
         }
     } else if (action.startsWith("encoder")) {
         if (action.split(",")[1].startsWith("x264")) {
