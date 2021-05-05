@@ -14,9 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -ex
 
+# Timeout in seconds to wait for x server before shutting down
+XSERVER_TIMEOUT=${WATCHDOG_TIMEOUT:-60}
+
+count=0
+set +x
 echo "Waiting for host X server at ${DISPLAY}"
-until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
-echo "Host X server is ready"
-exec python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/watchdog.sh
+until [[ -e /var/run/appconfig/xserver_ready ]]; do
+    ((count=count+1))
+    if [[ $count -ge ${XSERVER_TIMEOUT} ]]; then
+        echo "ERROR: Timeout waiting for X server"
+        /opt/app/shutdown.sh
+        exit
+    fi
+    sleep 1
+done
+[[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
+echo "X server is ready"
+set -x
+
+exec python3 /opt/app/xserver_watchdog.py --on_timeout=/opt/app/shutdown.sh
