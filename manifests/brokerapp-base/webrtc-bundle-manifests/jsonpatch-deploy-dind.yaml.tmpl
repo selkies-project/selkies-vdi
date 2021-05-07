@@ -36,8 +36,54 @@
 {{- end}}
 
 {{- $persistStorageMountPath := default "/home/coder" .AppParams.persistStorageMountPath }}
+{{- $dindPersistSubPath := default "var/lib/docker" .AppParams.dindPersistSubPath }}
 
-{{- if and ($persistEnabled) ($dindEnabled) }}
+###
+# Using Filestore or NFS is not supported with dind.
+# Not only is NFS too slow, but the rootless version of dind is also not compatible with the NFS filesystem.
+# See also: https://docs.docker.com/engine/security/rootless/#docker-pull-errors
+###
+{{- $persistFilestore := false}}
+{{- if .AppParams.persistStorageClass }}
+  {{- if contains "filestore" .AppParams.persistStorageClass }}
+    {{- $persistFilestore = true }}
+  {{- end}}
+{{- end}}
+
+{{- $dindVolumeName := "persist" }}
+{{- $dindPDEnabled := false }}
+{{- $dindPDStorageClass := default "standard-rwo" .AppParams.dindPDStorageClass }}
+{{- $dindPDStorageSize := default "10Gi" .AppParams.dindPDStorageSize }}
+{{- if .AppParams.enableDindPD }}
+  {{- if eq .AppParams.enableDindPD "true" }}
+    {{- $dindVolumeName = "persist-dind-pd" }}
+    {{- $dindPDEnabled = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $dindPDEnabled }}
+###
+# Add dedicated PD volume for docker-in-docker
+###
+- op: add
+  path: "/spec/volumeClaimTemplates/-"
+  value:
+    metadata:
+      name: {{$dindVolumeName}}
+      annotations:
+        gke.accel.vdi/user: "{{.User}}"
+      labels:
+        app.broker/deletion-policy: "abandon"
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: {{ $dindPDStorageClass | quote }}
+      volumeName: {{ default "" .AppParams.dindPDVolumeName | quote }}
+      resources:
+        requests:
+          storage: {{ $dindPDStorageSize }}
+{{- end}}
+
+{{- if or (and (and $persistEnabled $dindEnabled) (not $persistFilestore)) (and ($dindPDEnabled) ($dindEnabled)) }}
 ###
 # Add shared volume for docker-certs
 # Inserting as first element to deconflict other patches that append.
@@ -51,14 +97,8 @@
       sizeLimit: 128Mi
 
 ###
-# Add volumeMounts to desktop container
+# Add shared volumeMount for docker certs
 ###
-- op: add
-  path: "/spec/template/spec/containers/0/volumeMounts/0"
-  value:
-    name: persist
-    mountPath: /var/lib/docker
-    subPath: var/lib/docker
 - op: add
   path: "/spec/template/spec/containers/0/volumeMounts/0"
   value:
@@ -96,7 +136,33 @@
     value: "true"
 
 ###
-# Add Docker in Docker container
+# Add Docker-in-Docker persistent data init container
+###
+- op: add
+  path: "/spec/template/spec/initContainers/-"
+  value:
+    name: dind-persist-init
+    securityContext:
+      runAsUser: 0
+    image: docker:20.10-dind-rootless
+    command: ["/bin/sh"]
+    args:
+     - -exc
+     - |
+        if [[ ! -e /mnt/docker/.dind-persist-init ]]; then
+          echo "INFO: initializing data-root persistent directory"
+          touch /mnt/docker/.dind-persist-init
+          chown -R 1000:1000 /mnt/docker
+        else
+          echo "INFO: data-root persist init already complete."
+        fi
+    volumeMounts:
+      - name: {{$dindVolumeName}}
+        # NOTE: When using the 'rootless' dind image, data is stored to /home/rootless/.local/share/docker
+        mountPath: /mnt/docker
+        subPath: {{$dindPersistSubPath}}
+###
+# Add Docker-in-Docker container
 ###
 - op: add
   path: "/spec/template/spec/containers/-"
@@ -104,7 +170,18 @@
     name: dind
     securityContext:
       privileged: true
-    image: docker:19.03.2-dind
+    image: docker:20.10-dind-rootless
+    command: ["/bin/sh"]
+    args:
+     - -exc
+     - |
+        # Write config file for dockerd to remap data directory outside of rootless home.
+        # Without this, the volumeMount at the default data directory (/home/rootless/.local/share/docker) will break the permissions on the rootless home directory.
+        mkdir -p ${HOME}/.config/docker
+        cat - > ${HOME}/.config/docker/daemon.json <<EOF
+        {"data-root":"/mnt/docker"}
+        EOF
+        exec dockerd-entrypoint.sh
     env:
       - name: DOCKER_TLS_CERTDIR
         value: /var/lib/docker-certs
@@ -113,20 +190,29 @@
         containerPort: 2375
         protocol: TCP
     volumeMounts:
+      ###
+      # Certs volume shared with desktop container
+      ###
       - name: docker-certs
         mountPath: /var/lib/docker-certs
-      - name: persist
-        mountPath: /var/lib/docker
-        subPath: var/lib/docker
+      ###
+      # Docker data volume
+      ###
+      - name: {{$dindVolumeName}}
+        # NOTE: When using the 'rootless' dind image, data is stored to /home/rootless/.local/share/docker
+        mountPath: /mnt/docker
+        subPath: {{$dindPersistSubPath}}
+      ###
+      # User home directory shared with dind container
+      ###
       - name: persist
         mountPath: {{$persistStorageMountPath}}
     resources:
       limits:
         cpu: 4
         memory: 8Gi
-        # If user creates too many temporary files, the pod will be evicted.
-        # Available in k8s 1.15+
-        # ephemeral-storage: 50Gi
+        # If storage outside of the user dind containers is exceeded, the pod will be evicted. This is to protect the node disk.
+        ephemeral-storage: 1Gi
       requests:
         cpu: 100m
         memory: 256Mi
