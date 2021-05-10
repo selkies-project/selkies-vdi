@@ -137,30 +137,32 @@
 
 ###
 # Add Docker-in-Docker persistent data init container
+# TODO: Rootless performance is currently very slow, so this is disabled for now.
 ###
-- op: add
-  path: "/spec/template/spec/initContainers/-"
-  value:
-    name: dind-persist-init
-    securityContext:
-      runAsUser: 0
-    image: docker:20.10-dind-rootless
-    command: ["/bin/sh"]
-    args:
-     - -exc
-     - |
-        if [[ ! -e /mnt/docker/.dind-persist-init ]]; then
-          echo "INFO: initializing data-root persistent directory"
-          touch /mnt/docker/.dind-persist-init
-          chown -R 1000:1000 /mnt/docker
-        else
-          echo "INFO: data-root persist init already complete."
-        fi
-    volumeMounts:
-      - name: {{$dindVolumeName}}
-        # NOTE: When using the 'rootless' dind image, data is stored to /home/rootless/.local/share/docker
-        mountPath: /mnt/docker
-        subPath: {{$dindPersistSubPath}}
+#- op: add
+#  path: "/spec/template/spec/initContainers/-"
+#  value:
+#    name: dind-persist-init
+#    securityContext:
+#      runAsUser: 0
+#    image: docker:20.10-dind-rootless
+#    command: ["/bin/sh"]
+#    args:
+#     - -exc
+#     - |
+#        if [[ ! -e /mnt/docker/.dind-persist-init ]]; then
+#          echo "INFO: initializing data-root persistent directory"
+#          touch /mnt/docker/.dind-persist-init
+#          chown -R 1000:1000 /mnt/docker
+#        else
+#          echo "INFO: data-root persist init already complete."
+#        fi
+#    volumeMounts:
+#      - name: {{$dindVolumeName}}
+#        # NOTE: When using the 'rootless' dind image, data is stored to /home/rootless/.local/share/docker
+#        mountPath: /mnt/docker
+#        subPath: {{$dindPersistSubPath}}
+
 ###
 # Add Docker-in-Docker container
 ###
@@ -170,18 +172,11 @@
     name: dind
     securityContext:
       privileged: true
-    image: docker:20.10-dind-rootless
-    command: ["/bin/sh"]
-    args:
-     - -exc
-     - |
-        # Write config file for dockerd to remap data directory outside of rootless home.
-        # Without this, the volumeMount at the default data directory (/home/rootless/.local/share/docker) will break the permissions on the rootless home directory.
-        mkdir -p ${HOME}/.config/docker
-        cat - > ${HOME}/.config/docker/daemon.json <<EOF
-        {"data-root":"/mnt/docker"}
-        EOF
-        exec dockerd-entrypoint.sh
+    image: docker:20.10-dind
+
+    # Move the Docker data dir to the volume mount.
+    args: ["--data-root", "/mnt/docker"]
+
     env:
       - name: DOCKER_TLS_CERTDIR
         value: /var/lib/docker-certs
@@ -199,7 +194,6 @@
       # Docker data volume
       ###
       - name: {{$dindVolumeName}}
-        # NOTE: When using the 'rootless' dind image, data is stored to /home/rootless/.local/share/docker
         mountPath: /mnt/docker
         subPath: {{$dindPersistSubPath}}
       ###
