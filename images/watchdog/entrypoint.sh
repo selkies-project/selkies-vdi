@@ -19,6 +19,14 @@ set -ex
 # Timeout in seconds to wait for x server before shutting down
 XSERVER_TIMEOUT=${WATCHDOG_TIMEOUT:-60}
 
+set +x
+if [[ ${XSERVER_TIMEOUT} -lt 1 ]]; then
+    echo "INFO: watchdog is disabled because timeout is ${XSERVER_TIMEOUT}, spinning."
+    while true; do sleep 1000; done
+    exit
+fi
+set -x
+
 count=0
 set +x
 echo "Waiting for host X server at ${DISPLAY}"
