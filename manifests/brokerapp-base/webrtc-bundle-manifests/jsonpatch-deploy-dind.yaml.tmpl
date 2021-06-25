@@ -39,6 +39,19 @@
 {{- $dindPersistSubPath := default "var/lib/docker" .AppParams.dindPersistSubPath }}
 
 ###
+# Copy limits from spec so that docker container matches limits of desktop container.
+# Requests is not matched to avoid doubling of the requested resources.
+###
+{{- $hasLimits := false }}
+{{- $hasLimitsCPU := false }}
+{{- $hasLimitsMemory := false }}
+{{- if .NodeTier.Resources.Limits }}
+  {{- $hasLimits = true }}
+  {{- if .NodeTier.Resources.Limits.CPU }}{{- $hasLimitsCPU = true }}{{- end}}
+  {{- if .NodeTier.Resources.Limits.Memory }}{{- $hasLimitsMemory = true }}{{- end}}
+{{- end}}
+
+###
 # Using Filestore or NFS is not supported with dind.
 # Not only is NFS too slow, but the rootless version of dind is also not compatible with the NFS filesystem.
 # See also: https://docs.docker.com/engine/security/rootless/#docker-pull-errors
@@ -52,7 +65,7 @@
 
 {{- $dindVolumeName := "persist" }}
 {{- $dindPDEnabled := false }}
-{{- $dindPDStorageClass := default "standard-rwo" .AppParams.dindPDStorageClass }}
+{{- $dindPDStorageClass := default "pd-standard" .AppParams.dindPDStorageClass }}
 {{- $dindPDStorageSize := default "10Gi" .AppParams.dindPDStorageSize }}
 {{- if .AppParams.enableDindPD }}
   {{- if eq .AppParams.enableDindPD "true" }}
@@ -203,13 +216,17 @@
         mountPath: {{$persistStorageMountPath}}
     resources:
       limits:
-        cpu: 4
-        memory: 8Gi
+        {{- if $hasLimitsCPU }}
+        cpu: {{.NodeTier.Resources.Limits.CPU}}
+        {{- end}}
+        {{- if $hasLimitsMemory }}
+        memory: {{.NodeTier.Resources.Limits.Memory}}
+        {{- end}}
         # If storage outside of the user dind containers is exceeded, the pod will be evicted. This is to protect the node disk.
         ephemeral-storage: 1Gi
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: "1m"
+        memory: 1Mi
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test
