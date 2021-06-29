@@ -121,7 +121,7 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
-{{.AppParams.command | nindent 12}}
+{{.AppParams.command | nindent 14}}
           {{- end}}
           securityContext:
             privileged: false
