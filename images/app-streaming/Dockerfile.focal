@@ -50,14 +50,15 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         xz-utils \
         gdebi-core \
         xfwm4 \
-        gdebi-core && \
+        gdebi-core \
+        libegl1-mesa && \
     rm -rf /var/lib/apt/lists/*
 
 # Install VirtualGL for off-screen rendering with Xpra
-ARG VIRTUALGL_VERSION=2.6.80
+ARG VIRTUALGL_VERSION=2.6.90
 RUN \
-    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/dev/linux/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
-    apt-get update && gdebi -n /tmp/virtualgl.deb
+    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/main/linux/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
+    apt-get update && dpkg -i /tmp/virtualgl.deb
 
 ENV PATH=${PATH}:/opt/VirtualGL/bin
 
