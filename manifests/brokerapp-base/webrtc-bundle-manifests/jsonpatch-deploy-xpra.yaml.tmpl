@@ -41,7 +41,13 @@
   path: "/spec/template/spec/containers/0/args"
   value:
     - |
-      echo "Waiting for X server"
+      if [[ "${VDI_enableXpra}" == false ]]; then
+        # Revert back to original entrypoint if the patched entrypoint gets commited to the image.
+        exec /tini -- /entrypoint.sh
+        exit
+      fi
+
+      echo "Waiting for Xpra server"
       until [[ -e /var/run/appconfig/xpra_ready ]]; do sleep 1; done
       [[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
       echo "X server is ready"
