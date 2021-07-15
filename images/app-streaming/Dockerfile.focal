@@ -57,7 +57,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 # Install VirtualGL for off-screen rendering with Xpra
 ARG VIRTUALGL_VERSION=2.6.90
 RUN \
-    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/main/linux/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
+    curl -fsSL -o /tmp/virtualgl.deb https://sourceforge.net/projects/virtualgl/files/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
     apt-get update && dpkg -i /tmp/virtualgl.deb
 
 ENV PATH=${PATH}:/opt/VirtualGL/bin
