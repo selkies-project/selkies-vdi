@@ -29,6 +29,7 @@ configMapGenerator:
       - resource-vdi-statefulset.yaml.tmpl
       - resource-vdi-egress-network-policy.yaml.tmpl
       - resource-vdi-file-manager-config.yaml.tmpl
+      - jsonpatch-deploy-host-aliases.yaml.tmpl
       - resource-vdi-isolated-network-def.yaml.tmpl
       - resource-vdi-shared-storage-nfs-pv.yaml.tmpl
       - resource-vdi-shared-storage-ceph-secret.yaml.tmpl

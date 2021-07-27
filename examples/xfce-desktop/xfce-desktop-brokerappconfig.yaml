@@ -114,6 +114,14 @@ spec:
       default: "3600" # seconds
 
     ###
+    # Custom hosts aliases
+    ###
+    #- name: enableHostAliases
+    #  default: "true"
+    #- name: hostAliases
+    #  default: "127.0.0.1:foo.local,bar.local;10.1.2.3:foo.remote,bar.remote"
+
+    ###
     # Web Preview feature
     ###
     #- name: enableWebPreview

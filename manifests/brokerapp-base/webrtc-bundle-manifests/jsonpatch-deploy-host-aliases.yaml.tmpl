@@ -1,0 +1,56 @@
+# Copyright 2021 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# Example BrokerAppConfig appParams when combined with hostAliases
+###
+#    appParams:
+#      - name: enableHostAliases
+#        default: "true"
+#      - name: hostAliases
+#        default: "127.0.0.1:foo.local,bar.local;10.1.2.3:foo.remote,bar.remote"
+
+{{- $enableHostAliases := false }}
+{{- if .AppParams.enableHostAliases }}
+  {{- if eq .AppParams.enableHostAliases "true" }}
+    {{- $enableHostAliases = true }}
+  {{- end}}
+{{- end}}
+
+# Split host aliases string from BrokerAppConfig
+{{- $hostAliases := split ";" (default "" .AppParams.hostAliases) }}
+
+{{- if and $enableHostAliases $hostAliases }}
+###
+# Add hostAliases to pod spec.
+# https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/
+###
+- op: add
+  path: "/spec/template/spec/hostAliases"
+  value:
+  {{- range $alias := $hostAliases }}
+  {{- $toks := split ":" $alias }}
+  - ip: {{ $toks._0 }}
+    hostnames:
+    {{- $hosts := split "," $toks._1}}
+    {{- range $host := $hosts }}
+    - {{$host | quote}}
+    {{- end}}
+  {{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
