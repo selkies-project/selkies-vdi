@@ -24,6 +24,8 @@ kind: Service
 metadata:
   name: vdi
 spec:
+  type: ClusterIP
+  clusterIP: None
   selector:
     app: vdi
   ports:
