@@ -14,19 +14,23 @@
 
 {{- $hasRequests := false }}
 {{- $hasRequestsMemory := false }}
+{{- $hasRequestsEphemeralStorage := false }}
 {{- $hasLimits := false }}
 {{- $hasLimitsCPU := false }}
 {{- $hasLimitsMemory := false }}
+{{- $hasLimitsEphemeralStorage := false }}
 
 {{- if .NodeTier.Resources.Requests }}
   {{- $hasRequests = true }}
   {{- if .NodeTier.Resources.Requests.Memory }}{{- $hasRequestsMemory = true }}{{- end}}
+  {{- if .NodeTier.Resources.Requests.EphemeralStorage }}{{- $hasRequestsEphemeralStorage = true }}{{- end}}
 {{- end}}
 
 {{- if .NodeTier.Resources.Limits }}
   {{- $hasLimits = true }}
   {{- if .NodeTier.Resources.Limits.CPU }}{{- $hasLimitsCPU = true }}{{- end}}
   {{- if .NodeTier.Resources.Limits.Memory }}{{- $hasLimitsMemory = true }}{{- end}}
+  {{- if .NodeTier.Resources.Limits.EphemeralStorage }}{{- $hasLimitsEphemeralStorage = true }}{{- end}}
 {{- end}}
 
 {{- if not (and ($hasRequests) ($hasLimits)) }}
@@ -54,6 +58,15 @@
   value: {{.NodeTier.Resources.Requests.Memory}}
 {{- end}}
 
+{{- if $hasRequestsEphemeralStorage }}
+###
+# Ephemeral Storage requests from Node Tier spec, or none.
+###
+- op: add
+  path: "/spec/template/spec/containers/0/resources/requests/ephemeral-storage"
+  value: {{.NodeTier.Resources.Requests.EphemeralStorage}}
+{{- end}}
+
 {{- if $hasLimitsCPU }}
 ###
 # CPU limits from Node Tier spec, or none
@@ -70,4 +83,13 @@
 - op: add
   path: "/spec/template/spec/containers/0/resources/limits/memory"
   value: {{.NodeTier.Resources.Limits.Memory}}
+{{- end}}
+
+{{- if $hasLimitsEphemeralStorage }}
+###
+# Ephemeral Storage limits from Node Tier spec, or none
+###
+- op: add
+  path: "/spec/template/spec/containers/0/resources/limits/ephemeral-storage"
+  value: {{.NodeTier.Resources.Limits.EphemeralStorage}}
 {{- end}}
