@@ -107,9 +107,15 @@ spec:
               . /hostfs/etc/os-release
               PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/project/project-id)
               TOKEN=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token | tr ',' '\n' | grep access_token | cut -d: -f2 | tr -d '"')
-              URL="https://storage.googleapis.com/${PROJECT_ID}-vdi/drivers/NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}.tar.gz"
+              URL="https://storage.googleapis.com/${PROJECT_ID}-vdi/drivers/NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}-nvidia-${NVIDIA_DRIVER_VERSION}.tar.gz"
               (cd /usr/local/ && curl -sfL -H "Authorization: Bearer $TOKEN" $URL | tar -zxvf -) || \
                 echo "WARN: Cache driver not found, driver will be built from source and cached afterwards."
+          env:
+            - name: NVIDIA_DRIVER_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: gpu-driver-cos
+                  key: nvidia_driver_version
           volumeMounts:
             - name: root-mount
               mountPath: /hostfs
@@ -135,7 +141,10 @@ spec:
             - name: ROOT_MOUNT_DIR
               value: /root
             - name: NVIDIA_DRIVER_VERSION
-              value: "450.80.02"
+              valueFrom:
+                configMapKeyRef:
+                  name: gpu-driver-cos
+                  key: nvidia_driver_version
           volumeMounts:
             - name: nvidia-install-dir-host
               mountPath: /usr/local/nvidia
@@ -174,17 +183,36 @@ spec:
 
               apt-get update
               apt-get install -y gnupg
-              apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub
-              curl -LO http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
-              dpkg -i cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
-              apt-get update
-              apt-get install -y cuda-nvrtc-dev-10-1
+
+              IFS="." read -ra VERSION_TOKS <<< ${NVIDIA_DRIVER_VERSION}
+
+              if [[ ${VERSION_TOKS[0]} -ge 460 ]]; then
+                echo "Installing CUDA 11.2"
+                apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+                curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-nvrtc-11-2_11.2.152-1_amd64.deb
+                curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-nvrtc-dev-11-2_11.2.152-1_amd64.deb
+                dpkg -i cuda-nvrtc-11-2_11.2.152-1_amd64.deb
+                dpkg -i cuda-nvrtc-dev-11-2_11.2.152-1_amd64.deb
+                CUDA_SRC_DIR="/usr/local/cuda-11.2/lib64"
+              else
+                echo "Installing CUDA 10.1"
+                apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/7fa2af80.pub
+                curl -LO http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
+                dpkg -i cuda-repo-ubuntu1404_10.1.243-1_amd64.deb
+                apt-get update
+                apt-get install -y cuda-nvrtc-dev-10-1
+                CUDA_SRC_DIR="/usr/local/cuda-10.1/lib64"
+              fi
 
               mkdir -p ${CUDA_LIB_DIR}
-
-              rsync -ra /usr/local/cuda-10.1/lib64/* ${CUDA_LIB_DIR}
-
+              rsync -ra ${CUDA_SRC_DIR?}/* ${CUDA_LIB_DIR}
               touch /tmp/cuda_install_complete
+          env:
+            - name: NVIDIA_DRIVER_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: gpu-driver-cos
+                  key: nvidia_driver_version
         ###
         # Remove taint and update node label.
         ###
@@ -220,7 +248,7 @@ spec:
               . /hostfs/etc/os-release
               PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google"  http://metadata.google.internal/computeMetadata/v1/project/project-id)
               BUCKET=gs://${PROJECT_ID}-vdi
-              DEST_FILE=NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}.tar.gz
+              DEST_FILE=NVIDIA-driver-cached-cos-${VERSION_ID}-${BUILD_ID}-nvidia-${NVIDIA_DRIVER_VERSION}.tar.gz
               DEST_OBJ=${BUCKET}/drivers/${DEST_FILE}
 
               # Exit if object already exists.
@@ -238,6 +266,12 @@ spec:
 
               # Copy archive to GCS
               gsutil -m cp /tmp/${DEST_FILE} ${DEST_OBJ} || true
+          env:
+            - name: NVIDIA_DRIVER_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: gpu-driver-cos
+                  key: nvidia_driver_version
           volumeMounts:
             - name: root-mount
               mountPath: /hostfs

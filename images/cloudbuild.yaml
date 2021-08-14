@@ -71,9 +71,6 @@ images: [
     # tinyfilemanager
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
-    # nvidia-gpu-device-plugin
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
     # uinput-device-plugin
     'gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/uinput-device-plugin:latest',
@@ -477,39 +474,6 @@ steps:
         ]
   waitFor:
     - tinyfilemanager
-
-###
-# NVIDIA device plugin image
-###
-- name: 'gcr.io/cloud-builders/docker'
-  id: nvidia-gpu-device-plugin-pull
-  entrypoint: 'bash'
-  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest || exit 0); fi"]
-  waitFor: ["-"]
-- name: gcr.io/cloud-builders/git
-  id: nvidia-gpu-device-plugin-clone
-  args: ['clone', 'https://github.com/danisla/container-engine-accelerators', '-b', 'add-modeset-device']
-  waitFor:
-    - nvidia-gpu-device-plugin-pull
-- name: 'gcr.io/cloud-builders/docker'
-  id: nvidia-gpu-device-plugin-build
-  args: [
-            'build',
-            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
-            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
-            'container-engine-accelerators'
-        ]
-  waitFor:
-    - nvidia-gpu-device-plugin-clone
-- name: 'gcr.io/cloud-builders/docker'
-  id: nvidia-gpu-device-plugin-tags
-  args: [
-            'tag',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:${_IMAGE_TAG}',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-nvidia-gpu-device-plugin:latest',
-        ]
-  waitFor:
-    - nvidia-gpu-device-plugin-build
 
 ###
 # uinput device plugin image

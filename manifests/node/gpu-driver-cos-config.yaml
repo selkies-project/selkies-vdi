@@ -18,6 +18,12 @@ metadata:
   name: gpu-driver-cos
   namespace: kube-system
 data:
+  # Get latest list of supported drivers here:
+  #   gsutil ls gs://nvidia-drivers-us-public/nvidia-cos-project/
+  # Verified working versions:
+  #   COS 89: 418.197.02, 450.119.04, 460.73.01
+  nvidia_driver_version: 460.73.01
+
   gpu_installer_url_lib.sh: |
     #!/bin/bash
 

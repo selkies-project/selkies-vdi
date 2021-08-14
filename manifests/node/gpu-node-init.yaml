@@ -108,48 +108,6 @@ spec:
             type: File
       initContainers:
         ###
-        # Patch the nvidia-gpu-device-plugin pod with the new image
-        # The daemonset is loaded on the master node and not accessible.
-        # Patches to the daemonset would be replaced automatically with the node version.
-        # As a workaround, just patch the pod with a new image.
-        # This can be removed PR #122 has been merged.
-        # https://github.com/GoogleCloudPlatform/container-engine-accelerators/pull/122
-        ###
-        - name: gpu-plugin-patch
-          image: "cos-nvidia-installer:fixed"
-          imagePullPolicy: Never
-          resources:
-            requests:
-              cpu: 0.15
-          command: ["/bin/bash"]
-          args:
-            - -exc
-            - |
-              export PROJECT_ID=$(curl -sf -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/project/project-id)
-              export NVIDIA_GPU_DEVICE_PLUGIN_IMAGE="gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-nvidia-gpu-device-plugin:latest"
-              cat > patch.yaml <<EOF
-              spec:
-                containers:
-                - name: nvidia-gpu-device-plugin
-                  image: ${NVIDIA_GPU_DEVICE_PLUGIN_IMAGE?}
-              EOF
-
-              POD=$(kubectl get pod -n kube-system -l k8s-app=nvidia-gpu-device-plugin --field-selector spec.nodeName=${MY_NODE_NAME} -o jsonpath='{..metadata.name}')
-              if [[ -n "${POD}" ]]; then
-                kubectl -n kube-system patch pod ${POD} --type strategic --patch "$(cat patch.yaml)"
-              else
-                echo "ERROR: pod not found: ${POD}"
-                exit 1
-              fi
-          env:
-            - name: MY_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-          volumeMounts:
-            - name: host-kubectl
-              mountPath: /usr/local/bin/kubectl
-        ###
         # Remove taint and update node label when finished.
         ###
         - name: node-init
