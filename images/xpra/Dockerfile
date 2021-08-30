@@ -74,12 +74,15 @@ RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/bionic/main/binary-amd
     gdebi -n ffmpeg-xpra.deb && \
     rm -f ffmpeg-xpra.deb
 
+# Install other python dependencies
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    python3-requests \
+    python3-setproctitle \
+    python3-netifaces
+
 # Install xpra
-ADD https://xpra.org/repos/bionic/xpra.list /etc/apt/sources.list.d/xpra-beta.list
-RUN curl -sfL https://xpra.org/gpg.asc | sudo apt-key add - && \
-    sudo apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        python3-requests \
-        xpra
+RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_4.2.1-r71-1_amd64.deb -o /opt/xpra_4.3-r29771-1_amd64.deb && \
+    DEBIAN_FRONTEND=noninteractive gdebi -n /opt/xpra_4.3-r29771-1_amd64.deb
 
 # Apply xpra patches
 COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
@@ -87,15 +90,21 @@ RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
     sudo patch -p3 < xpra-prop-conv-py.patch && \
     sudo rm xpra-prop-conv-py.patch
 
+# Remove xpra-html5 package, replaced with fork below.
+RUN apt-get remove -y xpra-html5
+
 # Install Xpra HTML5 client from forked submodule
 # NOTE: installer depends on working non-submodule get repo.
+
+# Supported minifiers are uglifyjs and copy
 ARG MINIFIER=uglifyjs
 COPY xpra-html5 /opt/xpra-html5
 RUN cd /opt/xpra-html5 && \
     git config --global user.email "selkies@docker" && \
     git config --global user.name "Selkies Builder" && \
-    git init && git checkout -b selkies-patches && \
-    git add . && git commit -m "selkies-patches" && \
+    git init && git checkout -b selkies-build-patches && \
+    git add . && git commit -m "selkies-build-patches" && \
+    mkdir -p /usr/share/xpra/www/js/lib && \
     sudo python3 ./setup.py install /usr/share/xpra/www ${MINIFIER}
 
 # Install Vulkan ICD
@@ -138,6 +147,7 @@ RUN \
 
 # Replace connect.html with redirect to Selkies App Launcher
 COPY connect.html /usr/share/xpra/www/connect.html
+RUN rm -f /usr/share/xpra/www/connect.html.*
 
 # Copy PWA source files
 COPY pwa/manifest.json /usr/share/xpra/www/manifest.json
