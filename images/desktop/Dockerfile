@@ -30,7 +30,7 @@ RUN chmod +x jetbrains-toolbox && \
 FROM gcr.io/cloudshell-images/cloudshell:latest
 
 # Install base dependencies
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN apt-get --allow-releaseinfo-change update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         bsdtar \
         gdebi-core \
         gnupg2 \
@@ -53,7 +53,7 @@ RUN \
     mv /etc/xdg/autostart/xscreensaver.desktop /etc/xdg/autostart/xscreensaver.desktop.bak
 
 # Install Vulkan, OpenGL-ES and GLX libraries.
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
         libvulkan1 \
         vulkan-utils \
         mesa-utils \
