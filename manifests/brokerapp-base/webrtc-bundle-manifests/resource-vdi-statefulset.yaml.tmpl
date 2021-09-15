@@ -60,6 +60,14 @@ spec:
     spec:
       serviceAccount: {{.Namespace}}
 
+
+      {{- if .PullSecrets }}
+      imagePullSecrets:
+      {{- range $secretName := .PullSecrets }}
+      - name: {{$.FullName}}-{{ $secretName }}
+      {{- end}}
+      {{- end}}
+
       enableServiceLinks: false
 
       # Disable service account used for accessing the kubernetes API/
@@ -118,6 +126,8 @@ spec:
         ###
         - name: desktop
           image: {{.ImageRepo}}:{{.ImageTag}}
+          imagePullPolicy: Always
+          workingDir: {{$workingDir}}
           # Allow entrypoint command override from app config spec.
           {{- if .AppParams.command}}
           command: ["/bin/bash", "-c"]
