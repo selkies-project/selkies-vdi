@@ -127,7 +127,6 @@ spec:
         - name: desktop
           image: {{.ImageRepo}}:{{.ImageTag}}
           imagePullPolicy: Always
-          workingDir: {{$workingDir}}
           # Allow entrypoint command override from app config spec.
           {{- if .AppParams.command}}
           command: ["/bin/bash", "-c"]
