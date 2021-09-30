@@ -66,10 +66,10 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
         libegl1-mesa 
 
 # Install VirtualGL for off-screen rendering with Xpra
-ARG VIRTUALGL_VERSION=2.6.90
 RUN \
-    curl -fsSL -o /tmp/virtualgl.deb https://sourceforge.net/projects/virtualgl/files/virtualgl_${VIRTUALGL_VERSION}_amd64.deb && \
-    apt-get update --allow-releaseinfo-change && dpkg -i /tmp/virtualgl.deb
+    VGL_PR_VERSION=$(curl -s https://s3.amazonaws.com/virtualgl-pr | sed 's,</,\n</,g' | grep -o -e "virtualgl_.*_amd64.deb" | sort | tail -1) && \
+    curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/main/linux/${VGL_PR_VERSION} && \
+    apt-get update && dpkg -i /tmp/virtualgl.deb && rm -f /tmp/virtualgl.deb
 
 # Install socat for uinput control socket forwarding
 RUN apt-get install -y \
