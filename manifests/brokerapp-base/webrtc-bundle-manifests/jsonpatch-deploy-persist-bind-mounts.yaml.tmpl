@@ -1,0 +1,78 @@
+# Copyright 2021 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# NOTE: This feature depends on the persistence feature also being enabled and configured.
+#
+# Any paths listed in the semi-colon separated value for `persistBindMounts` will be
+# mounted into the persistent volume at: $HOME/mnt/...
+# This feature is useful for saving persistent data from existing applications
+# into the home directory without having to reconfigure the application to do so.
+###
+
+###
+# Example BrokerAppConfig appParams when combined with persistBindMounts
+###
+#    appParams:
+#      - name: enablePersistBindMounts
+#        default: "true"
+#      - name: persistBindMounts
+#        default: "/var/lib/mysql:/etc/nginx"
+
+{{- $enablePersistBindMounts := false }}
+{{- if .AppParams.enablePersistBindMounts }}
+  {{- if eq .AppParams.enablePersistBindMounts "true" }}
+    {{- $enablePersistBindMounts = true }}
+  {{- end}}
+{{- end}}
+
+{{- $enablePersistence := false }}
+{{- if .UserParams.enablePersistence }}
+  {{- if eq .UserParams.enablePersistence "true" }}
+    {{- $enablePersistence = true }}
+  {{- end}}
+{{- end}}
+
+{{- if .AppParams.enablePersistence }}
+  {{- if eq .AppParams.enablePersistence "true" }}
+    {{- $enablePersistence = true }}
+  {{- end}}
+{{- end}}
+
+{{- $subPath := default "" .AppParams.persistStorageSubPath }}
+{{- if eq $subPath "USER" }}
+  {{- $subPath = .User }}
+{{- end}}
+
+{{- $bindMounts := split ":" (default "" .AppParams.persistBindMounts) }}
+
+{{- if and $enablePersistBindMounts (and $enablePersistence $bindMounts._0) }}
+{{- range $mount := $bindMounts }}
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: persist
+    mountPath: {{ $mount }}
+    {{- if $subPath }}
+    subPath: {{ (printf "%s/mnt%s" $subPath $mount) }}
+    {{- else}}
+    subPath: {{ printf "mnt%s" $mount }}
+    {{- end}}
+{{- end}}
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
