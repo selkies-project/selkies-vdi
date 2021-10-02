@@ -3,20 +3,18 @@
     "short_name": "XPRA_PWA_APP_NAME",
     "lang": "en-US",
     "start_url": "/XPRA_PWA_APP_PATH/index.html",
-    "display": "standalone",
+    "display": "minimal-ui",
     "background_color": "white",
     "theme_color": "white",
     "icons": [
       {
         "src": "icon-192x192.png",
         "sizes": "192x192",
-        "purpose": "any maskable",
         "type": "image/png"
       },
       {
         "src": "icon-512x512.png",
         "sizes": "512x512",
-        "purpose": "any maskable",
         "type": "image/png"
       }
     ]
