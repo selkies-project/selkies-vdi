@@ -81,8 +81,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     python3-netifaces
 
 # Install xpra
-RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_4.2.1-r71-1_amd64.deb -o /opt/xpra_4.3-r29771-1_amd64.deb && \
-    DEBIAN_FRONTEND=noninteractive gdebi -n /opt/xpra_4.3-r29771-1_amd64.deb
+ARG XPRA_VERSION=4.3-r30109-1
+RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /opt/xpra_${XPRA_VERSION}_amd64.deb && \
+    DEBIAN_FRONTEND=noninteractive gdebi -n /opt/xpra_${XPRA_VERSION}_amd64.deb
 
 # Apply xpra patches
 COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
