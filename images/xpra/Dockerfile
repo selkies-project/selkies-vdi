@@ -146,6 +146,9 @@ RUN \
         -e 's|</body>|        <script type="application/javascript">window.onload = () => {"use strict"; if ("serviceWorker" in navigator) { navigator.serviceWorker.register("./sw.js");}}</script>\n    </body>|' /usr/share/xpra/www/index.html && \
     rm -f /usr/share/xpra/www/index.html.*
 
+# Patch to fix Xpra webworker on Safari
+COPY 10_content_security_policy.txt /etc/xpra/http-headers/10_content_security_policy.txt
+
 # Replace connect.html with redirect to Selkies App Launcher
 COPY connect.html /usr/share/xpra/www/connect.html
 RUN rm -f /usr/share/xpra/www/connect.html.*
