@@ -24,6 +24,9 @@ var filesToCache = [
   'connect.html?ts=CACHE_VERSION',
   'icon-192x192.png?ts=CACHE_VERSION',
   'icon-512x512.png?ts=CACHE_VERSION',
+  'icons/minimize.png?ts=CACHE_VERSION',
+  'icons/maximize.png?ts=CACHE_VERSION',
+  'icons/close.png?ts=CACHE_VERSION',
   /* cache assets from app launcher */
   '/index.html?ts=CACHE_VERSION',
   '/app.js?ts=CACHE_VERSION',

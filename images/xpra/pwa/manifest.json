@@ -3,7 +3,7 @@
     "short_name": "XPRA_PWA_APP_NAME",
     "lang": "en-US",
     "start_url": "/XPRA_PWA_APP_PATH/index.html",
-    "display": "minimal-ui",
+    "display": "XPRA_PWA_DISPLAY",
     "background_color": "white",
     "theme_color": "white",
     "icons": [

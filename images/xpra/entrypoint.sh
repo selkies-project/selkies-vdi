@@ -42,6 +42,9 @@ sudo sed -i \
   -e "s|XPRA_PWA_APP_PATH|${XPRA_PWA_APP_PATH:-xpra-desktop}|g" \
   '/usr/share/xpra/www/manifest.json'
 sudo sed -i \
+  -e "s|XPRA_PWA_DISPLAY|${XPRA_PWA_DISPLAY:-minimal-ui}|g" \
+  '/usr/share/xpra/www/manifest.json'
+sudo sed -i \
   -e "s|XPRA_PWA_CACHE|${XPRA_PWA_APP_PATH:-xpra-desktop}-xpra-pwa|g" \
   '/usr/share/xpra/www/sw.js'
 
@@ -59,6 +62,7 @@ if [[ -n "${XPRA_PWA_ICON_URL}" ]]; then
     for size in 192x192 512x512; do
       sudo convert -resize ${size} -size ${size} /usr/share/xpra/www/icon.png /usr/share/xpra/www/icon-${size}.png || true
     done
+    sudo convert -resize 180x180 /usr/share/xpra/www/icon.png /usr/share/xpra/www/apple-touch-icon.png || true
   else
     echo "WARN: failed to download PWA icon, PWA features may not be available: ${XPRA_PWA_ICON_URL}"
   fi
