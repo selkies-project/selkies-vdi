@@ -25,11 +25,25 @@ fi
 [[ -c /dev/nvidiactl ]] && (cd /tmp && sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} DISPLAY=${DISPLAY} vulkaninfo >/dev/null || true)
 
 # Write html5 client default settings
+echo "INFO: writing HTML5 default-settings.txt"
 if [[ -n "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
-  echo "INFO: echo writing HTML5 default-settings.txt"
   sudo rm -f /usr/share/xpra/www/default-settings.txt.*
   echo "${XPRA_HTML5_DEFAULT_SETTINGS}" | sudo tee /usr/share/xpra/www/default-settings.txt
 fi
+
+# Copy clipboard direction so that it can be passed to the html5 client.
+echo "clipboard_direction = ${XPRA_CLIPBOARD_DIRECTION:-"both"}" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+
+# Write variables prefixed with XPRA_HTML5_SETTING_ to default-settings file
+for v in "${!XPRA_HTML5_SETTING_@}"; do
+  setting_name=${v/XPRA_HTML5_SETTING_/}
+  setting_value=$(eval echo \$$v)
+  echo "$setting_name = $setting_value" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+done
+
+# Make default-settings.txt entries unique
+uniq /usr/share/xpra/www/default-settings.txt > /tmp/default-settings.txt && \
+  sudo mv /tmp/default-settings.txt /usr/share/xpra/www/default-settings.txt
 
 if [[ -n "${XPRA_CONF}" ]]; then
   echo "INFO: echo writing xpra conf to /etc/xpra/conf.d/99_appconfig.conf"
