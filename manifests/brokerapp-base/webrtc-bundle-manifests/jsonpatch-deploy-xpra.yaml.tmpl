@@ -186,6 +186,12 @@
 ###
 - op: remove
   path: "/spec/template/spec/containers/4"
+
+###
+# Remove pulseaudio container
+###
+- op: remove
+  path: "/spec/template/spec/containers/2"
 {{- else}}
 # Cannot have empty patch, so this is effectively a no-op.
 - op: test

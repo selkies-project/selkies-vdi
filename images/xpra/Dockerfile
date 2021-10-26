@@ -80,6 +80,14 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     python3-setproctitle \
     python3-netifaces
 
+# Install GStreamer for sound support
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-pulseaudio \
+    python-gst-1.0 \
+    gstreamer1.0-tools
+
 # Install xpra
 ARG XPRA_VERSION=4.3-r30191-1
 RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /opt/xpra_${XPRA_VERSION}_amd64.deb && \
@@ -88,8 +96,8 @@ RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION
 # Apply xpra patches
 COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
 RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
-    sudo patch -p3 < xpra-prop-conv-py.patch && \
-    sudo rm xpra-prop-conv-py.patch
+    patch -p3 < xpra-prop-conv-py.patch && \
+    rm xpra-prop-conv-py.patch
 
 # Remove xpra-html5 package, replaced with fork below.
 RUN apt-get remove -y xpra-html5

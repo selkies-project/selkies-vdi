@@ -41,9 +41,23 @@ for v in "${!XPRA_HTML5_SETTING_@}"; do
   echo "$setting_name = $setting_value" | sudo tee -a /usr/share/xpra/www/default-settings.txt
 done
 
+# Add TCP module to Xpra pulseaudio server command to share pulse server with sidecars.
+if [[ "${XPRA_ENABLE_AUDIO:-false}" == "true" ]]; then
+  sudo sed -i -e 's|^pulseaudio-command = pulseaudio|pulseaudio-command = pulseaudio "--load=module-native-protocol-tcp port=4713 auth-anonymous=1"|g' \
+    /etc/xpra/conf.d/60_server.conf
+  XPRA_ARGS="${XPRA_ARGS} --sound-source=pulsesrc"
+
+  echo "sound = true" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+  echo "audio_codec = opus" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+else
+  XPRA_ARGS="${XPRA_ARGS} --no-pulseaudio"
+  echo "sound = false" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+fi
+
 # Make default-settings.txt entries unique
 uniq /usr/share/xpra/www/default-settings.txt > /tmp/default-settings.txt && \
   sudo mv /tmp/default-settings.txt /usr/share/xpra/www/default-settings.txt
+sudo rm -f /usr/share/xpra/www/default-settings.txt.gz
 
 if [[ -n "${XPRA_CONF}" ]]; then
   echo "INFO: echo writing xpra conf to /etc/xpra/conf.d/99_appconfig.conf"
@@ -103,7 +117,6 @@ sudo chmod 777 /var/log/xpra
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
     --html=on \
     --daemon=no \
-    --no-pulseaudio \
     --bell=${XPRA_ENABLE_BELL:-"no"} \
     --clipboard=${XPRA_ENABLE_CLIPBOARD:-"yes"} \
     --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
