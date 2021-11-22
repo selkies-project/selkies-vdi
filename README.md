@@ -71,7 +71,7 @@ gcloud container node-pools list --cluster broker-${REGION?} --region ${REGION?}
 1. Verify that submodules are up to date:
 
 ```bash
-git submodule update --recursive
+git submodule update --init --recursive
 ```
 
 2. Build build-images and install infrastructure:
