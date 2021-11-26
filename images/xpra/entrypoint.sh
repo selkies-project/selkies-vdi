@@ -45,10 +45,11 @@ done
 if [[ "${XPRA_ENABLE_AUDIO:-false}" == "true" ]]; then
   sudo sed -i -e 's|^pulseaudio-command = pulseaudio|pulseaudio-command = pulseaudio "--load=module-native-protocol-tcp port=4713 auth-anonymous=1"|g' \
     /etc/xpra/conf.d/60_server.conf
-  XPRA_ARGS="${XPRA_ARGS} --sound-source=pulsesrc"
+  XPRA_ARGS="${XPRA_ARGS} --sound-source=pulsesrc --speaker-codec=opus+mka"
 
   echo "sound = true" | sudo tee -a /usr/share/xpra/www/default-settings.txt
   echo "audio_codec = opus" | sudo tee -a /usr/share/xpra/www/default-settings.txt
+  export GST_DEBUG=${GST_DEBUG:-"*:2"}
 else
   XPRA_ARGS="${XPRA_ARGS} --no-pulseaudio"
   echo "sound = false" | sudo tee -a /usr/share/xpra/www/default-settings.txt

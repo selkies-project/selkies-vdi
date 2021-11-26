@@ -84,6 +84,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
     gstreamer1.0-pulseaudio \
     python-gst-1.0 \
     gstreamer1.0-tools
@@ -98,6 +99,10 @@ COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
 RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
     patch -p3 < xpra-prop-conv-py.patch && \
     rm xpra-prop-conv-py.patch
+
+# Install gsttimestamp xpra plugin
+# TODO: sound is WIP.
+# https://xpra.org/src/gst-plugin-timestamp-0.1.0.tar.xz
 
 # Remove xpra-html5 package, replaced with fork below.
 RUN apt-get remove -y xpra-html5
@@ -115,6 +120,12 @@ RUN cd /opt/xpra-html5 && \
     git add . && git commit -m "selkies-build-patches" && \
     mkdir -p /usr/share/xpra/www/js/lib && \
     sudo python3 ./setup.py install /usr/share/xpra/www ${MINIFIER}
+
+# Install flags SVG for keyboard layout flag icons.
+RUN apt-get update && apt-get install -y \
+    iso-flags-svg && \
+    mkdir -p /usr/share/xpra/www/flags && \
+    ln -s /usr/share/iso-flags-svg/country-4x3 /usr/share/xpra/www/flags/4x3
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
