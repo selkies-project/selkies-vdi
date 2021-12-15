@@ -14,10 +14,8 @@
 
 FROM python:3.7 as build
 
-ARG GIT_TAG=e1de93cf40677220a516e85969b8c7626cb66988
-
 RUN \
-    git clone https://gitlab.freedesktop.org/gstreamer/gst-examples.git && \
+    git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git --depth 1 -b gst-examples-1.19.2 gst-examples && \
     cd gst-examples/webrtc/signalling && \
     git checkout ${GIT_TAG} && \
     cp -R * /opt/
