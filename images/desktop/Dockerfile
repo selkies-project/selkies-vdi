@@ -67,7 +67,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
 
 # Install VirtualGL for off-screen rendering with Xpra
 RUN \
-    VGL_PR_VERSION=$(curl -s https://s3.amazonaws.com/virtualgl-pr | sed 's,</,\n</,g' | grep -o -e "virtualgl_.*_amd64.deb" | sort | tail -1) && \
+    VGL_PR_VERSION=$(curl -s https://s3.amazonaws.com/virtualgl-pr | sed 's,</,\n</,g' | grep -o -e "main/linux/virtualgl_.*_amd64.deb" | xargs basename | sort | tail -1) && \
     curl -fsSL -o /tmp/virtualgl.deb https://s3.amazonaws.com/virtualgl-pr/main/linux/${VGL_PR_VERSION} && \
     apt-get update && dpkg -i /tmp/virtualgl.deb && rm -f /tmp/virtualgl.deb
 
