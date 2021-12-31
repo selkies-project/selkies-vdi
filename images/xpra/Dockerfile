@@ -90,9 +90,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     gstreamer1.0-tools
 
 # Install xpra
-ARG XPRA_VERSION=4.3-r30191-1
-RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /opt/xpra_${XPRA_VERSION}_amd64.deb && \
-    DEBIAN_FRONTEND=noninteractive gdebi -n /opt/xpra_${XPRA_VERSION}_amd64.deb
+ARG XPRA_VERSION=4.3.1-r20-1
+RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
+    apt-get update && DEBIAN_FRONTEND=noninteractive gdebi -n /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
+    rm -f /tmp/xpra_${XPRA_VERSION}_amd64.deb
 
 # Apply xpra patches
 COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
