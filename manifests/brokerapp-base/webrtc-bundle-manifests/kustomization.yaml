@@ -58,6 +58,5 @@ configMapGenerator:
       - jsonpatch-service-app-proxy.yaml.tmpl
       - jsonpatch-service-file-manager.yaml.tmpl
       - jsonpatch-service-web-preview.yaml.tmpl
-      - jsonpatch-service-xpra.yaml.tmpl
       - jsonpatch-virtualservice-app-proxy.yaml.tmpl
       - jsonpatch-virtualservice-file-manager.yaml.tmpl

@@ -33,9 +33,9 @@ spec:
     - port: 80
       name: http-web
       targetPort: 8082
-    - port: 8081
-      name: http-signaling
-      targetPort: 8081
+    - port: 8082
+      name: http-webrtc
+      targetPort: 8082
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -247,10 +247,10 @@ spec:
               value: ":0"
             - name: METRICS_PORT
               value: "8008"
+            - name: LISTEN_PORT
+              value: "8082"
             - name: "PULSE_SERVER"
               value: "127.0.0.1:4713"
-            - name: SIGNALLING_SERVER
-              value: "ws://127.0.0.1:8081"
             - name: "COTURN_WEB_USERNAME"
               value: "selkies:server@localhost"
             - name: "COTURN_AUTH_HEADER_NAME"
@@ -274,6 +274,14 @@ spec:
             {{- end}}
             {{- end}}
 
+            # Add app context for PWA manifest
+            - name: PWA_APP_NAME
+              value: {{.AppSpec.DisplayName | quote}}
+            - name: PWA_APP_PATH
+              value: {{.App | quote}}
+            - name: PWA_ICON_URL
+              value: {{.AppSpec.Icon | quote}}
+
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -282,44 +290,7 @@ spec:
           resources:
             requests: {}
             limits: {}
-        ###
-        # signalling container
-        ###
-        - name: signalling
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: signalling
-              containerPort: 8081
-          readinessProbe:
-            tcpSocket:
-              port: signalling
 
-        ###
-        # web container
-        ###
-        - name: web
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web:latest
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: GST_WEB_PORT
-              value: "8082"
-            - name: PATH_PREFIX
-              value: "/"
-            # Add app context for PWA manifest
-            - name: PWA_APP_NAME
-              value: {{.AppSpec.DisplayName | quote}}
-            - name: PWA_APP_PATH
-              value: {{.App | quote}}
-            - name: PWA_ICON_URL
-              value: {{.AppSpec.Icon | quote}}
-          ports:
-            - name: web
-              containerPort: 8082
-          readinessProbe:
-            httpGet:
-              path: /
-              port: web
         ###
         # WebRTC metrics exporter container
         # TODO
