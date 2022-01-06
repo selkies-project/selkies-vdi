@@ -1,0 +1,136 @@
+# Copyright 2022 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 3600s
+substitutions:
+  _NAME: broker
+  _ACTION: apply
+  _TURN_REALM:
+  _REGION: us-west1
+  _COTURN_WEB_IMAGE: ghcr.io/selkies-project/selkies-gstreamer/coturn-web
+  _COTURN_WEB_IMAGE_TAG: latest
+tags:
+- selkies-vdi-turn-private-gke
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/${PROJECT_ID}/secrets/selkies-turn-shared-secret/versions/latest
+    env: TURN_SHARED_SECRET
+
+steps:
+###
+# Base infrastructure terraform
+###
+- name: "gcr.io/cloud-builders/gcloud"
+  id: base-infra
+  dir: selkies-gstreamer/infra/gce/base
+  args:
+    - builds
+    - submit
+    - --substitutions=_ACTION=${_ACTION}
+
+###
+# Deploy coturn VMs to managed instance group.
+###
+- name: "gcr.io/cloud-builders/gcloud"
+  id: turn-vm
+  dir: selkies-gstreamer/infra/gce/turn-vm
+  args:
+    - builds
+    - submit
+    - --substitutions=_ACTION=${_ACTION},_REGION=${_REGION},_TURN_REALM=${_TURN_REALM}
+
+###
+# Prepare the K8S manifests
+###
+- name: "gcr.io/cloud-builders/gcloud"
+  id: prep-manifests
+  dir: selkies-gstreamer/infra/gke/manifests/coturn-vm
+  entrypoint: bash
+  secretEnv:
+    - TURN_SHARED_SECRET
+  args:
+   - -exc
+   - |
+      echo -n "selkies-turn-${_REGION}.*" > MIG_DISCO_FILTER
+      echo -n "${PROJECT_ID}" > MIG_DISCO_PROJECT_ID
+      echo -n "${_TURN_REALM}" > TURN_REALM
+      echo -n "$${TURN_SHARED_SECRET}" > TURN_SHARED_SECRET
+
+      # Grant K8S service account workload identity permissions
+      gcloud -q iam service-accounts add-iam-policy-binding broker@gpod-dev01.iam.gserviceaccount.com \
+        --role roles/iam.workloadIdentityUser \
+        --member "serviceAccount:${PROJECT_ID}.svc.id.goog[coturn/coturn-web]" > /dev/null
+
+      # Add kustomize patch for service account to bind to workload identity.
+      cat - > patch-coturn-web-sa.yaml <<EOF
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: coturn-web
+        annotations:
+          iam.gke.io/gcp-service-account: broker@gpod-dev01.iam.gserviceaccount.com
+      EOF
+
+      # Add kustomize patch for Istio VirtualService to use the pod-broker-gateway.
+      cat - > patch-coturn-web-gateway.yaml <<EOF
+      apiVersion: networking.istio.io/v1alpha3
+      kind: VirtualService
+      metadata:
+        name: coturn-web
+      spec:
+        gateways:
+          - pod-broker-system/pod-broker-gateway
+      EOF
+
+      # Update kustomization
+      cat - | tee -a kustomization.yaml <<EOF
+
+      images:
+        - name: ghcr.io/selkies-project/selkies-gstreamer/coturn-web:latest
+          newName: ${_COTURN_WEB_IMAGE}
+          newTag: ${_COTURN_WEB_IMAGE_TAG}
+      
+      patches:
+        - patch-coturn-web-sa.yaml
+        - patch-coturn-web-gateway.yaml
+      EOF
+
+###
+# Deploy manifests to cluster.
+###
+- name: "gcr.io/cloud-builders/kubectl"
+  id: deploy-manifests
+  dir: selkies-gstreamer/infra/gke/manifests/coturn-vm
+  entrypoint: bash
+  args:
+    - -exc
+    - |
+      if [[ "${_ACTION}" == "plan" ]]; then
+        echo "Files in working dir:"
+        ls
+        echo
+        echo "kustomization.yaml contents:"
+        cat kustomization.yaml
+        echo
+        kubectl kustomize . 
+        exit
+      fi
+
+      kubectl kustomize . | /builder/kubectl.bash ${_ACTION} -f -
+  env:
+    - "PROJECT_ID=${PROJECT_ID}"
+    - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+    - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+    - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"

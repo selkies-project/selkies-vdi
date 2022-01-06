@@ -1,10 +1,10 @@
-# GPU-accelerated streaming with WebRTC and Gstreamer
+# VDI Addon for Selkies
 
 [![Discord](https://img.shields.io/discord/798699922223398942?logo=discord)](https://discord.gg/wDNGDeSW5F)
 
 ## Description
 
-Provides GPU accelerated WebRTC streaming and Xpra VDI support to Selkies.
+Selkies addon for deploying VDI and app streaming workloads.
 
 ## Dependencies
 
@@ -12,21 +12,26 @@ Provides GPU accelerated WebRTC streaming and Xpra VDI support to Selkies.
 
 ## Features
 
-- Full desktop streaming with WebRTC (requires GPU).
-- Hybrid streaming with Xpra (no GPU required).
-- App streaming with WebRTC.
+- Deploy apps as StatefulSet for persistence, or as Deployment, for always-ready ephemeral pods.
+- Hybrid desktop environment with Xpra HTML5 client.
+- Full desktop streaming at up to 15-20fps with WebRTC and software encoder.
+- Full desktop streaming at 60+fps with WebRTC and NVIDIA GPU encoder.
+- WebRTC TURN infrastructure provided by selkies-gstreamer repo.
+- Individual app streaming with Xpra or WebRTC, software or hardware encoder.
 - GPU sharing, multiple users per node sharing the same GPU.
 - Persistent home directories with VolumeClaimTemplates and dynamic resizing.
-- Manual bitrate selection, configurable in real-time.
-- Manual frame rate selection.
-- Resolution up to 2560x1600.
-- Audio support.
-- Mouse lock support.
-- Fullscreen support.
-- Clipboard support.
-- Gamepad support.
+- Shared storage with NFS, SMB and CephFS.
+- Docker-in-Docker support.
+- Audio support with WebRTC.
 - Stream recording to GCS.
 - Idle detection and automatic shutdown.
+- Traffic filtering with NetworkPolicy or Squid sidecar.
+- File manager sidecar with tinyfilemanager.
+- Windows app supoprt with Proton.
+- Secure TCP tunnel creation with the Selkies Connector.
+- Per-application web preview ports 3000, 8000, and 8080.
+- Custom host aliases
+- Bind mounts from root filesystem to persistent home directory.
 
 ## Quick start
 

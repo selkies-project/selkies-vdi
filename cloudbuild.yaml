@@ -22,8 +22,74 @@ timeout: 3600s
 substitutions:
   _NAME: broker
   _REGION:
+  # Set this to your broker endpoint, if set to 'default', will use cannonical "broker.endpoints.PROJECT_ID.cloud.goog"
+  _TURN_REALM: default
 
 steps:
+  ###
+  # Detect type of Selkies cluster, public or private GKE.
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "selkies-gke-detect"
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        PRIVATE_NODES=$(gcloud -q container clusters describe ${_NAME}-${_REGION} --region ${_REGION} --format='value(privateClusterConfig.enablePrivateNodes)')
+        if [[ "${PRIVATE_NODES,,}" == true ]]; then
+          touch /workspace/PRIVATE_GKE
+        fi
+  ###
+  # Deploy TURN infrastructure based on GKE cluster type.
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "selkies-gke-detect"
+    dir: infra/turn
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        if [[ -e /workspace/PRIVATE_GKE ]]; then
+          # Deploy TURN to private GKE cluster.
+          echo "INFO: Deploying TURN to VMs and manifests to private GKE cluster"
+
+          # Set the TURN_REALM
+          export TURN_REALM=""
+          if [[ "${_TURN_REALM}" == "default" ]]; then
+            TURN_REALM="broker.endpoints.${PROJECT_ID}.cloud.goog"
+          else
+            TURN_REALM="${_TURN_REALM}"
+          fi
+
+          # Deploy TURN using Cloud Build
+          gcloud -q builds submit --config cloudbuild.private-gke.yaml --substitutions=_REGION=${_REGON},_TURN_REALM=$$TURN_REALM,_ACTION=apply
+        else
+          # Deploy TURN to public GKE cluster
+          echo "INFO: Deploying TURN to public GKE cluster"
+
+          # Get the current TURN shared secret, if any.
+          export TURN_SHARED_SECRET=""
+          if [[ -n "$(gcloud -q secrets list --filter=name~selkies-turn-shared-secret --format='value(name)')" ]]; then
+            TURN_SHARED_SECRET=$(gcloud -q secrets versions access latest --secret selkies-turn-shared-secret)
+          fi
+          if [[ -z "$${TURN_SHARED_SECRET}" ]]; then
+            # Generate new TURN shared secret
+            TURN_SHARED_SECRET=$(openssl rand -base64 15)
+            gcloud -q secrets create selkies-turn-shared-secret --replication-policy=automatic --data-file <(echo -n ${TURN_SHARED_SECRET?})
+          fi
+
+          # Set the TURN_REALM
+          export TURN_REALM=""
+          if [[ "${_TURN_REALM}" == "default" ]]; then
+            TURN_REALM="broker.endpoints.${PROJECT_ID}.cloud.goog"
+          else
+            TURN_REALM="${_TURN_REALM}"
+          fi
+
+          # Deploy TURN using Cloud Build
+          gcloud -q builds submit --config cloudbuild.public-gke.yaml --substitutions=_REGION=${_REGON},_TURN_REALM=$$TURN_REALM,_ACTION=apply
+        fi
+
   ###
   # Build images
   ###
