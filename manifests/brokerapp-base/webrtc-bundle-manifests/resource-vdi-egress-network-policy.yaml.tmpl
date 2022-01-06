@@ -20,7 +20,10 @@
 {{- end}}
 
 # Split allowed CIDR ranges
-{{- $egressCIDRRanges := split "," (default "" .AppParams.egressCIDRRanges) }}
+{{- $egressCIDRRanges := list }}
+{{- if .AppParams.egressCIDRRanges}}
+  {{- $egressCIDRRanges = split "," (default "" .AppParams.egressCIDRRanges) }}
+{{- end}}
 
 {{- if $enableEgressPolicy}}
 apiVersion: networking.k8s.io/v1
@@ -40,23 +43,27 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
+
+    # Allow DNS traffic.
     - to:
         # KubeDNS
         - ipBlock:
             cidr: {{.NetworkPolicyData.KubeDNSClusterIP}}/32
+    
+    # Allowed egress CIDR ranges from system network policy data.
+    {{- if avail "AdditionalCIDRs" .NetworkPolicyData }}
+    {{- range $cidr := .NetworkPolicyData.AdditionalCIDRs}}
+    - to:
+        - ipBlock:
+            cidr: {{$cidr}}
+    {{- end}}
+    {{- end}}
 
     # Allowed egress CIDR ranges, split from app param.
     {{- range $cidr := $egressCIDRRanges }}
     - to:
         - ipBlock:
             cidr: {{$cidr}}
-    {{- end}}
-
-    # TURN pod host IPs
-    {{- range $ip := .NetworkPolicyData.TURNIPs}}
-    - to:
-        - ipBlock:
-            cidr: {{$ip}}/32
     {{- end}}
 ---
 apiVersion: networking.k8s.io/v1
