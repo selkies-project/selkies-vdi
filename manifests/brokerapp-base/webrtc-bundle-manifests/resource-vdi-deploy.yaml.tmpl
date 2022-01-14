@@ -247,6 +247,14 @@ spec:
             {{- end}}
             {{- end}}
 
+            # Add app context for PWA manifest
+            - name: PWA_APP_NAME
+              value: {{.AppSpec.DisplayName | quote}}
+            - name: PWA_APP_PATH
+              value: {{.App | quote}}
+            - name: PWA_ICON_URL
+              value: {{.AppSpec.Icon | quote}}
+
           volumeMounts:
             - name: x11
               mountPath: /tmp/.X11-unix
@@ -255,44 +263,7 @@ spec:
           resources:
             requests: {}
             limits: {}
-        ###
-        # signalling container
-        ###
-        - name: signalling
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: signalling
-              containerPort: 8080
-          readinessProbe:
-            tcpSocket:
-              port: signalling
 
-        ###
-        # web container
-        ###
-        - name: web
-          image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web:latest
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: GST_WEB_PORT
-              value: "8082"
-            - name: PATH_PREFIX
-              value: "/"
-            # Add app context for PWA manifest
-            - name: PWA_APP_NAME
-              value: {{.AppSpec.DisplayName | quote}}
-            - name: PWA_APP_PATH
-              value: {{.App | quote}}
-            - name: PWA_ICON_URL
-              value: {{.AppSpec.Icon | quote}}
-          ports:
-            - name: web
-              containerPort: 8082
-          readinessProbe:
-            httpGet:
-              path: /
-              port: web
         ###
         # WebRTC metrics exporter container
         # TODO
