@@ -69,7 +69,7 @@ steps:
       echo -n "$${TURN_SHARED_SECRET}" > TURN_SHARED_SECRET
 
       # Grant K8S service account workload identity permissions
-      gcloud -q iam service-accounts add-iam-policy-binding broker@gpod-dev01.iam.gserviceaccount.com \
+      gcloud -q iam service-accounts add-iam-policy-binding broker@${PROJECT_ID}.iam.gserviceaccount.com \
         --role roles/iam.workloadIdentityUser \
         --member "serviceAccount:${PROJECT_ID}.svc.id.goog[coturn/coturn-web]" > /dev/null
 
@@ -80,7 +80,7 @@ steps:
       metadata:
         name: coturn-web
         annotations:
-          iam.gke.io/gcp-service-account: broker@gpod-dev01.iam.gserviceaccount.com
+          iam.gke.io/gcp-service-account: broker@${PROJECT_ID}.iam.gserviceaccount.com
       EOF
 
       # Add kustomize patch for Istio VirtualService to use the pod-broker-gateway.
