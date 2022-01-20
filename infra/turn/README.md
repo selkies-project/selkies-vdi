@@ -33,7 +33,7 @@ REGION=us-west1
 ```
 
 ```bash
-gcloud builds submit --config cloudbuild.public-gke.yaml --project ${PROJECT_ID?} --substitutions=_TURN_REALM=${TURN_REALM?},_REGION=${REGION?}_ACTION=apply
+gcloud builds submit --config cloudbuild.public-gke.yaml --project ${PROJECT_ID?} --substitutions=_TURN_REALM=${TURN_REALM?},_REGION=${REGION?},_ACTION=apply
 ```
 
 # Private GKE deployment
@@ -57,7 +57,7 @@ REGION=us-west1
 ```
 
 ```bash
-gcloud builds submit --config cloudbuild.private-gke.yaml --project ${PROJECT_ID?} --substitutions=_TURN_REALM=${TURN_REALM?},_REGION=${REGION?}_ACTION=apply
+gcloud builds submit --config cloudbuild.private-gke.yaml --project ${PROJECT_ID?} --substitutions=_TURN_REALM=${TURN_REALM?},_REGION=${REGION?},_ACTION=apply
 ```
 
 ### (Optional) Update pod broker with network policy support for TURN
