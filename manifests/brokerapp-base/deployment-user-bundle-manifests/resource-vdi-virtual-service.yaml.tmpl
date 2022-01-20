@@ -23,23 +23,7 @@ spec:
     - pod-broker-system/pod-broker-gateway
   http:
     ###
-    # rule for signalling
-    ###
-    - match:
-        - uri:
-            prefix: /{{.App}}/signalling/
-          headers:
-            cookie:
-              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
-      rewrite:
-        uri: /
-      route:
-        - destination:
-            host: {{.FullName}}-{{.ServiceName}}
-            port:
-              number: 8080
-    ###
-    # rule for webrtc
+    # rule for webrtc web and signaling server
     ###
     - match:
         - uri:
@@ -53,7 +37,7 @@ spec:
         - destination:
             host: {{.FullName}}-{{.ServiceName}}
             port:
-              number: 80
+              number: 8082
     - match:
         - uri:
             prefix: /

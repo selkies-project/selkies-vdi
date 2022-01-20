@@ -222,14 +222,18 @@ spec:
               value: "/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64:/usr/local/nvidia/lib32"
             - name: DISPLAY
               value: ":0"
+            - name: METRICS_PORT
+              value: "8008"
+            - name: LISTEN_PORT
+              value: "8082"
             - name: "PULSE_SERVER"
               value: "127.0.0.1:4713"
-            - name: SIGNALLING_SERVER
-              value: "ws://127.0.0.1:8080"
+            - name: "COTURN_WEB_USERNAME"
+              value: "selkies:server@localhost"
             - name: "COTURN_AUTH_HEADER_NAME"
               value: "x-goog-authenticated-user-email"
             - name: COTURN_WEB_URI
-              value: "http://turn.pod-broker-system.svc.cluster.local/"
+              value: "http://coturn-web.coturn.svc.cluster.local:8080/"
             - name: APP_AUTO_INIT
               value: "{{default "true" .AppParams.appAutoInit}}"
             - name: ENABLE_AUDIO

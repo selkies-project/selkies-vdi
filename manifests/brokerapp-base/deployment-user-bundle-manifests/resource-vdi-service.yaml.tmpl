@@ -17,17 +17,16 @@ kind: Service
 metadata:
   name: vdi
 spec:
+  type: ClusterIP
+  clusterIP: None
   selector:
     app.kubernetes.io/instance: {{.FullName}}
     app.kubernetes.io/name: {{.App}}
   ports:
     # Port 80 is the default port routed by the pod broker.
     - port: 80
-      name: web
+      name: http-web
       targetPort: 8082
-    - port: 8080
-      name: signalling
-      targetPort: 8080
-    - port: 8081
-      name: xpra
-      targetPort: 8081
+    - port: 8082
+      name: http-webrtc
+      targetPort: 8082
