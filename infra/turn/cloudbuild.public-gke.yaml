@@ -38,12 +38,12 @@ steps:
   args:
    - -exc
    - |
-      if [[ -n "$(gcloud -q compute firewall-rules list --filter=name~allow-turn --format='value(name)')" ]]; then
+      if [[ -n "$(gcloud -q compute firewall-rules list --filter=name~${_NAME}-allow-turn --format='value(name)')" ]]; then
         echo "Firewall rule already exists, skipping creation"
         exit 0
       fi
 
-      gcloud -q compute firewall-rules create allow-turn \
+      gcloud -q compute firewall-rules create ${_NAME}-allow-turn \
           --project ${PROJECT_ID} \
           --network ${_NAME} \
           --allow tcp:3478,tcp:25000-25100,udp:3478,udp:25000-25100
