@@ -256,7 +256,7 @@ spec:
             - name: "COTURN_AUTH_HEADER_NAME"
               value: "x-goog-authenticated-user-email"
             - name: COTURN_WEB_URI
-              value: "http://turn.pod-broker-system.svc.cluster.local/"
+              value: "http://coturn-web.coturn.svc.cluster.local:8080/"
             - name: APP_AUTO_INIT
               value: "{{default "true" .AppParams.appAutoInit}}"
             - name: ENABLE_AUDIO
