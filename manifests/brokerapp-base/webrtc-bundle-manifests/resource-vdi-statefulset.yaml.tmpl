@@ -19,6 +19,18 @@
   {{- $watchdogImage = .AppParams.watchdogImage}}
 {{- end}}
 
+{{- $enableAudio := false}}
+{{- if .AppParams.enableAudio }}
+  {{- if eq .AppParams.enableAudio "true"}}
+    {{- $enableAudio = true }}
+  {{- end}}
+{{- end}}
+{{- if .UserParams.enableAudio }}
+  {{- if eq .UserParams.enableAudio "true"}}
+    {{- $enableAudio = true }}
+  {{- end}}
+{{- end}}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -260,7 +272,7 @@ spec:
             - name: APP_AUTO_INIT
               value: "{{default "true" .AppParams.appAutoInit}}"
             - name: ENABLE_AUDIO
-              value: "{{default "false" .UserParams.enableAudio}}"
+              value: "{{$enableAudio}}"
             {{- if .AppParams.enableClipboard }}
             - name: ENABLE_CLIPBOARD
               value: "{{.AppParams.enableClipboard}}"
