@@ -6,6 +6,7 @@ on:
       - master
 
 jobs:
+
   ###
   # Get release version from build context
   ###
@@ -23,6 +24,7 @@ jobs:
       run: |
         echo $RELEASE_VERSION
         echo ${{ steps.vars.outputs.tag }}
+
   detect_image_source_changes:
     runs-on: ubuntu-latest
     outputs:
@@ -37,6 +39,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 2 # This is for changed-files.
+
     ###
     # Detect changes to infra/gce/installer-image
     ###

@@ -3,6 +3,7 @@ name: Build & publish all images
 on: workflow_dispatch
 
 jobs:
+
   ###
   # Get release version from build context
   ###
@@ -21,6 +22,7 @@ jobs:
       run: |
         echo $RELEASE_VERSION
         echo ${{ steps.vars.outputs.tag }}
+
   ###
   # GCP infrastructure installer image
   ###
