@@ -4,21 +4,29 @@ description: Build an image from source, then publish it to GHCR
 
 inputs:
   build_args:
+    description: '`ARG=value`s to pass to `docker build`'
     required: false
   dockerfile:
+    description: Image source file name
     default: 'Dockerfile'
     required: false
   github_personal_access_token:
+    description: GitHub personal access token (PAT)
     required: true
   github_username:
+    description: GitHub username
     required: true
   image_source_directory:
+    description: Image source directory path
     required: true
   image_tag_1:
+    description: A tag for the published image
     required: true
   image_tag_2:
+    description: Another tag for the published image
     required: false
   use_cache:
+    description: Use cached layers from pre-published image with tag 1 (true/false)
     required: false
 
 runs:
