@@ -1,5 +1,7 @@
 name: Build & publish an image
 
+description: Build an image from source, then publish it to GHCR
+
 inputs:
   use_cache:
     required: false
