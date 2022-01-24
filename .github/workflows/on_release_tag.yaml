@@ -1,10 +1,11 @@
-name: Stub
+name: "Trigger: A release tag was pushed to the repo"
 
-on: workflow_dispatch
+on:
+  push:
+    tags:
+    - 'v*'
 
 jobs:
 
-  stub:
-    runs-on: ubuntu-latest
-    steps:
-    - run: echo 'stub'
+  create_release:
+    uses: itopia-inc/selkies-vdi/.github/workflows/create_release.yaml@main
