@@ -1,17 +1,18 @@
 name: Build & publish all images
 
-on: workflow_dispatch
+on:
+  workflow_call:
+    inputs:
+      image_version_1:
+        description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:foo"
+        required: true
+        type: string
+      image_version_2:
+        description: Another version for all image tags, such as "bar" in "ghcr.io/user/repo/image:bar"
+        required: false
+        type: string
 
 jobs:
-
-  get_version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get.outputs.version }}
-    steps:
-    - id: get
-      run: |
-        echo ::set-output name=version::${GITHUB_REF#refs/*/}
 
   build_and_publish_TEMPLATE_image:
     needs: get_version
@@ -23,5 +24,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/TEMPLATE
-        image_tag_1: ghcr.io/selkies-project/selkies-vdi/TEMPLATE:${{ needs.get_version.outputs.version }}
+        image_name: TEMPLATE
+        image_version_1: ${{ inputs.image_version_1 }}
+        image_version_2: ${{ inputs.image_version_2 }}
         use_cache: "true"

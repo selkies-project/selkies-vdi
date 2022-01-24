@@ -34,9 +34,7 @@ jobs:
           TEMPLATE
 
   build_and_publish_TEMPLATE_image_if_changed:
-    needs:
-    - get_version
-    - detect_image_source_changes
+    needs: detect_image_source_changes
     if: needs.detect_image_source_changes.outputs.TEMPLATE_changed == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -46,5 +44,6 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/TEMPLATE
-        image_tag_1: ghcr.io/selkies-project/selkies-vdi/TEMPLATE:${{ needs.get_version.outputs.version }}
+        image_name: TEMPLATE
+        image_version_1: ${{ needs.get_version.outputs.version }}
         use_cache: "true"
