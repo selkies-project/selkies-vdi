@@ -1,3 +1,5 @@
+name: Build & publish an image
+
 inputs:
   use_cache:
     required: false
