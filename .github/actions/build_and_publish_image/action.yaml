@@ -3,11 +3,11 @@ name: Build & publish an image
 description: Build an image from source, then publish it to GHCR
 
 inputs:
-  use_cache:
+  build_args:
     required: false
   dockerfile:
-    required: false
     default: 'Dockerfile'
+    required: false
   github_personal_access_token:
     required: true
   github_username:
@@ -18,7 +18,7 @@ inputs:
     required: true
   image_tag_2:
     required: false
-  build_args:
+  use_cache:
     required: false
 
 runs:
