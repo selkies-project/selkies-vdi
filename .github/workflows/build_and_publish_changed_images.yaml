@@ -13,41 +13,17 @@ jobs:
   detect_image_source_changes:
     runs-on: ubuntu-latest
     outputs:
-      TEMPLATE_changed: ${{ steps.check_TEMPLATE.outputs.any_changed == 'true' || steps.check_TEMPLATE.outputs.any_deleted == 'true' }}
       webrtc_changed: ${{ steps.check_webrtc.outputs.any_changed == 'true' || steps.check_webrtc.outputs.any_deleted == 'true' }}
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 2 # This is for changed-files.
 
-    - id: check_TEMPLATE
-      name: Check for changes to the TEMPLATE image source
-      uses: tj-actions/changed-files@v1.1.2
-      with:
-        files: |
-          TEMPLATE
-          TEMPLATE
-
     - id: check_webrtc
       name: Check for changes to the webrtc image source
       uses: tj-actions/changed-files@v1.1.2
       with:
         files: images/webrtc
-
-  build_and_publish_TEMPLATE_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.TEMPLATE_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
-      with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/TEMPLATE
-        image_name: TEMPLATE
-        image_version_1: ${{ inputs.image_version }}
-        use_cache: "true"
 
   build_and_publish_webrtc_image_if_changed:
     needs: detect_image_source_changes
