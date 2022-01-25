@@ -72,6 +72,16 @@
       fi
 
       while true; do
+        {{- if eq .AppSpec.Type "deployment" }}
+        echo "Waiting for session metadata..."
+        until [[ -e /var/run/appconfig/session_metadata_ready ]]; do sleep 0.5; done
+        echo "Found session metadata, exporting VDI_ variables to environment"
+        # Export session params as VDI ENV vars, if present.
+        jq -r '.user_params|to_entries|map("export VDI_\(.key)=\(.value|tostring)")|.[]' /var/run/appconfig/session_metadata.json | \
+          tee /var/run/appconfig/user_vdi_env
+        source /var/run/appconfig/user_vdi_env
+        {{- end}}
+
         eval ${XPRA_ENTRYPOINT:-"xfdesktop --sm-client-disable -A"} &
         PID=$!
         if [[ "${XPRA_ENTRYPOINT}" =~ xfdesktop ]]; then

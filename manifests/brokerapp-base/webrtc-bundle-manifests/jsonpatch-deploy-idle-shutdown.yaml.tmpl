@@ -47,3 +47,9 @@
       value: "{{ $appName }}"
     - name: WATCHDOG_TIMEOUT
       value: "{{default 600 .AppParams.idleShutdownTimeout}}"
+
+    # Add the appParams to the env prefixed with VDI_
+    {{- range $key, $value := .AppParams }}
+    - name: VDI_{{ $key }}
+      value: {{ quote $value }}
+    {{- end}}
