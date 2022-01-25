@@ -1,0 +1,24 @@
+name: "Trigger: Image source was changed on master"
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - 'images/**/**'
+
+jobs:
+
+  get_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get.outputs.version }}
+    steps:
+    - id: get
+      run: |
+        echo ::set-output name=version::${GITHUB_REF#refs/*/}
+
+  build_and_publish_changed_images:
+    uses: itopia-inc/selkies-vdi/.github/workflows/build_and_publish_changed_images.yaml@main
+    with:
+      image_version: ${{ jobs.get_version.outputs.version }}

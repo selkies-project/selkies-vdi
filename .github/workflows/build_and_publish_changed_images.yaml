@@ -1,20 +1,14 @@
 name: Build & publish changed images
 
 on:
-  push:
-    branches:
-    - master
+  workflow_call:
+    inputs:
+      image_version:
+        description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:foo"
+        required: true
+        type: string
 
 jobs:
-
-  get_version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get.outputs.version }}
-    steps:
-    - id: get
-      run: |
-        echo ::set-output name=version::${GITHUB_REF#refs/*/}
 
   detect_image_source_changes:
     runs-on: ubuntu-latest
@@ -45,5 +39,5 @@ jobs:
         github_username: ${{ github.actor }}
         image_source_directory: images/TEMPLATE
         image_name: TEMPLATE
-        image_version_1: ${{ needs.get_version.outputs.version }}
+        image_version_1: ${{ inputs.image_version }}
         use_cache: "true"
