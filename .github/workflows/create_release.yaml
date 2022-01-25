@@ -1,0 +1,10 @@
+name: Stub
+
+on: workflow_call
+
+jobs:
+
+  stub:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo 'stub'
