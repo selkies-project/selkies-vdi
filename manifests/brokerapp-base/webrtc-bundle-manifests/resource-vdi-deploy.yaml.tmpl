@@ -57,6 +57,9 @@ spec:
       # Disable service account used for accessing the kubernetes API/
       automountServiceAccountToken: false
 
+      # Allow setting hostname from appParams
+      hostname: {{default "selkies" .AppParams.hostname}}
+
       nodeSelector:
         app.broker/tier: {{ .NodeTier.NodeLabel }}
         cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
