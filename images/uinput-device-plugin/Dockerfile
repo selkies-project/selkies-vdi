@@ -12,22 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.12 as builder
+FROM golang:1.17 as builder
+
+RUN apt-get update && \
+    apt-get install -y \
+        unzip && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /go/src/github.com/danisla/uinput-device-plugin
 COPY . .
-ENV GO111MODULE=on
-
-# Get forked version of fsnotify that supports Open and CloseWrite operations.
-RUN go get github.com/nsaway/fsnotify@f133d1d12072765250420b923155a2222f2b0d2c
 
 # Install protoc
 ENV PATH=${PATH}:/go/bin
-RUN go get github.com/golang/protobuf/protoc-gen-go@v1.4.2
-RUN cd /tmp && curl -sLO https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protoc-3.13.0-linux-x86_64.zip && \
-    python -m zipfile -e protoc-3.13.0-linux-x86_64.zip . && \
+RUN go get github.com/golang/protobuf/protoc-gen-go@v1.5.2
+RUN cd /tmp && curl -sLO https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip && \
+    unzip protoc-3.19.0-linux-x86_64.zip && \
     mv bin/protoc /go/bin/ && \
     chmod +x /go/bin/protoc
-RUN protoc -I pkg/uinput --go_out=plugins=grpc:pkg/uinput pkg/uinput/*.proto
+RUN protoc -I=pkg/uinput --go_out=plugins=grpc:. pkg/uinput/*.proto
 
 # Build the binaries
 RUN go build -o uinput_plugin cmd/uinput_plugin/uinput_plugin.go
