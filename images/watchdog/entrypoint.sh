@@ -16,6 +16,9 @@
 
 set -ex
 
+# Run startup script to query session metadata
+/opt/app/startup.sh &
+
 # Timeout in seconds to wait for x server before shutting down
 XSERVER_TIMEOUT=${WATCHDOG_TIMEOUT:-60}
 
