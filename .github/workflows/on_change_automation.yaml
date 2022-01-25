@@ -1,0 +1,16 @@
+name: 'Trigger: Automation config was changed'
+
+on:
+  push:
+    branches:
+    - dev
+    - master
+    paths:
+    - '.github/**'
+
+jobs:
+
+  all_images:
+    uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
+    with:
+      image_version_1: $GITHUB_REF_NAME

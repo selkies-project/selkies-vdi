@@ -172,8 +172,8 @@ jobs:
         image_version_suffix: -bionic
 
   app_streaming_buster:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.app_streaming_buster_changed == 'true'
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.app_streaming_buster_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
