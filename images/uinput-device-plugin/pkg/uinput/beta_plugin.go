@@ -24,7 +24,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 type pluginServiceV1Beta1 struct {
@@ -144,6 +144,24 @@ func (s *pluginServiceV1Beta1) Allocate(ctx context.Context, requests *pluginapi
 
 	}
 	return resps, nil
+}
+
+func (s *pluginServiceV1Beta1) GetPreferredAllocation(ctx context.Context, r *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+	response := &pluginapi.PreferredAllocationResponse{}
+
+	ids := make([]string, 0)
+	for _, req := range r.ContainerRequests {
+		for _, id := range req.GetAvailableDeviceIDs() {
+			ids = append(ids, id)
+		}
+	}
+
+	resp := &pluginapi.ContainerPreferredAllocationResponse{
+		DeviceIDs: ids,
+	}
+	response.ContainerResponses = append(response.ContainerResponses, resp)
+
+	return response, nil
 }
 
 func (s *pluginServiceV1Beta1) PreStartContainer(ctx context.Context, r *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {

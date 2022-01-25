@@ -6,8 +6,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/danisla/fsnotify"
 	"github.com/golang/glog"
-	"github.com/nsaway/fsnotify"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
