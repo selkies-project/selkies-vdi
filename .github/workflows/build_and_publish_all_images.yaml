@@ -14,6 +14,19 @@ on:
 
 jobs:
 
+  build_and_publish_app_proxy_image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-proxy
+        image_name: webrtc-gpu-streaming-app-proxy
+        image_version_1: ${{ inputs.image_version_1 }}
+        image_version_2: ${{ inputs.image_version_2 }}
+
   build_and_publish_app_streaming_image:
     runs-on: ubuntu-latest
     steps:
