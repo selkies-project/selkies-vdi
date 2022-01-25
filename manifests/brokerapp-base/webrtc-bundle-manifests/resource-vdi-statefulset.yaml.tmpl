@@ -72,7 +72,6 @@ spec:
     spec:
       serviceAccount: {{.Namespace}}
 
-
       {{- if .PullSecrets }}
       imagePullSecrets:
       {{- range $secretName := .PullSecrets }}
