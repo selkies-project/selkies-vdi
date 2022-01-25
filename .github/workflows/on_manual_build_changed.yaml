@@ -1,10 +1,11 @@
-name: Stub
+name: "Trigger: Someone/something requested to build & publish changed images"
 
 on: workflow_dispatch
 
 jobs:
 
-  stub:
-    runs-on: ubuntu-latest
-    steps:
-    - run: echo 'stub'
+  build_and_publish_all_images:
+    uses: itopia-inc/selkies-vdi/.github/workflows/build_and_publish_changed_images.yaml@main
+    with:
+      image_version_1: ${{ needs.get_version.outputs.version }}
+      image_version_2: latest
