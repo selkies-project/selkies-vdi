@@ -13,6 +13,10 @@ jobs:
   detect_image_source_changes:
     runs-on: ubuntu-latest
     outputs:
+      app_streaming_changed: ${{ steps.check_app_streaming.outputs.any_changed == 'true' || steps.check_app_streaming.outputs.any_deleted == 'true' }}
+      app_streaming_bionic_changed: ${{ steps.check_app_streaming_bionic.outputs.any_changed == 'true' || steps.check_app_streaming_bionic.outputs.any_deleted == 'true' }}
+      app_streaming_focal_changed: ${{ steps.check_app_streaming_focal.outputs.any_changed == 'true' || steps.check_app_streaming_focal.outputs.any_deleted == 'true' }}
+      app_streaming_focal_cuda_changed: ${{ steps.check_app_streaming_focal_cuda.outputs.any_changed == 'true' || steps.check_app_streaming_focal_cuda.outputs.any_deleted == 'true' }}
       desktop_changed: ${{ steps.check_desktop.outputs.any_changed == 'true' || steps.check_desktop.outputs.any_deleted == 'true' }}
       pulseaudio_changed: ${{ steps.check_pulseaudio.outputs.any_changed == 'true' || steps.check_pulseaudio.outputs.any_deleted == 'true' }}
       squid_proxy_changed: ${{ steps.check_squid_proxy.outputs.any_changed == 'true' || steps.check_squid_proxy.outputs.any_deleted == 'true' }}
@@ -26,6 +30,46 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 2 # This is for changed-files.
+
+    - id: check_app_streaming
+      name: Check for changes to the app streaming image source
+      uses: tj-actions/changed-files@v1.1.2
+      with:
+        files: |
+          images/app-streaming/10_nvidia.json
+          images/app-streaming/Dockerfile
+          images/app-streaming/entrypoint.json
+          images/app-streaming/nvidia_icd.json
+
+    - id: check_app_streaming_bionic
+      name: Check for changes to the app streaming (bionic) image source
+      uses: tj-actions/changed-files@v1.1.2
+      with:
+        files: |
+          images/app-streaming/10_nvidia.json
+          images/app-streaming/Dockerfile.bionic
+          images/app-streaming/entrypoint.json
+          images/app-streaming/nvidia_icd.json
+
+    - id: check_app_streaming_focal
+      name: Check for changes to the app streaming (focal) image source
+      uses: tj-actions/changed-files@v1.1.2
+      with:
+        files: |
+          images/app-streaming/10_nvidia.json
+          images/app-streaming/Dockerfile.focal
+          images/app-streaming/entrypoint.json
+          images/app-streaming/nvidia_icd.json
+
+    - id: check_app_streaming_focal_cuda
+      name: Check for changes to the app streaming (focal cuda) image source
+      uses: tj-actions/changed-files@v1.1.2
+      with:
+        files: |
+          images/app-streaming/10_nvidia.json
+          images/app-streaming/Dockerfile.focal-cuda
+          images/app-streaming/entrypoint.json
+          images/app-streaming/nvidia_icd.json
 
     - id: check_desktop
       name: Check for changes to the desktop image source
@@ -80,6 +124,62 @@ jobs:
       uses: tj-actions/changed-files@v1.1.2
       with:
         files: images/xserver
+
+  build_and_publish_app_streaming_image_if_changed:
+    needs: detect_image_source_changes
+    if: needs.detect_image_source_changes.outputs.app_streaming_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_version_1: ${{ inputs.image_version }}
+
+  build_and_publish_app_streaming_bionic_image_if_changed:
+    needs: detect_image_source_changes
+    if: needs.detect_image_source_changes.outputs.app_streaming_bionic_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_version_1: bionic
+
+  build_and_publish_app_streaming_focal_image_if_changed:
+    needs: detect_image_source_changes
+    if: needs.detect_image_source_changes.outputs.app_streaming_focal_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_version_1: focal
+
+  build_and_publish_app_streaming_focal_cuda_image_if_changed:
+    needs: detect_image_source_changes
+    if: needs.detect_image_source_changes.outputs.app_streaming_focal_cuda_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_version_1: focal-cuda
 
   build_and_publish_desktop_image_if_changed:
     needs: detect_image_source_changes
