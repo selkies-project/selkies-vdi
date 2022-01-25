@@ -26,4 +26,3 @@ jobs:
         image_name: webrtc-gpu-streaming-gst-webrtc-app
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
-        use_cache: "true"
