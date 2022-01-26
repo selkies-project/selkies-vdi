@@ -3,10 +3,18 @@ name: Build & publish changed images
 on:
   workflow_call:
     inputs:
-      image_version:
+      image_version_1:
         description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:foo"
         required: true
         type: string
+      image_version_2:
+        description: Another version for all image tags, such as "bar" in "ghcr.io/user/repo/image:bar"
+        required: false
+        type: string
+
+env:
+  github_token: ${{ secrets.GITHUB_TOKEN }}
+  github_username: $GITHUB_ACTOR
 
 jobs:
 
@@ -140,11 +148,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-proxy
+        github_token: $github_token
+        github_username: $github_username
         image_name: app-proxy
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/app-proxy
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_app_streaming_bionic_image_if_changed:
     needs: detect_image_source_changes
@@ -154,11 +162,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
+        github_token: $github_token
+        github_username: $github_username
         image_name: app-streaming
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -bionic
 
   build_and_publish_app_streaming_buster_image_if_changed:
@@ -169,11 +177,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
+        github_token: $github_token
+        github_username: $github_username
         image_name: app-streaming
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -buster
 
   build_and_publish_app_streaming_focal_image_if_changed:
@@ -184,11 +192,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
+        github_token: $github_token
+        github_username: $github_username
         image_name: app-streaming
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -focal
 
   build_and_publish_app_streaming_focal_cuda_image_if_changed:
@@ -199,11 +207,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
+        github_token: $github_token
+        github_username: $github_username
         image_name: app-streaming
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -focal-cuda
 
   build_and_publish_desktop_image_if_changed:
@@ -214,11 +222,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/desktop
+        github_token: $github_token
+        github_username: $github_username
         image_name: desktop
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/desktop
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_pulseaudio_image_if_changed:
     needs: detect_image_source_changes
@@ -228,11 +236,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/pulseaudio
+        github_token: $github_token
+        github_username: $github_username
         image_name: pulseaudio
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/pulseaudio
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_squid_proxy_image_if_changed:
     needs: detect_image_source_changes
@@ -242,11 +250,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/squid-proxy
+        github_token: $github_token
+        github_username: $github_username
         image_name: squid-proxy
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/squid-proxy
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_tinyfilemanager_image_if_changed:
     needs: detect_image_source_changes
@@ -256,11 +264,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/tinyfilemanager
+        github_token: $github_token
+        github_username: $github_username
         image_name: tinyfilemanager
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/tinyfilemanager
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_uinput_device_plugin_image_if_changed:
     needs: detect_image_source_changes
@@ -270,11 +278,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/uinput-device-plugin
+        github_token: $github_token
+        github_username: $github_username
         image_name: uinput-device-plugin
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/uinput-device-plugin
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_watchdog_image_if_changed:
     needs: detect_image_source_changes
@@ -284,11 +292,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/watchdog
+        github_token: $github_token
+        github_username: $github_username
         image_name: watchdog
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/watchdog
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_webrtc_image_if_changed:
     needs: detect_image_source_changes
@@ -298,11 +306,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
+        github_token: $github_token
+        github_username: $github_username
+        image_name: webrtc-app
         image_source_directory: images/webrtc
-        image_name: webrtc
-        image_version_1: ${{ inputs.image_version }}
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_xpra_image_if_changed:
     needs: detect_image_source_changes
@@ -312,11 +320,11 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/xpra
+        github_token: $github_token
+        github_username: $github_username
         image_name: xpra
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/xpra
+        image_version_1: ${{ inputs.image_version_1 }}
 
   build_and_publish_xserver_image_if_changed:
     needs: detect_image_source_changes
@@ -326,8 +334,8 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ./.github/actions/build_and_publish_image
       with:
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/xserver
+        github_token: $github_token
+        github_username: $github_username
         image_name: xserver
-        image_version_1: ${{ inputs.image_version }}
+        image_source_directory: images/xserver
+        image_version_1: ${{ inputs.image_version_1 }}

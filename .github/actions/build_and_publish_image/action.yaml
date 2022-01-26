@@ -10,11 +10,11 @@ inputs:
     description: Image source file name
     default: 'Dockerfile'
     required: false
-  github_personal_access_token:
-    description: GitHub personal access token (PAT)
+  github_token:
+    description: A GitHub personal access token (PAT) that matches the username
     required: true
   github_username:
-    description: GitHub username
+    description: The GitHub user as whom to run this action
     required: true
   image_source_directory:
     description: Image source directory path
@@ -43,7 +43,7 @@ runs:
     run: |
       set -x
 
-      echo ${{ inputs.github_personal_access_token }} | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
+      echo ${{ inputs.github_token }} | docker login ghcr.io -u ${{ inputs.github_username }} --password-stdin
       export BUILD_ARGS=""
       if [[ -n "${{ inputs.build_args }}" ]]; then
         IFS=";" read -ra args <<< "${{ inputs.build_args }}"
