@@ -27,7 +27,22 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_app_streaming_image:
+  build_and_publish_app_streaming_bionic_image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        dockerfile: Dockerfile.bionic
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
+        image_version_2: ${{ inputs.image_version_2 }}
+        image_version_suffix: -bionic
+
+  build_and_publish_app_streaming_buster_image:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -39,35 +54,7 @@ jobs:
         image_name: app-streaming
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
-
-  build_and_publish_app_streaming_bionic_image:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
-      with:
-        dockerfile: Dockerfile.bionic
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
-        # TODO: Should we add "bionic" to the name?
-        image_name: app-streaming
-        # TODO: Should we have a version history (with "latest")?
-        image_version_1: bionic
-
-  build_and_publish_app_streaming_focal_cuda_image:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
-      with:
-        dockerfile: Dockerfile.focal-cuda
-        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
-        github_username: ${{ github.actor }}
-        image_source_directory: images/app-streaming
-        # TODO: Should we add "focal-cuda" to the name?
-        image_name: app-streaming
-        image_version_1: focal-cuda
+        image_version_suffix: -buster
 
   build_and_publish_app_streaming_focal_image:
     runs-on: ubuntu-latest
@@ -79,9 +66,25 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-streaming
-        # TODO: Should we add "focal" to the name?
         image_name: app-streaming
-        image_version_1: focal
+        image_version_1: ${{ inputs.image_version_1 }}
+        image_version_2: ${{ inputs.image_version_2 }}
+        image_version_suffix: -focal
+
+  build_and_publish_app_streaming_focal_cuda_image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/build_and_publish_image
+      with:
+        dockerfile: Dockerfile.focal-cuda
+        github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+        github_username: ${{ github.actor }}
+        image_source_directory: images/app-streaming
+        image_name: app-streaming
+        image_version_1: ${{ inputs.image_version_1 }}
+        image_version_2: ${{ inputs.image_version_2 }}
+        image_version_suffix: -focal-cuda
 
   build_and_publish_desktop_image:
     runs-on: ubuntu-latest

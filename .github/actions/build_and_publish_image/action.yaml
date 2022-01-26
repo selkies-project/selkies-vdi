@@ -23,10 +23,13 @@ inputs:
     description: The basename for all image tags, such as "image" in "ghcr.io/user/repo/image:latest"
     required: true
   image_version_1:
-    description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:bar"
+    description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:foo"
     required: true
   image_version_2:
     description: Another version for all image tags, such as "bar" in "ghcr.io/user/repo/image:bar"
+    required: false
+  image_version_suffix:
+    description: A suffix for all image tags, such as "-baz" in "ghcr.io/user/repo/image:foo-baz"
     required: false
   use_cache:
     default: "true"
@@ -48,7 +51,7 @@ runs:
       fi
 
       export IMAGE_TAG_URL_PREFIX=ghcr.io/selkies-project/selkies-vdi/
-      export IMAGE_TAG_1="${IMAGE_TAG_URL_PREFIX}${{ inputs.image_name }}:${{ inputs.image_version_1 }}"
+      export IMAGE_TAG_1="${IMAGE_TAG_URL_PREFIX}${{ inputs.image_name }}:${{ inputs.image_version_1 }}${{ inputs.image_version_suffix }}"
       if [[ "${{ inputs.use_cache }}" == "true" ]]; then
         docker pull $IMAGE_TAG_1 || true
         (cd ${{ inputs.image_source_directory }} && docker build $BUILD_ARGS -f ${{ inputs.dockerfile }} --cache-from $IMAGE_TAG_1 -t $IMAGE_TAG_1 .)
@@ -58,7 +61,7 @@ runs:
       docker push $IMAGE_TAG_1
 
       if [ '${{ inputs.image_version_2 }}' != '' ]; then
-        export IMAGE_TAG_2="${IMAGE_TAG_URL_PREFIX}${{ inputs.image_name }}:${{ inputs.image_version_2 }}"
+        export IMAGE_TAG_2="${IMAGE_TAG_URL_PREFIX}${{ inputs.image_name }}:${{ inputs.image_version_2 }}${{ inputs.image_version_suffix }}"
         docker tag $IMAGE_TAG_1 $IMAGE_TAG_2
         docker push $IMAGE_TAG_2
       fi
