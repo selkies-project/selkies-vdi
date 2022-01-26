@@ -330,6 +330,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Build & publish image
       uses: ./.github/actions/build_and_publish_image
       with:
