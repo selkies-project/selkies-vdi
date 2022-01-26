@@ -1,4 +1,4 @@
-name: "Trigger: Someone/something requested to build & publish changed images"
+name: "Trigger: Manual request to build & publish changed images"
 
 on: workflow_dispatch
 
