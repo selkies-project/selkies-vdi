@@ -143,7 +143,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-proxy
-        image_name: webrtc-gpu-streaming-gst-app-proxy
+        image_name: app-proxy
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_app_streaming_image_if_changed:
@@ -157,7 +157,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-streaming
-        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_name: app-streaming
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_app_streaming_bionic_image_if_changed:
@@ -171,7 +171,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-streaming
-        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_name: app-streaming
         image_version_1: bionic
 
   build_and_publish_app_streaming_focal_image_if_changed:
@@ -185,7 +185,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-streaming
-        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_name: app-streaming
         image_version_1: focal
 
   build_and_publish_app_streaming_focal_cuda_image_if_changed:
@@ -199,7 +199,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/app-streaming
-        image_name: webrtc-gpu-streaming-gst-app-streaming
+        image_name: app-streaming
         image_version_1: focal-cuda
 
   build_and_publish_desktop_image_if_changed:
@@ -213,7 +213,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/desktop
-        image_name: webrtc-gpu-streaming-gst-desktop
+        image_name: desktop
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_pulseaudio_image_if_changed:
@@ -227,7 +227,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/pulseaudio
-        image_name: webrtc-gpu-streaming-gst-pulseaudio
+        image_name: pulseaudio
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_squid_proxy_image_if_changed:
@@ -241,7 +241,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/squid-proxy
-        image_name: webrtc-gpu-streaming-gst-squid-proxy
+        image_name: squid-proxy
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_tinyfilemanager_image_if_changed:
@@ -255,7 +255,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/tinyfilemanager
-        image_name: webrtc-gpu-streaming-gst-tinyfilemanager
+        image_name: tinyfilemanager
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_uinput_device_plugin_image_if_changed:
@@ -283,7 +283,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/watchdog
-        image_name: webrtc-gpu-streaming-gst-watchdog
+        image_name: watchdog
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_webrtc_image_if_changed:
@@ -297,7 +297,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/webrtc
-        image_name: webrtc-gpu-streaming-gst-webrtc-app
+        image_name: webrtc
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_xpra_image_if_changed:
@@ -311,7 +311,7 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/xpra
-        image_name: webrtc-gpu-streaming-gst-xpra
+        image_name: xpra
         image_version_1: ${{ inputs.image_version }}
 
   build_and_publish_xserver_image_if_changed:
@@ -325,5 +325,5 @@ jobs:
         github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
         github_username: ${{ github.actor }}
         image_source_directory: images/xserver
-        image_name: webrtc-gpu-streaming-gst-xserver
+        image_name: xserver
         image_version_1: ${{ inputs.image_version }}
