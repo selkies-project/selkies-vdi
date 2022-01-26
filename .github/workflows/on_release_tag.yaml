@@ -8,4 +8,4 @@ on:
 jobs:
 
   create_release:
-    uses: itopia-inc/selkies-vdi/.github/workflows/create_release.yaml@main
+    uses: selkies-project/selkies-vdi/.github/workflows/create_release.yaml@master

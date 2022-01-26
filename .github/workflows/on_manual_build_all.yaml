@@ -5,7 +5,7 @@ on: workflow_dispatch
 jobs:
 
   build_and_publish_all_images:
-    uses: itopia-inc/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@main
+    uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
     with:
       image_version_1: ${{ needs.get_version.outputs.version }}
       image_version_2: latest
