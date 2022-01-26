@@ -18,11 +18,12 @@ env:
 
 jobs:
 
-  build_and_publish_app_proxy_image:
+  app_proxy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -31,11 +32,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_app_streaming_bionic_image:
+  app_streaming_bionic:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         dockerfile: Dockerfile.bionic
         github_token: $github_token
@@ -46,11 +48,12 @@ jobs:
         image_version_2: ${{ inputs.image_version_2 }}
         image_version_suffix: -bionic
 
-  build_and_publish_app_streaming_buster_image:
+  app_streaming_buster:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -60,11 +63,12 @@ jobs:
         image_version_2: ${{ inputs.image_version_2 }}
         image_version_suffix: -buster
 
-  build_and_publish_app_streaming_focal_image:
+  app_streaming_focal:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         dockerfile: Dockerfile.focal
         github_token: $github_token
@@ -75,11 +79,12 @@ jobs:
         image_version_2: ${{ inputs.image_version_2 }}
         image_version_suffix: -focal
 
-  build_and_publish_app_streaming_focal_cuda_image:
+  app_streaming_focal_cuda:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         dockerfile: Dockerfile.focal-cuda
         github_token: $github_token
@@ -90,11 +95,12 @@ jobs:
         image_version_2: ${{ inputs.image_version_2 }}
         image_version_suffix: -focal-cuda
 
-  build_and_publish_desktop_image:
+  desktop:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -103,11 +109,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_pulseaudio_image:
+  pulseaudio:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -116,11 +123,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_squid_proxy_image:
+  squid_proxy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -129,11 +137,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_tinyfilemanager_image:
+  tinyfilemanager:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -142,11 +151,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_uinput_device_plugin_image:
+  uinput_device_plugin:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -155,11 +165,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_watchdog_image:
+  watchdog:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -168,11 +179,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_webrtc_image:
+  webrtc:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -181,11 +193,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_xpra_image:
+  xpra:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -194,11 +207,12 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_2: ${{ inputs.image_version_2 }}
 
-  build_and_publish_xserver_image:
+  xserver:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username

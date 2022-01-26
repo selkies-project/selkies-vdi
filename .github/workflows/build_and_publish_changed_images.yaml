@@ -18,7 +18,7 @@ env:
 
 jobs:
 
-  detect_image_source_changes:
+  check_image_source_changes:
     runs-on: ubuntu-latest
     outputs:
       app_proxy_changed: ${{ steps.check_app_proxy.outputs.any_changed == 'true' || steps.check_app_proxy.outputs.any_deleted == 'true' }}
@@ -140,13 +140,14 @@ jobs:
       with:
         files: images/xserver
 
-  build_and_publish_app_proxy_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.app_proxy_changed == 'true'
+  app_proxy:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.app_proxy_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -154,13 +155,14 @@ jobs:
         image_source_directory: images/app-proxy
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_app_streaming_bionic_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.app_streaming_bionic_changed == 'true'
+  app_streaming_bionic:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.app_streaming_bionic_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -169,13 +171,14 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -bionic
 
-  build_and_publish_app_streaming_buster_image_if_changed:
+  app_streaming_buster:
     needs: detect_image_source_changes
     if: needs.detect_image_source_changes.outputs.app_streaming_buster_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -184,13 +187,14 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -buster
 
-  build_and_publish_app_streaming_focal_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.app_streaming_focal_changed == 'true'
+  app_streaming_focal:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.app_streaming_focal_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -199,13 +203,14 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -focal
 
-  build_and_publish_app_streaming_focal_cuda_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.app_streaming_focal_cuda_changed == 'true'
+  app_streaming_focal_cuda:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.app_streaming_focal_cuda_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -214,13 +219,14 @@ jobs:
         image_version_1: ${{ inputs.image_version_1 }}
         image_version_suffix: -focal-cuda
 
-  build_and_publish_desktop_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.desktop_changed == 'true'
+  desktop:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.desktop_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -228,13 +234,14 @@ jobs:
         image_source_directory: images/desktop
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_pulseaudio_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.pulseaudio_changed == 'true'
+  pulseaudio:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.pulseaudio_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -242,13 +249,14 @@ jobs:
         image_source_directory: images/pulseaudio
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_squid_proxy_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.squid_proxy_changed == 'true'
+  squid_proxy:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.squid_proxy_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -256,13 +264,14 @@ jobs:
         image_source_directory: images/squid-proxy
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_tinyfilemanager_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.tinyfilemanager_changed == 'true'
+  tinyfilemanager:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.tinyfilemanager_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -270,13 +279,14 @@ jobs:
         image_source_directory: images/tinyfilemanager
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_uinput_device_plugin_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.uinput_device_plugin_changed == 'true'
+  uinput_device_plugin:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.uinput_device_plugin_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -284,13 +294,14 @@ jobs:
         image_source_directory: images/uinput-device-plugin
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_watchdog_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.watchdog_changed == 'true'
+  watchdog:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.watchdog_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -298,13 +309,14 @@ jobs:
         image_source_directory: images/watchdog
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_webrtc_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.webrtc_changed == 'true'
+  webrtc:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.webrtc_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -312,13 +324,14 @@ jobs:
         image_source_directory: images/webrtc
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_xpra_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.xpra_changed == 'true'
+  xpra:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.xpra_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
@@ -326,13 +339,14 @@ jobs:
         image_source_directory: images/xpra
         image_version_1: ${{ inputs.image_version_1 }}
 
-  build_and_publish_xserver_image_if_changed:
-    needs: detect_image_source_changes
-    if: needs.detect_image_source_changes.outputs.xserver_changed == 'true'
+  xserver:
+    needs: check_image_source_changes
+    if: needs.check_image_source_changes.outputs.xserver_changed == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ./.github/actions/build_and_publish_image
+    - name: Build & publish image
+      uses: ./.github/actions/build_and_publish_image
       with:
         github_token: $github_token
         github_username: $github_username
