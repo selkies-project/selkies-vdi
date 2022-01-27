@@ -31,4 +31,4 @@ else
 fi
 
 # Notify sidecars that startup is complete
-touch /var/run/appconfig/session_metadata_ready# XProp of Eclipse IDE Launcher window
+touch /var/run/appconfig/session_metadata_ready
