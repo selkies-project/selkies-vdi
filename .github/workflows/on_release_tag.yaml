@@ -1,10 +1,27 @@
-name: Stub
+name: "Trigger: A release tag was pushed to the repo"
 
-on: workflow_dispatch
+on:
+  push:
+    tags:
+    - 'v*'
 
 jobs:
 
-  stub:
+  build_and_publish_all_images:
+    uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
+    with:
+      image_version_1: $GITHUB_REF_NAME
+      image_version_2: latest
+
+  create_release:
+    needs: build_and_publish_all_images
     runs-on: ubuntu-latest
     steps:
-    - run: echo 'stub'
+    - uses: actions/create-release@v1
+      env:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        draft: true
+        prerelease: false
+        release_name: Release $GITHUB_REF_NAME
+        tag_name: $GITHUB_REF_NAME
