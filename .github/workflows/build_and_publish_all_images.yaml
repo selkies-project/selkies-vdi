@@ -1,20 +1,18 @@
 name: Build & publish all images
 
 on:
-  workflow_call:
-    inputs:
-      image_version_1:
-        description: A version for all image tags, such as "foo" in "ghcr.io/user/repo/image:foo"
-        required: true
-        type: string
-      image_version_2:
-        description: Another version for all image tags, such as "bar" in "ghcr.io/user/repo/image:bar"
-        required: false
-        type: string
+  push:
+    branches:
+      - dev
+      - master
+    paths:
+      - ".github/**"
+  workflow_dispatch:
 
 env:
   github_token: ${{ secrets.GITHUB_TOKEN }}
-  github_username: $GITHUB_ACTOR
+  github_username: ${{ github.actor }}
+  image_version: ${{ github.ref_name }}
 
 jobs:
   app_proxy:
@@ -28,8 +26,7 @@ jobs:
           github_username: $github_username
           image_name: app-proxy
           image_source_directory: images/app-proxy
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   app_streaming_bionic:
     runs-on: ubuntu-latest
@@ -43,8 +40,7 @@ jobs:
           github_username: $github_username
           image_name: app-streaming
           image_source_directory: images/app-streaming
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
           image_version_suffix: -bionic
 
   app_streaming_buster:
@@ -58,8 +54,7 @@ jobs:
           github_username: $github_username
           image_name: app-streaming
           image_source_directory: images/app-streaming
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
           image_version_suffix: -buster
 
   app_streaming_focal:
@@ -74,8 +69,7 @@ jobs:
           github_username: $github_username
           image_name: app-streaming
           image_source_directory: images/app-streaming
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
           image_version_suffix: -focal
 
   app_streaming_focal_cuda:
@@ -90,8 +84,7 @@ jobs:
           github_username: $github_username
           image_name: app-streaming
           image_source_directory: images/app-streaming
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
           image_version_suffix: -focal-cuda
 
   desktop:
@@ -105,8 +98,7 @@ jobs:
           github_username: $github_username
           image_name: desktop
           image_source_directory: images/desktop
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   pulseaudio:
     runs-on: ubuntu-latest
@@ -119,8 +111,7 @@ jobs:
           github_username: $github_username
           image_name: pulseaudio
           image_source_directory: images/pulseaudio
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   squid_proxy:
     runs-on: ubuntu-latest
@@ -133,8 +124,7 @@ jobs:
           github_username: $github_username
           image_name: squid-proxy
           image_source_directory: images/squid-proxy
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   tinyfilemanager:
     runs-on: ubuntu-latest
@@ -147,8 +137,7 @@ jobs:
           github_username: $github_username
           image_name: tinyfilemanager
           image_source_directory: images/tinyfilemanager
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   uinput_device_plugin:
     runs-on: ubuntu-latest
@@ -161,8 +150,7 @@ jobs:
           github_username: $github_username
           image_name: uinput-device-plugin
           image_source_directory: images/uinput-device-plugin
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   watchdog:
     runs-on: ubuntu-latest
@@ -175,8 +163,7 @@ jobs:
           github_username: $github_username
           image_name: watchdog
           image_source_directory: images/watchdog
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   webrtc:
     runs-on: ubuntu-latest
@@ -189,8 +176,7 @@ jobs:
           github_username: $github_username
           image_name: webrtc
           image_source_directory: images/webrtc
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   xpra:
     runs-on: ubuntu-latest
@@ -205,8 +191,7 @@ jobs:
           github_username: $github_username
           image_name: xpra
           image_source_directory: images/xpra
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
 
   xserver:
     runs-on: ubuntu-latest
@@ -219,5 +204,4 @@ jobs:
           github_username: $github_username
           image_name: xserver
           image_source_directory: images/xserver
-          image_version_1: ${{ inputs.image_version_1 }}
-          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_1: $image_version
