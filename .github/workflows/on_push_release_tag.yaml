@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/create-release@v1
         env:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
           prerelease: false
