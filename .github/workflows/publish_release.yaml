@@ -1,4 +1,4 @@
-name: "Trigger: A release tag was pushed to the repo"
+name: Publish release
 
 on:
   push:
