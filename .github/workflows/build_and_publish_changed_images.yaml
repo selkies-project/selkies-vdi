@@ -15,340 +15,110 @@ env:
   image_version: ${{ github.ref_name }}
 
 jobs:
-  check_image_source_changes:
+  # Note: When modifying this job, copy modifications to all other workflows' image jobs.
+  changed_images:
     runs-on: ubuntu-latest
-    outputs:
-      app_proxy_changed: ${{ steps.check_app_proxy.outputs.any_changed == 'true' || steps.check_app_proxy.outputs.any_deleted == 'true' }}
-      app_streaming_bionic_changed: ${{ steps.check_app_streaming_bionic.outputs.any_changed == 'true' || steps.check_app_streaming_bionic.outputs.any_deleted == 'true' }}
-      app_streaming_buster_changed: ${{ steps.check_app_streaming_buster.outputs.any_changed == 'true' || steps.check_app_streaming_buster.outputs.any_deleted == 'true' }}
-      app_streaming_focal_changed: ${{ steps.check_app_streaming_focal.outputs.any_changed == 'true' || steps.check_app_streaming_focal.outputs.any_deleted == 'true' }}
-      app_streaming_focal_cuda_changed: ${{ steps.check_app_streaming_focal_cuda.outputs.any_changed == 'true' || steps.check_app_streaming_focal_cuda.outputs.any_deleted == 'true' }}
-      desktop_changed: ${{ steps.check_desktop.outputs.any_changed == 'true' || steps.check_desktop.outputs.any_deleted == 'true' }}
-      pulseaudio_changed: ${{ steps.check_pulseaudio.outputs.any_changed == 'true' || steps.check_pulseaudio.outputs.any_deleted == 'true' }}
-      squid_proxy_changed: ${{ steps.check_squid_proxy.outputs.any_changed == 'true' || steps.check_squid_proxy.outputs.any_deleted == 'true' }}
-      tinyfilemanager_changed: ${{ steps.check_tinyfilemanager.outputs.any_changed == 'true' || steps.check_tinyfilemanager.outputs.any_deleted == 'true' }}
-      uinput_device_plugin_changed: ${{ steps.check_uinput_device_plugin.outputs.any_changed == 'true' || steps.check_uinput_device_plugin.outputs.any_deleted == 'true' }}
-      watchdog_changed: ${{ steps.check_watchdog.outputs.any_changed == 'true' || steps.check_watchdog.outputs.any_deleted == 'true' }}
-      webrtc_changed: ${{ steps.check_webrtc.outputs.any_changed == 'true' || steps.check_webrtc.outputs.any_deleted == 'true' }}
-      xpra_changed: ${{ steps.check_xpra.outputs.any_changed == 'true' || steps.check_xpra.outputs.any_deleted == 'true' }}
-      xserver_changed: ${{ steps.check_xserver.outputs.any_changed == 'true' || steps.check_xserver.outputs.any_deleted == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: app-proxy
+            source_directory: images/app-proxy
+            source_files_for_diff: images/app-proxy
+
+          - name: app-streaming
+            version_suffix: -bionic
+            dockerfile: Dockerfile.bionic
+            source_directory: images/app-streaming
+            source_files_for_diff: |
+              images/app-streaming/10_nvidia.json
+              images/app-streaming/Dockerfile.bionic
+              images/app-streaming/entrypoint.json
+              images/app-streaming/nvidia_icd.json
+
+          - name: app-streaming
+            version_suffix: -buster
+            source_directory: images/app-streaming
+            source_files_for_diff: |
+              images/app-streaming/10_nvidia.json
+              images/app-streaming/Dockerfile
+              images/app-streaming/entrypoint.json
+              images/app-streaming/nvidia_icd.json
+
+          - name: app-streaming
+            version_suffix: -focal
+            dockerfile: Dockerfile.focal
+            source_directory: images/app-streaming
+            source_files_for_diff: |
+              images/app-streaming/10_nvidia.json
+              images/app-streaming/Dockerfile.focal
+              images/app-streaming/entrypoint.json
+              images/app-streaming/nvidia_icd.json
+
+          - name: app-streaming
+            version_suffix: -focal-cuda
+            dockerfile: Dockerfile.focal-cuda
+            source_directory: images/app-streaming
+            source_files_for_diff: |
+              images/app-streaming/10_nvidia.json
+              images/app-streaming/Dockerfile.focal-cuda
+              images/app-streaming/entrypoint.json
+              images/app-streaming/nvidia_icd.json
+
+          - name: desktop
+            source_directory: images/desktop
+            source_files_for_diff: images/desktop
+
+          - name: pulseaudio
+            source_directory: images/pulseaudio
+            source_files_for_diff: images/pulseaudio
+
+          - name: squid-proxy
+            source_directory: images/squid-proxy
+            source_files_for_diff: images/squid-proxy
+
+          - name: tinyfilemanager
+            source_directory: images/tinyfilemanager
+            source_files_for_diff: images/tinyfilemanager
+
+          - name: uinput-device-plugin
+            source_directory: images/uinput-device-plugin
+            source_files_for_diff: images/uinput-device-plugin
+
+          - name: watchdog
+            source_directory: images/watchdog
+            source_files_for_diff: images/watchdog
+
+          - name: webrtc
+            source_directory: images/webrtc
+            source_files_for_diff: images/webrtc
+
+          - name: xpra
+            source_directory: images/xpra
+            source_files_for_diff: images/xpra
+            submodules: recursive
+
+          - name: xserver
+            source_directory: images/xserver
+            source_files_for_diff: images/xserver
+
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2 # This is for changed-files.
+          submodules: ${{ matrix.submodules }}
 
-      - id: check_app_proxy
-        name: Check for changes to the app proxy image source
+      - id: check_for_changes_to_image_source
+        name: Check for changes to ${{ matrix.name }} image source
         uses: tj-actions/changed-files@v1.1.2
         with:
-          files: images/app-proxy
+          files: ${{ matrix.source_files_for_diff }}
 
-      - id: check_app_streaming_bionic
-        name: Check for changes to the app streaming (bionic) image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: |
-            images/app-streaming/10_nvidia.json
-            images/app-streaming/Dockerfile.bionic
-            images/app-streaming/entrypoint.json
-            images/app-streaming/nvidia_icd.json
-
-      - id: check_app_streaming_buster
-        name: Check for changes to the app streaming (buster) image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: |
-            images/app-streaming/10_nvidia.json
-            images/app-streaming/Dockerfile
-            images/app-streaming/entrypoint.json
-            images/app-streaming/nvidia_icd.json
-
-      - id: check_app_streaming_focal
-        name: Check for changes to the app streaming (focal) image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: |
-            images/app-streaming/10_nvidia.json
-            images/app-streaming/Dockerfile.focal
-            images/app-streaming/entrypoint.json
-            images/app-streaming/nvidia_icd.json
-
-      - id: check_app_streaming_focal_cuda
-        name: Check for changes to the app streaming (focal cuda) image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: |
-            images/app-streaming/10_nvidia.json
-            images/app-streaming/Dockerfile.focal-cuda
-            images/app-streaming/entrypoint.json
-            images/app-streaming/nvidia_icd.json
-
-      - id: check_desktop
-        name: Check for changes to the desktop image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/desktop
-
-      - id: check_pulseaudio
-        name: Check for changes to the pulseaudio image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/pulseaudio
-
-      - id: check_squid_proxy
-        name: Check for changes to the squid proxy image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/squid-proxy
-
-      - id: check_tinyfilemanager
-        name: Check for changes to the tinyfilemanager image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/tinyfilemanager
-
-      - id: check_uinput_device_plugin
-        name: Check for changes to the uinput device plugin image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/uinput-device-plugin
-
-      - id: check_watchdog
-        name: Check for changes to the watchdog image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/watchdog
-
-      - id: check_webrtc
-        name: Check for changes to the webrtc image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/webrtc
-
-      - id: check_xpra
-        name: Check for changes to the xpra image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/xpra
-
-      - id: check_xserver
-        name: Check for changes to the xserver image source
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: images/xserver
-
-  app_proxy:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.app_proxy_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
+      - name: Build & publish ${{ matrix.name }} image
+        if: steps.check_for_changes_to_image_source.outputs.any_changed == 'true' || steps.check_for_changes_to_image_source.outputs.any_deleted == 'true'
         with:
           github_token: $github_token
           github_username: $github_username
-          image_name: app-proxy
-          image_source_directory: images/app-proxy
-          image_version_1: $image_version
-
-  app_streaming_bionic:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.app_streaming_bionic_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -bionic
-
-  app_streaming_buster:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.app_streaming_buster_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -buster
-
-  app_streaming_focal:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.app_streaming_focal_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -focal
-
-  app_streaming_focal_cuda:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.app_streaming_focal_cuda_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -focal-cuda
-
-  desktop:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.desktop_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: desktop
-          image_source_directory: images/desktop
-          image_version_1: $image_version
-
-  pulseaudio:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.pulseaudio_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: pulseaudio
-          image_source_directory: images/pulseaudio
-          image_version_1: $image_version
-
-  squid_proxy:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.squid_proxy_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: squid-proxy
-          image_source_directory: images/squid-proxy
-          image_version_1: $image_version
-
-  tinyfilemanager:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.tinyfilemanager_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: tinyfilemanager
-          image_source_directory: images/tinyfilemanager
-          image_version_1: $image_version
-
-  uinput_device_plugin:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.uinput_device_plugin_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: uinput-device-plugin
-          image_source_directory: images/uinput-device-plugin
-          image_version_1: $image_version
-
-  watchdog:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.watchdog_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: watchdog
-          image_source_directory: images/watchdog
-          image_version_1: $image_version
-
-  webrtc:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.webrtc_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: webrtc-app
-          image_source_directory: images/webrtc
-          image_version_1: $image_version
-
-  xpra:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.xpra_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: xpra
-          image_source_directory: images/xpra
-          image_version_1: $image_version
-
-  xserver:
-    needs: check_image_source_changes
-    if: needs.check_image_source_changes.outputs.xserver_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: xserver
-          image_source_directory: images/xserver
-          image_version_1: $image_version
+          image_name: ${{ matrix.name }}
+          image_source_directory: ${{ matrix.source_directory }}
+          image_version_1: $image_version${{ matrix.version_suffix }}

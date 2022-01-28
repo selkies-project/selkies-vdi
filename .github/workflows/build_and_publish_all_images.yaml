@@ -15,193 +15,73 @@ env:
   image_version: ${{ github.ref_name }}
 
 jobs:
-  app_proxy:
+  # Note: When modifying this job, copy modifications to all other workflows' image jobs.
+  all_images:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-proxy
-          image_source_directory: images/app-proxy
-          image_version_1: $image_version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: app-proxy
+            source_directory: images/app-proxy
 
-  app_streaming_bionic:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          dockerfile: Dockerfile.bionic
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -bionic
+          - name: app-streaming
+            version_suffix: -bionic
+            dockerfile: Dockerfile.bionic
+            source_directory: images/app-streaming
 
-  app_streaming_buster:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -buster
+          - name: app-streaming
+            version_suffix: -buster
+            source_directory: images/app-streaming
 
-  app_streaming_focal:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          dockerfile: Dockerfile.focal
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -focal
+          - name: app-streaming
+            version_suffix: -focal
+            dockerfile: Dockerfile.focal
+            source_directory: images/app-streaming
 
-  app_streaming_focal_cuda:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          dockerfile: Dockerfile.focal-cuda
-          github_token: $github_token
-          github_username: $github_username
-          image_name: app-streaming
-          image_source_directory: images/app-streaming
-          image_version_1: $image_version
-          image_version_suffix: -focal-cuda
+          - name: app-streaming
+            version_suffix: -focal-cuda
+            dockerfile: Dockerfile.focal-cuda
+            source_directory: images/app-streaming
 
-  desktop:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: desktop
-          image_source_directory: images/desktop
-          image_version_1: $image_version
+          - name: desktop
+            source_directory: images/desktop
 
-  pulseaudio:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: pulseaudio
-          image_source_directory: images/pulseaudio
-          image_version_1: $image_version
+          - name: pulseaudio
+            source_directory: images/pulseaudio
 
-  squid_proxy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: squid-proxy
-          image_source_directory: images/squid-proxy
-          image_version_1: $image_version
+          - name: squid-proxy
+            source_directory: images/squid-proxy
 
-  tinyfilemanager:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: tinyfilemanager
-          image_source_directory: images/tinyfilemanager
-          image_version_1: $image_version
+          - name: tinyfilemanager
+            source_directory: images/tinyfilemanager
 
-  uinput_device_plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: uinput-device-plugin
-          image_source_directory: images/uinput-device-plugin
-          image_version_1: $image_version
+          - name: uinput-device-plugin
+            source_directory: images/uinput-device-plugin
 
-  watchdog:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: watchdog
-          image_source_directory: images/watchdog
-          image_version_1: $image_version
+          - name: watchdog
+            source_directory: images/watchdog
 
-  webrtc:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: webrtc
-          image_source_directory: images/webrtc
-          image_version_1: $image_version
+          - name: webrtc
+            source_directory: images/webrtc
 
-  xpra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Build & publish image
-        uses: ./.github/actions/build_and_publish_image
-        with:
-          github_token: $github_token
-          github_username: $github_username
-          image_name: xpra
-          image_source_directory: images/xpra
-          image_version_1: $image_version
+          - name: xpra
+            source_directory: images/xpra
+            submodules: recursive
 
-  xserver:
-    runs-on: ubuntu-latest
+          - name: xserver
+            source_directory: images/xserver
+
     steps:
       - uses: actions/checkout@v2
-      - name: Build & publish image
+        with:
+          submodules: ${{ matrix.submodules }}
+
+      - name: Build & publish ${{ matrix.name }} image
         uses: ./.github/actions/build_and_publish_image
         with:
           github_token: $github_token
           github_username: $github_username
-          image_name: xserver
-          image_source_directory: images/xserver
-          image_version_1: $image_version
+          image_name: ${{ matrix.name }}
+          image_source_directory: ${{ matrix.source_directory }}
+          image_version_1: $image_version${{ matrix.version_suffix }}
