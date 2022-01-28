@@ -3,7 +3,6 @@ name: "Trigger: Manual request to build & publish all images"
 on: workflow_dispatch
 
 jobs:
-
   all_images:
     uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
     with:

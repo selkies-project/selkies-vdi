@@ -17,208 +17,207 @@ env:
   github_username: $GITHUB_ACTOR
 
 jobs:
-
   app_proxy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: app-proxy
-        image_source_directory: images/app-proxy
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: app-proxy
+          image_source_directory: images/app-proxy
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   app_streaming_bionic:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        dockerfile: Dockerfile.bionic
-        github_token: $github_token
-        github_username: $github_username
-        image_name: app-streaming
-        image_source_directory: images/app-streaming
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
-        image_version_suffix: -bionic
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          dockerfile: Dockerfile.bionic
+          github_token: $github_token
+          github_username: $github_username
+          image_name: app-streaming
+          image_source_directory: images/app-streaming
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_suffix: -bionic
 
   app_streaming_buster:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: app-streaming
-        image_source_directory: images/app-streaming
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
-        image_version_suffix: -buster
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: app-streaming
+          image_source_directory: images/app-streaming
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_suffix: -buster
 
   app_streaming_focal:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        dockerfile: Dockerfile.focal
-        github_token: $github_token
-        github_username: $github_username
-        image_name: app-streaming
-        image_source_directory: images/app-streaming
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
-        image_version_suffix: -focal
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          dockerfile: Dockerfile.focal
+          github_token: $github_token
+          github_username: $github_username
+          image_name: app-streaming
+          image_source_directory: images/app-streaming
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_suffix: -focal
 
   app_streaming_focal_cuda:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        dockerfile: Dockerfile.focal-cuda
-        github_token: $github_token
-        github_username: $github_username
-        image_name: app-streaming
-        image_source_directory: images/app-streaming
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
-        image_version_suffix: -focal-cuda
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          dockerfile: Dockerfile.focal-cuda
+          github_token: $github_token
+          github_username: $github_username
+          image_name: app-streaming
+          image_source_directory: images/app-streaming
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
+          image_version_suffix: -focal-cuda
 
   desktop:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: desktop
-        image_source_directory: images/desktop
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: desktop
+          image_source_directory: images/desktop
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   pulseaudio:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: pulseaudio
-        image_source_directory: images/pulseaudio
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: pulseaudio
+          image_source_directory: images/pulseaudio
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   squid_proxy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: squid-proxy
-        image_source_directory: images/squid-proxy
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: squid-proxy
+          image_source_directory: images/squid-proxy
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   tinyfilemanager:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: tinyfilemanager
-        image_source_directory: images/tinyfilemanager
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: tinyfilemanager
+          image_source_directory: images/tinyfilemanager
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   uinput_device_plugin:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: uinput-device-plugin
-        image_source_directory: images/uinput-device-plugin
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: uinput-device-plugin
+          image_source_directory: images/uinput-device-plugin
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   watchdog:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: watchdog
-        image_source_directory: images/watchdog
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: watchdog
+          image_source_directory: images/watchdog
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   webrtc:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: webrtc
-        image_source_directory: images/webrtc
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: webrtc
+          image_source_directory: images/webrtc
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   xpra:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: xpra
-        image_source_directory: images/xpra
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: xpra
+          image_source_directory: images/xpra
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}
 
   xserver:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build & publish image
-      uses: ./.github/actions/build_and_publish_image
-      with:
-        github_token: $github_token
-        github_username: $github_username
-        image_name: xserver
-        image_source_directory: images/xserver
-        image_version_1: ${{ inputs.image_version_1 }}
-        image_version_2: ${{ inputs.image_version_2 }}
+      - uses: actions/checkout@v2
+      - name: Build & publish image
+        uses: ./.github/actions/build_and_publish_image
+        with:
+          github_token: $github_token
+          github_username: $github_username
+          image_name: xserver
+          image_source_directory: images/xserver
+          image_version_1: ${{ inputs.image_version_1 }}
+          image_version_2: ${{ inputs.image_version_2 }}

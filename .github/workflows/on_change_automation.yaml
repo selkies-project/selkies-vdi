@@ -1,15 +1,14 @@
-name: 'Trigger: Automation config was changed'
+name: "Trigger: Automation config was changed"
 
 on:
   push:
     branches:
-    - dev
-    - master
+      - dev
+      - master
     paths:
-    - '.github/**'
+      - ".github/**"
 
 jobs:
-
   all_images:
     uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
     with:

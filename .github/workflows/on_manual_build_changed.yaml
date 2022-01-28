@@ -3,7 +3,6 @@ name: "Trigger: Manual request to build & publish changed images"
 on: workflow_dispatch
 
 jobs:
-
   changed_images:
     uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_changed_images.yaml@master
     with:

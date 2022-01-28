@@ -3,10 +3,9 @@ name: "Trigger: A release tag was pushed to the repo"
 on:
   push:
     tags:
-    - 'v*'
+      - "v*"
 
 jobs:
-
   build_and_publish_all_images:
     uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_all_images.yaml@master
     with:
@@ -17,11 +16,11 @@ jobs:
     needs: build_and_publish_all_images
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/create-release@v1
-      env:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        draft: true
-        prerelease: false
-        release_name: Release $GITHUB_REF_NAME
-        tag_name: $GITHUB_REF_NAME
+      - uses: actions/create-release@v1
+        env:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: true
+          prerelease: false
+          release_name: Release $GITHUB_REF_NAME
+          tag_name: $GITHUB_REF_NAME

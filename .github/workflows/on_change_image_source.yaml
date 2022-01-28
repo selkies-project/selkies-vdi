@@ -3,13 +3,12 @@ name: "Trigger: Image source was changed"
 on:
   push:
     branches:
-    - dev
-    - master
+      - dev
+      - master
     paths:
-    - 'images/**/**'
+      - "images/**/**"
 
 jobs:
-
   changed_images:
     uses: selkies-project/selkies-vdi/.github/workflows/build_and_publish_changed_images.yaml@master
     with:
