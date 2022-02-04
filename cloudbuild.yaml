@@ -43,7 +43,7 @@ steps:
   # Deploy TURN infrastructure based on GKE cluster type.
   ###
   - name: "gcr.io/cloud-builders/gcloud"
-    id: "selkies-gke-detect"
+    id: "deploy-turn"
     dir: infra/turn
     entrypoint: bash
     args:
@@ -62,7 +62,7 @@ steps:
           fi
 
           # Deploy TURN using Cloud Build
-          gcloud -q builds submit --config cloudbuild.private-gke.yaml --substitutions=_REGION=${_REGON},_TURN_REALM=$$TURN_REALM,_ACTION=apply
+          gcloud -q builds submit --config cloudbuild.private-gke.yaml --substitutions=_REGION=${_REGION},_TURN_REALM=$$TURN_REALM,_ACTION=apply
         else
           # Deploy TURN to public GKE cluster
           echo "INFO: Deploying TURN to public GKE cluster"
@@ -87,7 +87,7 @@ steps:
           fi
 
           # Deploy TURN using Cloud Build
-          gcloud -q builds submit --config cloudbuild.public-gke.yaml --substitutions=_REGION=${_REGON},_TURN_REALM=$$TURN_REALM,_ACTION=apply
+          gcloud -q builds submit --config cloudbuild.public-gke.yaml --substitutions=_REGION=${_REGION},_TURN_REALM=$$TURN_REALM,_ACTION=apply
         fi
 
   ###
