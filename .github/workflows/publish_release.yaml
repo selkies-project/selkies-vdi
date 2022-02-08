@@ -1,120 +1,93 @@
-name: Build & publish changed images
+name: Publish release
 
 on:
   push:
-    branches:
-      - dev
-      - master
-    paths:
-      - "images/**/**"
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
   # Note: When modifying this job, copy modifications to all other workflows' image jobs.
-  changed_images:
+  all_images:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - name: app-proxy
             source_directory: images/app-proxy
-            source_files_for_diff: images/app-proxy
 
           - name: app-streaming
             version_suffix: -bionic
             dockerfile: Dockerfile.bionic
             source_directory: images/app-streaming
-            source_files_for_diff: |
-              images/app-streaming/10_nvidia.json
-              images/app-streaming/Dockerfile.bionic
-              images/app-streaming/entrypoint.json
-              images/app-streaming/nvidia_icd.json
 
           - name: app-streaming
             version_suffix: -buster
             source_directory: images/app-streaming
-            source_files_for_diff: |
-              images/app-streaming/10_nvidia.json
-              images/app-streaming/Dockerfile
-              images/app-streaming/entrypoint.json
-              images/app-streaming/nvidia_icd.json
 
           - name: app-streaming
             version_suffix: -focal
             dockerfile: Dockerfile.focal
             source_directory: images/app-streaming
-            source_files_for_diff: |
-              images/app-streaming/10_nvidia.json
-              images/app-streaming/Dockerfile.focal
-              images/app-streaming/entrypoint.json
-              images/app-streaming/nvidia_icd.json
 
           - name: app-streaming
             version_suffix: -focal-cuda
             dockerfile: Dockerfile.focal-cuda
             source_directory: images/app-streaming
-            source_files_for_diff: |
-              images/app-streaming/10_nvidia.json
-              images/app-streaming/Dockerfile.focal-cuda
-              images/app-streaming/entrypoint.json
-              images/app-streaming/nvidia_icd.json
 
           - name: desktop
             source_directory: images/desktop
-            source_files_for_diff: images/desktop
 
           - name: pulseaudio
             source_directory: images/pulseaudio
-            source_files_for_diff: images/pulseaudio
 
           - name: squid-proxy
             source_directory: images/squid-proxy
-            source_files_for_diff: images/squid-proxy
 
           - name: tinyfilemanager
             source_directory: images/tinyfilemanager
-            source_files_for_diff: images/tinyfilemanager
 
           - name: uinput-device-plugin
             source_directory: images/uinput-device-plugin
-            source_files_for_diff: images/uinput-device-plugin
 
           - name: watchdog
             source_directory: images/watchdog
-            source_files_for_diff: images/watchdog
 
           - name: webrtc
             source_directory: images/webrtc
-            source_files_for_diff: images/webrtc
 
           - name: xpra
             source_directory: images/xpra
-            source_files_for_diff: images/xpra
             submodules: recursive
 
           - name: xserver
             source_directory: images/xserver
-            source_files_for_diff: images/xserver
 
     name: ${{ matrix.name }}${{ matrix.version_suffix }} image build & publish
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 2 # This is for changed-files.
           submodules: ${{ matrix.submodules }}
 
-      - name: Check for changes to ${{ matrix.name }} image source
-        id: check
-        uses: tj-actions/changed-files@v1.1.2
-        with:
-          files: ${{ matrix.source_files_for_diff }}
-
       - name: Build & publish ${{ matrix.name }} image
-        if: steps.check.outputs.any_changed == 'true' || steps.check.outputs.any_deleted == 'true'
         uses: ./.github/actions/build_and_publish_image
         with:
           github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
           github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
           image_source_directory: ${{ matrix.source_directory }}
-          image_version_1: ${{ github.ref_name }}${{ matrix.version_suffix }}
+          image_version_1: ${{ github.ref_name }}_1${{ matrix.version_suffix }}
+          image_version_2: latest${{ matrix.version_suffix }}
+
+  create_release:
+    needs: all_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: true
+          prerelease: false
+          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}

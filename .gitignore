@@ -16,3 +16,6 @@ deploy-*.sh
 
 # Python stuff
 **/__pycache__
+
+# macOS stuff
+.DS_Store
