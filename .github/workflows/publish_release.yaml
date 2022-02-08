@@ -4,19 +4,13 @@ on:
   push:
     tags:
       - "v*"
-
-env:
-  github_token: ${{ secrets.GITHUB_TOKEN }}
-  github_username: ${{ github.actor }}
-  image_version_1: ${{ github.ref_name }}
-  image_version_2: latest
+  workflow_dispatch:
 
 jobs:
   # Note: When modifying this job, copy modifications to all other workflows' image jobs.
   all_images:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         include:
           - name: app-proxy
@@ -69,6 +63,7 @@ jobs:
           - name: xserver
             source_directory: images/xserver
 
+    name: ${{ matrix.name }}${{ matrix.version_suffix }} image build & publish
     steps:
       - uses: actions/checkout@v2
         with:
@@ -77,12 +72,12 @@ jobs:
       - name: Build & publish ${{ matrix.name }} image
         uses: ./.github/actions/build_and_publish_image
         with:
-          github_token: $github_token
-          github_username: $github_username
+          github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
           image_source_directory: ${{ matrix.source_directory }}
-          image_version_1: $image_version_1${{ matrix.version_suffix }}
-          image_version_2: $image_version_2${{ matrix.version_suffix }}
+          image_version_1: ${{ github.ref_name }}_1${{ matrix.version_suffix }}
+          image_version_2: latest${{ matrix.version_suffix }}
 
   create_release:
     needs: all_images
@@ -94,5 +89,5 @@ jobs:
         with:
           draft: true
           prerelease: false
-          release_name: Release $GITHUB_REF_NAME
-          tag_name: $GITHUB_REF_NAME
+          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}

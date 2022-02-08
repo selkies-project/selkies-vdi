@@ -9,17 +9,11 @@ on:
       - "images/**/**"
   workflow_dispatch:
 
-env:
-  github_token: ${{ secrets.GITHUB_TOKEN }}
-  github_username: ${{ github.actor }}
-  image_version: ${{ github.ref_name }}
-
 jobs:
   # Note: When modifying this job, copy modifications to all other workflows' image jobs.
   changed_images:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         include:
           - name: app-proxy
@@ -102,23 +96,25 @@ jobs:
             source_directory: images/xserver
             source_files_for_diff: images/xserver
 
+    name: ${{ matrix.name }}${{ matrix.version_suffix }} image build & publish
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2 # This is for changed-files.
           submodules: ${{ matrix.submodules }}
 
-      - id: check_for_changes_to_image_source
-        name: Check for changes to ${{ matrix.name }} image source
+      - name: Check for changes to ${{ matrix.name }} image source
+        id: check
         uses: tj-actions/changed-files@v1.1.2
         with:
           files: ${{ matrix.source_files_for_diff }}
 
       - name: Build & publish ${{ matrix.name }} image
-        if: steps.check_for_changes_to_image_source.outputs.any_changed == 'true' || steps.check_for_changes_to_image_source.outputs.any_deleted == 'true'
+        if: steps.check.outputs.any_changed == 'true' || steps.check.outputs.any_deleted == 'true'
+        uses: ./.github/actions/build_and_publish_image
         with:
-          github_token: $github_token
-          github_username: $github_username
+          github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
           image_source_directory: ${{ matrix.source_directory }}
-          image_version_1: $image_version${{ matrix.version_suffix }}
+          image_version_1: ${{ github.ref_name }}${{ matrix.version_suffix }}

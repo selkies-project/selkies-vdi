@@ -9,17 +9,11 @@ on:
       - ".github/**"
   workflow_dispatch:
 
-env:
-  github_token: ${{ secrets.GITHUB_TOKEN }}
-  github_username: ${{ github.actor }}
-  image_version: ${{ github.ref_name }}
-
 jobs:
   # Note: When modifying this job, copy modifications to all other workflows' image jobs.
   all_images:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         include:
           - name: app-proxy
@@ -72,6 +66,7 @@ jobs:
           - name: xserver
             source_directory: images/xserver
 
+    name: ${{ matrix.name }}${{ matrix.version_suffix }} image build & publish
     steps:
       - uses: actions/checkout@v2
         with:
@@ -80,8 +75,8 @@ jobs:
       - name: Build & publish ${{ matrix.name }} image
         uses: ./.github/actions/build_and_publish_image
         with:
-          github_token: $github_token
-          github_username: $github_username
+          github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
           image_source_directory: ${{ matrix.source_directory }}
-          image_version_1: $image_version${{ matrix.version_suffix }}
+          image_version_1: ${{ github.ref_name }}${{ matrix.version_suffix }}
