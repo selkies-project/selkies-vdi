@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -28,6 +29,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -46,6 +48,7 @@ type CredentialCache struct {
 const defaultAudience = "BROKER_CLIENT_ID"
 const defaultClientID = "DESKTOP_APP_CLIENT_ID"
 const defaultClientSecret = "DESKTOP_APP_CLIENT_SECRET"
+const defaultGCIPKey = "GCIP_API_KEY"
 
 var (
 	flCredentialFile = flag.String("credential_file", "creds.json", "Credential file with id_token, refresh_token, and broker_cookie")
@@ -59,6 +62,8 @@ var (
 	localAddr        = flag.String("local_addr", "127.0.0.1", "Local address to listen on")
 	appName          = flag.String("app", "", "Name of broker app to connect to")
 	userCookie       = flag.String("cookie", "", "Broker user cookie for per-user routing")
+	gcipKeyArg       = flag.String("gcip-key", "", "API key used when endpoint uses GCIP instead of IAM.")
+	gcipProviderArg  = flag.String("gcip-provider", "google.com", "GCIP provider name.")
 
 	verbose = flag.Bool("verbose", false, "Verbose.")
 )
@@ -105,6 +110,8 @@ func main() {
 	audience := *brokerAudience
 	clientID := *appClientID
 	clientSecret := *appClientSecret
+	gcipKey := *gcipKeyArg
+	gcipProvider := *gcipProviderArg
 
 	if len(audience) == 0 {
 		// Use default audience
@@ -147,11 +154,19 @@ func main() {
 	_, err := os.Stat(*flCredentialFile)
 	if *flCredentialFile == "" || os.IsNotExist(err) {
 		lurl := conf.AuthCodeURL("code")
-		fmt.Printf("\nVisit the URL for the auth dialog and enter the authorization code  \n\n%s\n", lurl)
-		fmt.Printf("\nEnter code:  ")
+		fmt.Printf("\nVisit the URL for the auth dialog and enter the authorization code  \n\n%s\n\n", lurl)
 		input := bufio.NewScanner(os.Stdin)
-		input.Scan()
-		newTok, err := conf.Exchange(oauth2.NoContext, input.Text())
+		inputCode := ""
+		for {
+			fmt.Printf("Enter code:  ")
+			input.Scan()
+			inputCode = input.Text()
+			if len(inputCode) > 0 {
+				break
+			}
+		}
+
+		newTok, err := conf.Exchange(oauth2.NoContext, inputCode)
 		if err != nil {
 			log.Fatalf("Cloud not exchange Token %v", err)
 		}
@@ -173,7 +188,7 @@ func main() {
 		parser = new(jwt.Parser)
 		tt, _, err := parser.ParseUnverified(cache.IDToken, &jwt.StandardClaims{})
 		if err != nil {
-			log.Fatalf("Could not parse saved id_tokne File %v", err)
+			log.Fatalf("Could not parse saved id_token File %v", err)
 		}
 
 		c, ok := tt.Claims.(*jwt.StandardClaims)
@@ -187,11 +202,34 @@ func main() {
 		brokerCookie = cache.BrokerCookie
 	}
 
-	tokenResp, err := oauth2oidc.GetIdToken(audience, clientID, clientSecret, refreshToken)
+	tok, err := oauth2oidc.GetIdToken(audience, clientID, clientSecret, refreshToken)
 	if err != nil {
 		log.Fatalf("Failed to get ID token: %v", err)
 	}
-	idToken := tokenResp.IDToken
+	idToken := tok
+
+	if gcip, err := isEndpointGCIP(*endpoint); err != nil {
+		log.Fatalf("Could not detect GCIP: %v", err)
+	} else if gcip {
+		if len(gcipKey) == 0 {
+			// Use default API key
+			gcipKey = defaultGCIPKey
+			if defaultGCIPKey == "GCIP_API_KEY" {
+				log.Fatalf("invalid GCIP api key: %v", gcipKey)
+			}
+		}
+
+		if len(gcipProvider) == 0 {
+			log.Fatalf("invalid GCIP provider ID: %v", gcipProvider)
+		}
+
+		// Exchange token for GCIP token.
+		gcipTok, err := exchangeGCIP(idToken, gcipKey, gcipProvider)
+		if err != nil {
+			log.Fatalf("Failed to exchange GCIP token: %v", err)
+		}
+		idToken = gcipTok
+	}
 
 	if len(brokerCookie) == 0 {
 		// Get broker cookie
@@ -214,7 +252,8 @@ func main() {
 			}
 		}
 		if len(cookieValue) == 0 {
-			log.Fatalf("failed to get broker cookie for app")
+			data, _ := io.ReadAll(resp.Body)
+			log.Fatalf("failed to get broker cookie for app: '%s' : %s", *appName, string(data))
 		}
 		brokerCookie = fmt.Sprintf("%s=%s", cookieName, cookieValue)
 	}
@@ -229,8 +268,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not parse saved token File %v", err)
 	}
-	defer f.Close()
-	json.NewEncoder(f).Encode(cache)
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	enc.Encode(cache)
+	f.Close()
 
 	head["Authorization"] = []string{
 		fmt.Sprintf("Bearer %s", idToken),
@@ -266,6 +307,67 @@ func main() {
 			}(l)
 		}
 	}
+}
+
+func isEndpointGCIP(endpoint string) (bool, error) {
+	url := fmt.Sprintf("https://%s", endpoint)
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, _ := http.NewRequest("HEAD", url, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode == 302 {
+		gcipLocationRE := regexp.MustCompile(".*googleapis.com/.*/gcip/resources.*")
+		return gcipLocationRE.MatchString(resp.Header.Get("location")), nil
+	}
+
+	return false, nil
+}
+
+func exchangeGCIP(token, apiKey, providerId string) (string, error) {
+	newTok := ""
+
+	type gcipExchangeReqSpec struct {
+		PostBody          string `json:"postBody"`
+		RequestURI        string `json:"requestUri"`
+		ReturnSecureToken bool   `json:"returnSecureToken"`
+	}
+
+	type gcipExchangeRespSpec struct {
+		IDToken string `json:"idToken"`
+	}
+
+	data, _ := json.Marshal(&gcipExchangeReqSpec{
+		RequestURI:        "http://localhost",
+		ReturnSecureToken: true,
+		PostBody:          fmt.Sprintf("id_token=%s&providerId=%s", token, providerId),
+	})
+
+	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=%s", apiKey)
+	client := http.Client{}
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return newTok, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var result gcipExchangeRespSpec
+	if err := json.Unmarshal(body, &result); err != nil {
+		return newTok, err
+	}
+
+	newTok = result.IDToken
+
+	return newTok, nil
 }
 
 func handleLocalConnection(lconn net.Conn, url string, head map[string][]string) {

@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Start http server
-darkhttpd /var/www/localhost/htdocs/ --chroot --daemon --port 8085
+lighttpd -f /etc/lighttpd/lighttpd.conf
 
 # Start the proxy
 /opt/huproxy -listen "0.0.0.0:8022"

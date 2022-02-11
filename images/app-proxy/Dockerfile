@@ -12,46 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.10-alpine as builder
-RUN apk add -u git
-WORKDIR /go/src/github.com/google
-RUN git clone --depth 1 https://github.com/danisla/huproxy.git -b iap
-RUN cd huproxy && go get ./... && \
-    env GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -o /opt/huproxy huproxy.go
+FROM golang:1.17-alpine as builder
+
+# Install huproxy binary from fork.
+RUN go get github.com/danisla/huproxy@iap
 
 ARG BROKER_CLIENT_ID=BROKER_CLIENT_ID
 ARG DESKTOP_CLIENT_ID=DESKTOP_APP_CLIENT_ID
 ARG DESKTOP_CLIENT_SECRET=DESKTOP_APP_CLIENT_SECRET
+ARG GCIP_API_KEY=GCIP_API_KEY
 ARG DEFAULT_ENDPOINT=broker.endpoints.PROJECT_ID.cloud.goog
-WORKDIR /go/src/github.com/selkies.io/selkies-connector
-COPY cli/client.go ./
+WORKDIR /go/src/github.com/selkies.io/connector
+COPY cli/* ./
 RUN sed -i \
-    -e "s|defaultAudience = .*|defaultAudience = \"${BROKER_CLIENT_ID}\"|g" \
-    -e "s|defaultClientID = .*|defaultClientID = \"${DESKTOP_CLIENT_ID}\"|g" \
-    -e "s|defaultClientSecret = .*|defaultClientSecret = \"${DESKTOP_CLIENT_SECRET}\"|g" \
+    -e "s|const defaultAudience .*= .*|const defaultAudience = \"${BROKER_CLIENT_ID}\"|g" \
+    -e "s|const defaultClientID .*= .*|const defaultClientID = \"${DESKTOP_CLIENT_ID}\"|g" \
+    -e "s|const defaultClientSecret .*= .*|const defaultClientSecret = \"${DESKTOP_CLIENT_SECRET}\"|g" \
+    -e "s|const defaultGCIPKey .*= .*|const defaultGCIPKey = \"${GCIP_API_KEY}\"|g" \
     -e "s|DEFAULT_ENDPOINT|${DEFAULT_ENDPOINT}|g" \
     client.go
 
-RUN go get ./... && \
-    (cd /go/src/github.com/salrashid123/oauth2oidc && git checkout 7ab57e8bab8ff320c63bfc2313552c25b1b897eb) && \
-    env GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -o /opt/selkies_connector_linux_amd64 client.go && \
+RUN env GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -o /opt/selkies_connector_linux_amd64 client.go && \
     env GOOS=darwin GARCH=amd64 CGO_ENABLED=0 go build -o /opt/selkies_connector_darwin_amd64 client.go && \
     env GOOS=windows GARCH=amd64 CGO_ENABLED=0 go build -o /opt/selkies_connector_win64.exe client.go
 
-FROM alpine:3.12
+FROM alpine:3
 
 # Install dependencies
-RUN apk add -u \
-        darkhttpd \
+RUN apk add --no-cache -u \
+        lighttpd \
         jq \
         bash \
         curl
 
+# Copy lighttpd config
+COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
+
 # Copy web content
-COPY index.html /var/www/localhost/htdocs/
+COPY web/ /var/www/localhost/htdocs/
+ADD https://cdn.jsdelivr.net/npm/@mdi/font@6.x/fonts/materialdesignicons-webfont.eot?v=6.5.95 /var/www/localhost/htdocs/fonts/materialdesignicons-webfont.eot
+ADD https://cdn.jsdelivr.net/npm/@mdi/font@6.x/fonts/materialdesignicons-webfont.ttf?v=6.5.95 /var/www/localhost/htdocs/fonts/materialdesignicons-webfont.ttf
+ADD https://cdn.jsdelivr.net/npm/@mdi/font@6.x/fonts/materialdesignicons-webfont.woff?v=6.5.95 /var/www/localhost/htdocs/fonts/materialdesignicons-webfont.woff
+ADD https://cdn.jsdelivr.net/npm/@mdi/font@6.x/fonts/materialdesignicons-webfont.woff2?v=6.5.95 /var/www/localhost/htdocs/fonts/materialdesignicons-webfont.woff2
+RUN chmod go+r /var/www/localhost/htdocs/ -R
 
 # Copy huproxy from builder
-COPY --from=builder /opt/huproxy /opt/huproxy
+COPY --from=builder /go/bin/huproxy /opt/huproxy
 COPY --from=builder /opt/selkies_connector_linux_amd64 /var/www/localhost/htdocs/selkies_connector_linux_amd64
 COPY --from=builder /opt/selkies_connector_darwin_amd64 /var/www/localhost/htdocs/selkies_connector_darwin_amd64
 COPY --from=builder /opt/selkies_connector_win64.exe /var/www/localhost/htdocs/selkies_connector_win64.exe

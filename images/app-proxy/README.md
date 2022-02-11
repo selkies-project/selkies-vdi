@@ -16,6 +16,15 @@ export PROJECT_ID=$(gcloud config get-value project)
 2. Note the newly created client ID and secret for later use.
 3. Note your Selkies __Web application__ client ID for later use (created automatically during initial deployment).
 
+## (Optional) Obtain the GCIP API Key
+
+If you are using GCIP external authentication instead of IAM, save the API Key to a variable.
+This API key can be found by clicking the __Application Setup Details__ button on the [Identity Providers Console Page](https://console.cloud.google.com/customer-identity/providers)
+
+```
+export GCIP_API_KEY=YOUR_GCIP_API_KEY
+```
+
 ## Building the image
 
 1. Set variables containing oauth and project properties:
@@ -28,10 +37,22 @@ export DESKTOP_CLIENT_SECRET=YOUR_DESKTOP_APP_CLIENT_SECRET
 
 > NOTE: Replace the values of the variables with the respective values obtained earlier.
 
+```
+export SELKIES_ENDPOINT=broker.endpoints.${PROJECT_ID?}.cloud.goog
+```
+
+> NOTE: Replace this with your custom domain, if configured.
+
+
 2. Build the image with the build-args:
 
 ```bash
-docker build -t gcr.io/${PROJECT_ID?}/webrtc-gpu-streaming-app-proxy:latest --build-arg BROKER_CLIENT_ID=${IAP_CLIENT_ID?} --build-arg DESKTOP_CLIENT_ID=${DESKTOP_CLIENT_ID?} --build-arg DESKTOP_CLIENT_SECRET=${DESKTOP_CLIENT_SECRET?} --build-arg DEFAULT_ENDPOINT=broker.endpoints.${PROJECT_ID?}.cloud.goog .
+docker build -t gcr.io/${PROJECT_ID?}/webrtc-gpu-streaming-app-proxy:latest \
+  --build-arg BROKER_CLIENT_ID=${IAP_CLIENT_ID?} \
+  --build-arg DESKTOP_CLIENT_ID=${DESKTOP_CLIENT_ID?} \
+  --build-arg DESKTOP_CLIENT_SECRET=${DESKTOP_CLIENT_SECRET?} \
+  --build-arg GCIP_API_KEY=${GCIP_API_KEY:-GCIP_API_KEY} \
+  --build-arg DEFAULT_ENDPOINT=${SELKIES_ENDPOINT?} .
 ```
 
 3. Push the image:
@@ -58,7 +79,7 @@ appParams:
 1. After launching the app, navigate to the Selkies Connect setup url:
 
 ```
-echo "https://broker.endpoints.${PROJECT_ID?}.cloud.goog/APP_NAME/connect/
+echo "https://${SELKIES_ENDPOINT?}/APP_NAME/connect/"
 ```
 > NOTE: Replace APP_NAME with your launched app name.
 
