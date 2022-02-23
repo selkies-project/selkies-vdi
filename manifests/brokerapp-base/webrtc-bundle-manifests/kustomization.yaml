@@ -45,6 +45,7 @@ configMapGenerator:
       - jsonpatch-deploy-persist.yaml.tmpl
       - jsonpatch-deploy-virtual-mouse.yaml.tmpl
       - jsonpatch-deploy-web-preview-ports.yaml.tmpl
+      - jsonpatch-deploy-wireshark.yaml.tmpl
       - jsonpatch-deploy-xpra.yaml.tmpl
       - jsonpatch-deploy-recording.yaml.tmpl
       - jsonpatch-deploy-squid-proxy.yaml.tmpl

@@ -1,0 +1,70 @@
+# Copyright 2022 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# Example BrokerAppConfig appParams used in conjunction with persistent home directory.
+# NOTE: this feature conflicts with the web-preview feature in that it listens on port 3000.
+###
+#    appParams:
+#      - name: enableWireshark
+#        default: "true"
+
+###
+# Usage
+##
+# After enabling the appParam and launching a pod:
+# 1. Create a port-forward to the web interface:
+#   kubectl port-forward -n USER_NAMESPACE POD_NAME 3000:3000
+# 2. Open your browser to localhost:3000 to see and use the wireshark UI.
+# 3. Save your capture to a file like: /tmp/capture.pcapng
+# 4. Copy pcap files out of the container to your local environment:
+#   kubectl -n USER_NAMESPACE cp -c wireshark POD_NAME:/tmp/capture.pcapng capture.pcapng
+#
+# NOTE: if you exit wireshark, it will not be restarted automatically, you have to shutdown and launch the pod again.
+
+{{- $enableWireshark := false }}
+{{- if .AppParams.enableWireshark }}
+  {{- if eq .AppParams.enableWireshark "true" }}
+    {{- $enableWireshark = true }}
+  {{- end}}
+{{- end}}
+
+{{- $wiresharkImage := default "lscr.io/linuxserver/wireshark:latest" .AppParams.wiresharkImage }}
+
+{{- if $enableWireshark }}
+###
+# Add wireshark container
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: wireshark
+    image: {{ $wiresharkImage }}
+    securityContext:
+      capabilities:
+        add: ["NET_ADMIN"]
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+{{- else}}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/spec/containers/0/name
+  value: desktop
+{{- end}}
