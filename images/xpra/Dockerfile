@@ -55,7 +55,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
         gdebi-core \
         xserver-xephyr \
         git \
-        uglifyjs
+        uglifyjs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add Tini
 ARG TINI_VERSION=v0.19.0
@@ -63,50 +64,78 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64
 RUN chmod +x /tini
 
 # Printer support
-RUN sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    cups-filters \
-    cups-common \
-    cups-pdf \
-    python-cups
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+        cups-filters \
+        cups-common \
+        cups-pdf \
+        python-cups && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install ffmpeg-xpra
 RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/bionic/main/binary-amd64/ffmpeg-xpra_4.0-1_amd64.deb && \
+    apt-get update && \
     gdebi -n ffmpeg-xpra.deb && \
-    rm -f ffmpeg-xpra.deb
+    rm -f ffmpeg-xpra.deb && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install other python dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    python3-requests \
-    python3-setproctitle \
-    python3-netifaces
+        python3-requests \
+        python3-setproctitle \
+        python3-netifaces && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install GStreamer for sound support
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    gstreamer1.0-plugins-base \
-    gstreamer1.0-plugins-good \
-    gstreamer1.0-plugins-bad \
-    gstreamer1.0-pulseaudio \
-    python-gst-1.0 \
-    gstreamer1.0-tools
+        gstreamer1.0-plugins-base \
+        gstreamer1.0-plugins-good \
+        gstreamer1.0-plugins-bad \
+        gstreamer1.0-pulseaudio \
+        python-gst-1.0 \
+        gstreamer1.0-tools && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install xpra
-ARG XPRA_VERSION=4.3.1-r20-1
-RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
-    apt-get update && DEBIAN_FRONTEND=noninteractive gdebi -n /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
-    rm -f /tmp/xpra_${XPRA_VERSION}_amd64.deb
+# Install xpra from source
+ARG XPRA_VERSION=v4.3.2
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        cython3 \
+        python3-cairo-dev \
+        python-gi-dev \
+        python3-pypandoc \
+        libxres-dev \
+        libxkbfile-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    cd /opt && \
+    git clone https://github.com/Xpra-org/xpra -b ${XPRA_VERSION} && \
+    cd xpra && \
+    /usr/bin/python3.6 setup.py install \
+        --prefix=/usr && \
+    cd /tmp && rm -Rf /opt/xpra && \
+    apt-get remove -y \
+        cython3 \
+        python3-cairo-dev \
+        python-gi-dev \
+        python3-pypandoc \
+        libxres-dev \
+        libxkbfile-dev
+
+#ARG XPRA_VERSION=4.3.1-r20-1
+#RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
+#    apt-get update && DEBIAN_FRONTEND=noninteractive gdebi -n /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
+#    rm -f /tmp/xpra_${XPRA_VERSION}_amd64.deb
 
 # Apply xpra patches
-COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
-RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
-    patch -p3 < xpra-prop-conv-py.patch && \
-    rm xpra-prop-conv-py.patch
+#COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
+#RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
+#    patch -p3 < xpra-prop-conv-py.patch && \
+#    rm xpra-prop-conv-py.patch
 
 # Install gsttimestamp xpra plugin
 # TODO: sound is WIP.
 # https://xpra.org/src/gst-plugin-timestamp-0.1.0.tar.xz
 
 # Remove xpra-html5 package, replaced with fork below.
-RUN apt-get remove -y xpra-html5
+#RUN apt-get remove -y xpra-html5
 
 # Install Xpra HTML5 client from forked submodule
 # NOTE: installer depends on working non-submodule get repo.
@@ -123,10 +152,19 @@ RUN cd /opt/xpra-html5 && \
     sudo python3 ./setup.py install /usr/share/xpra/www ${MINIFIER}
 
 # Install flags SVG for keyboard layout flag icons.
-RUN apt-get update && apt-get install -y \
-    iso-flags-svg && \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        iso-flags-svg && \
+    rm -rf /var/lib/apt/lists/* && \
     mkdir -p /usr/share/xpra/www/flags && \
     ln -s /usr/share/iso-flags-svg/country-4x3 /usr/share/xpra/www/flags/4x3
+
+# Xpra runtime dependencies
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        xvfb \
+        python3-pil && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONPATH=/usr/lib/python3.6/site-packages
 
 # Install Vulkan ICD
 COPY nvidia_icd.json /usr/share/vulkan/icd.d/
