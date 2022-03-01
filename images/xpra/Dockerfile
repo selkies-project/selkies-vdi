@@ -119,24 +119,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         libxres-dev \
         libxkbfile-dev
 
-#ARG XPRA_VERSION=4.3.1-r20-1
-#RUN curl -sfL https://xpra.org/beta/bionic/main/binary-amd64/xpra_${XPRA_VERSION}_amd64.deb -o /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
-#    apt-get update && DEBIAN_FRONTEND=noninteractive gdebi -n /tmp/xpra_${XPRA_VERSION}_amd64.deb && \
-#    rm -f /tmp/xpra_${XPRA_VERSION}_amd64.deb
-
-# Apply xpra patches
-#COPY xpra-prop-conv-py.patch /usr/lib/python3/dist-packages/xpra/x11/
-#RUN cd /usr/lib/python3/dist-packages/xpra/x11 && \
-#    patch -p3 < xpra-prop-conv-py.patch && \
-#    rm xpra-prop-conv-py.patch
-
-# Install gsttimestamp xpra plugin
-# TODO: sound is WIP.
-# https://xpra.org/src/gst-plugin-timestamp-0.1.0.tar.xz
-
-# Remove xpra-html5 package, replaced with fork below.
-#RUN apt-get remove -y xpra-html5
-
 # Install Xpra HTML5 client from forked submodule
 # NOTE: installer depends on working non-submodule get repo.
 
@@ -148,8 +130,7 @@ RUN cd /opt/xpra-html5 && \
     git config --global user.name "Selkies Builder" && \
     git init && git checkout -b selkies-build-patches && \
     git add . && git commit -m "selkies-build-patches" && \
-    mkdir -p /usr/share/xpra/www/js/lib && \
-    sudo python3 ./setup.py install /usr/share/xpra/www ${MINIFIER}
+    python3.6 ./setup.py install "/" "/usr/share/xpra/www/" "/etc/xpra/html5-client" ${MINIFIER}
 
 # Install flags SVG for keyboard layout flag icons.
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
