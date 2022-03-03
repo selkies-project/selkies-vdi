@@ -113,7 +113,7 @@ echo "Starting Xpra"
 sudo mkdir -p /var/log/xpra
 sudo chmod 777 /var/log/xpra
 (xpra ${XPRA_START:-"start"} ${DISPLAY} \
-    --resize-display=yes \
+    --resize-display=${XPRA_RESIZE_DISPLAY:-"yes"} \
     --user=app \
     --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
     --html=on \
