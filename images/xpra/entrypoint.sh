@@ -34,6 +34,17 @@ fi
 # Copy clipboard direction so that it can be passed to the html5 client.
 echo "clipboard_direction = ${XPRA_CLIPBOARD_DIRECTION:-"both"}" | sudo tee -a /usr/share/xpra/www/default-settings.txt
 
+# Set default Selkies xpra-html5 settings.
+[[ -z "${XPRA_HTML5_SETTING_video}" ]] && export XPRA_HTML5_SETTING_video="false"
+[[ -z "${XPRA_HTML5_SETTING_encoding}" ]] && export XPRA_HTML5_SETTING_encoding="jpeg"
+[[ -z "${XPRA_HTML5_SETTING_keyboard}" ]] && export XPRA_HTML5_SETTING_keyboard="false"
+[[ -z "${XPRA_HTML5_SETTING_autohide}" ]] && export XPRA_HTML5_SETTING_autohide="true"
+[[ -z "${XPRA_HTML5_SETTING_floating_menu}" ]] && export XPRA_HTML5_SETTING_floating_menu="true"
+[[ -z "${XPRA_HTML5_SETTING_window_tray}" ]] && export XPRA_HTML5_SETTING_window_tray="true"
+[[ -z "${XPRA_HTML5_SETTING_toolbar_position}" ]] && export XPRA_HTML5_SETTING_toolbar_position="top"
+[[ -z "${XPRA_HTML5_SETTING_device_dpi_scaling}" ]] && export XPRA_HTML5_SETTING_device_dpi_scaling="true"
+[[ -z "${XPRA_HTML5_SETTING_browser_native_notifications}" ]] && export XPRA_HTML5_SETTING_browser_native_notifications="false"
+
 # Write variables prefixed with XPRA_HTML5_SETTING_ to default-settings file
 for v in "${!XPRA_HTML5_SETTING_@}"; do
   setting_name=${v/XPRA_HTML5_SETTING_/}
@@ -110,27 +121,15 @@ until lpinfo -v | grep -q xpraforwarder; do sleep 1; done
 echo "CUPS is ready"
 
 echo "Starting Xpra"
+
 sudo mkdir -p /var/log/xpra
 sudo chmod 777 /var/log/xpra
-(xpra ${XPRA_START:-"start"} ${DISPLAY} \
-    --resize-display=${XPRA_RESIZE_DISPLAY:-"yes"} \
-    --user=app \
-    --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
-    --html=on \
-    --daemon=no \
-    --bell=${XPRA_ENABLE_BELL:-"no"} \
-    --clipboard=${XPRA_ENABLE_CLIPBOARD:-"yes"} \
-    --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
-    --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
-    --open-files=${XPRA_OPEN_FILES:-"on"} \
-    --printing=${XPRA_ENABLE_PRINTING:-"yes"} \
-    ${XPRA_ARGS} 2>&1 | tee /var/log/xpra/xpra.log) &
-PID=$!
 
 function watchLogs() {
+  touch /var/log/xpra/xpra.log
   tail -n+1 -F /var/log/xpra/xpra.log | while read line; do
     ts=$(date)
-    #echo "$line"
+    echo "$line"
     if [[ "${line}" =~ "startup complete" ]]; then
       echo "INFO: Saw Xpra startup complete: ${line}"
       echo "$ts" > /var/run/appconfig/.xpra-startup-complete
@@ -153,18 +152,43 @@ function watchLogs() {
 # Watch the xpra logs for key events and client resolution changes
 watchLogs &
 
-# Wait for Xpra client
-echo "Waiting for Xpra client"
-until [[ -f /var/run/appconfig/.xpra-startup-complete ]]; do sleep 1; done
-until [[ -f /var/run/appconfig/.xpra-client-connected ]]; do sleep 1; done
-echo "Xpra is ready"
+set -o pipefail
+while true; do
+  echo "" > /var/log/xpra/xpra.log
+  rm -f /var/run/appconfig/xserver_ready
+  rm -f /var/run/appconfig/xpra_ready
+  rm -f /var/run/appconfig/.xpra-client-connected
 
-xhost +
-touch /var/run/appconfig/xserver_ready
-touch /var/run/appconfig/xpra_ready
+  xpra ${XPRA_START:-"start"} ${DISPLAY} \
+    --resize-display=${XPRA_RESIZE_DISPLAY:-"yes"} \
+    --user=app \
+    --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
+    --html=on \
+    --daemon=yes \
+    --log-dir=/var/log/xpra \
+    --log-file=xpra.log \
+    --pidfile=/var/run/xpra/xpra.pid \
+    --bell=${XPRA_ENABLE_BELL:-"no"} \
+    --clipboard=${XPRA_ENABLE_CLIPBOARD:-"yes"} \
+    --clipboard-direction=${XPRA_CLIPBOARD_DIRECTION:-"both"} \
+    --file-transfer=${XPRA_FILE_TRANSFER:-"on"} \
+    --open-files=${XPRA_OPEN_FILES:-"on"} \
+    --printing=${XPRA_ENABLE_PRINTING:-"yes"} \
+    ${XPRA_ARGS}
 
-wait $PID
+  # Wait for Xpra client
+  echo "Waiting for Xpra client"
+  until [[ -f /var/run/appconfig/.xpra-startup-complete ]]; do sleep 1; done
+  until [[ -f /var/run/appconfig/.xpra-client-connected ]]; do sleep 1; done
+  echo "Xpra is ready"
 
-#kill -9 $DRPID
+  xhost +
+  touch /var/run/appconfig/xserver_ready
+  touch /var/run/appconfig/xpra_ready
 
-sleep 2
+  PID=$(cat /var/run/xpra/xpra.pid)
+  echo "Waiting for Xpra to exit, pid: $PID"
+  tail --pid=$PID -f /dev/null
+
+  sleep 1
+done

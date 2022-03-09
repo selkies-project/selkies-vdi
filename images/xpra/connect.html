@@ -1,7 +1,16 @@
 <html>
     <head>
         <script type="text/javascript">
-            window.location.replace(window.location.href.replace(window.location.pathname, "/"));
+            // Redirect to top-level URL (app launcher portal)
+            var dest = window.location.href.replace(window.location.pathname, "/");
+            // Reidrect to specific URL.
+            const urlSearchParams = new URLSearchParams(window.location.search);
+            const params = Object.fromEntries(urlSearchParams.entries());
+            var redirect = params['r'];
+            if (redirect) {
+                dest = redirect;
+            }
+            window.location.replace(dest);
         </script>
     </head>
 </html>
