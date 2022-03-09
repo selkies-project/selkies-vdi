@@ -1,2 +1,5 @@
 **/.git
+xpra-html5/html5/default-settings.txt*
+xpra-html5/html5/connect.html*
 xpra-html5/html5/flags
+start_html5_dev.sh
