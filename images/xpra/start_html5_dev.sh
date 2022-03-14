@@ -103,7 +103,7 @@ NSPOD=$(_user_pod_select "${ACCOUNT}" "${APP}")
 IFS="/" read -ra TOKS <<< "${NSPOD}"
 NS=${TOKS[0]}
 POD=${TOKS[1]}
-kubectl port-forward -n ${NS} ${POD} --address 0.0.0.0 8080:8082 >/dev/null &
+kubectl port-forward -n ${NS} ${POD} --address 0.0.0.0 8080:8882 >/dev/null &
 port_forward1_pid=$!
 
 # Add local client git pre-commit hook so dev generated files are not committed.
@@ -187,8 +187,29 @@ cat - > ${DEST_CONNECT} <<EOF
 EOF
 log_cyan "INFO: wrote $(basename ${DEST_CONNECT})"
 
+# Create simple multi-threaded http server in python3
+set +e
+read -r -d '' WEB_SERVER <<'EOF'
+import sys, os, socket
+from socketserver import ThreadingMixIn
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
+    pass
+HOST,PORT = "0.0.0.0", 8000
+server = ThreadingSimpleServer((HOST, PORT), SimpleHTTPRequestHandler)
+print("Serving HTTP traffic on", HOST, "using port", PORT)
+try:
+    while 1:
+        sys.stdout.flush()
+        server.handle_request()
+except KeyboardInterrupt:
+    print("\nShutting down server per users request.")
+EOF
+set -e
+
 cd ${SCRIPT_DIR}/xpra-html5/html5
-python3 -m http.server 8000 &
+echo "${WEB_SERVER}" | python3 &
+
 port_forward2_pid=$!
 
 sleep 1
