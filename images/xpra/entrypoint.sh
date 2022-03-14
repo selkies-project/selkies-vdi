@@ -45,6 +45,9 @@ echo "clipboard_direction = ${XPRA_CLIPBOARD_DIRECTION:-"both"}" | sudo tee -a /
 [[ -z "${XPRA_HTML5_SETTING_device_dpi_scaling}" ]] && export XPRA_HTML5_SETTING_device_dpi_scaling="true"
 [[ -z "${XPRA_HTML5_SETTING_browser_native_notifications}" ]] && export XPRA_HTML5_SETTING_browser_native_notifications="false"
 
+# Path prefix for xpra when behind nginx proxy.
+[[ -z "${XPRA_HTML5_SETTING_path}" && -n "${XPRA_WS_PATH}" ]] && export XPRA_HTML5_SETTING_path="${XPRA_WS_PATH}"
+
 # Write variables prefixed with XPRA_HTML5_SETTING_ to default-settings file
 for v in "${!XPRA_HTML5_SETTING_@}"; do
   setting_name=${v/XPRA_HTML5_SETTING_/}
@@ -152,6 +155,13 @@ function watchLogs() {
 # Watch the xpra logs for key events and client resolution changes
 watchLogs &
 
+# Start nginx proxy
+if [[ "${XPRA_DISABLE_PROXY:-false}" == "false" ]]; then
+  sudo sed -i "s|proxy_pass .*;|proxy_pass http://127.0.0.1:${XPRA_PORT:-8882};|g" /etc/nginx/conf.d/default.conf
+  sudo nginx
+  sudo tail -F /var/log/nginx/{access,error}.log &
+fi
+
 set -o pipefail
 while true; do
   echo "" > /var/log/xpra/xpra.log
@@ -162,7 +172,7 @@ while true; do
   xpra ${XPRA_START:-"start"} ${DISPLAY} \
     --resize-display=${XPRA_RESIZE_DISPLAY:-"yes"} \
     --user=app \
-    --bind-tcp=0.0.0.0:${XPRA_PORT:-8082} \
+    --bind-tcp=0.0.0.0:${XPRA_PORT:-8882} \
     --html=on \
     --daemon=yes \
     --log-dir=/var/log/xpra \
