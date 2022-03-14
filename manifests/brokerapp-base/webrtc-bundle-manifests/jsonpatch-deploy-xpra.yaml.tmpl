@@ -24,6 +24,13 @@
   {{- end}}
 {{- end}}
 
+{{- $disableXpraProxy := false }}
+{{- if .AppParams.disableXpraProxy }}
+  {{- if eq .AppParams.disableXpraProxy "true" }}
+    {{- $disableXpraProxy = true }}
+  {{- end}}
+{{- end}}
+
 {{- $xpraUploadDir := default "/mnt/uploads" .AppParams.xpraUploadsMountPath }}
 
 {{- if $enableXpra }}
@@ -150,10 +157,23 @@
       {{- end}}
       - name: PULSE_SERVER
         value: "127.0.0.1:4713"
+      - name: XPRA_DISABLE_PROXY
+        value: {{ $disableXpraProxy | quote}}
+      {{- if $disableXpraProxy }}
       - name: XPRA_PORT
         value: "8082"
       - name: XPRA
         value: "tcp://127.0.0.1:8082"
+      - name: XPRA_WS_PATH
+        value: {{printf "/%s/" .App | quote}}
+      {{- else}}
+      - name: XPRA_PORT
+        value: "8882"
+      - name: XPRA
+        value: "tcp://127.0.0.1:8882"
+      - name: XPRA_WS_PATH
+        value: {{printf "/%s/ws" .App | quote}}
+      {{- end}}
       - name: XPRA_DOWNLOAD_DIR
         value: "/mnt/downloads"
       # Add app context for PWA manifest
@@ -176,8 +196,15 @@
       - name: xpra-uploads
         mountPath: /mnt/downloads
     ports:
-      - name: web
+      {{- if $disableXpraProxy }}
+      - name: http-xpra
         containerPort: 8082
+      {{- else}}
+      - name: http-proxy
+        containerPort: 8082
+      - name: http-xpra
+        containerPort: 8882
+      {{- end}}
 
 ###
 # Remove webrtc container

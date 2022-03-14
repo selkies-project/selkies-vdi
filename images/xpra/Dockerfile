@@ -199,5 +199,11 @@ COPY pwa/sw.js /usr/share/xpra/www/sw.js
 # Patch the service worker with a new cache version so that it is refreshed.
 RUN sudo sed -i -e "s|CACHE_VERSION|$(date +%s)|g" '/usr/share/xpra/www/sw.js'
 
+# Install nginx proxy for Xpra
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        nginx && \
+    rm -rf /var/lib/apt/lists/*
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/tini", "--", "/entrypoint.sh"]
