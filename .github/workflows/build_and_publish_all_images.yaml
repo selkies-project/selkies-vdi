@@ -79,4 +79,5 @@ jobs:
           github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
           image_source_directory: ${{ matrix.source_directory }}
+          dockerfile: ${{ matrix.dockerfile }}
           image_version_1: ${{ github.ref_name }}${{ matrix.version_suffix }}
