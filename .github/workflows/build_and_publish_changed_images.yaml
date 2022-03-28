@@ -116,5 +116,6 @@ jobs:
           github_personal_access_token: ${{ secrets.GITHUB_TOKEN }}
           github_username: ${{ github.actor }}
           image_name: ${{ matrix.name }}
+          dockerfile: ${{ matrix.dockerfile }}
           image_source_directory: ${{ matrix.source_directory }}
           image_version_1: ${{ github.ref_name }}${{ matrix.version_suffix }}
