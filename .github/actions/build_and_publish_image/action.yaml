@@ -46,6 +46,10 @@ runs:
           IFS=";" read -ra args <<< "${{ inputs.build_args }}"
           for arg in ${args[@]}; do BUILD_ARGS+="--build-arg $arg "; done
         fi
+        export DOCKERFILE="${{ inputs.dockerfile }}"
+        if [[ -z "${DOCKERFILE}" ]]; then
+          DOCKERFILE="Dockerfile"
+        fi
 
         export IMAGE_TAG_URL_PREFIX=ghcr.io/selkies-project/selkies-vdi/
         export IMAGE_TAG_1="${IMAGE_TAG_URL_PREFIX}${{ inputs.image_name }}:${{ inputs.image_version_1 }}"
