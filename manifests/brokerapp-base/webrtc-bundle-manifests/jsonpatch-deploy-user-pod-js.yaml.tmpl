@@ -20,6 +20,14 @@
 
   {{- end}}
 {{- end }}
+{{- if .AppParams.enableXpra }}
+  {{- if eq .AppParams.enableXpra "true" }}
+    {{- $xpraDisabled = false }}
+# Joystick is not supported with Xpra.
+
+  {{- end}}
+{{- end }}
+
 {{- $enableJoystick := false }}
 {{- if .UserParams.enableJoystick }}
   {{- if eq .UserParams.enableJoystick "true" }}
