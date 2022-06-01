@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source /opt/gstreamer/gst-env
+
 echo "Waiting for X server"
 until [[ -e /var/run/appconfig/xserver_ready ]]; do sleep 1; done
 [[ -f /var/run/appconfig/.Xauthority ]] && cp /var/run/appconfig/.Xauthority ${HOME}/
@@ -54,7 +56,7 @@ echo "INFO: Maximum capture resolution: ${MAX_WINDOW_WIDTH}x${MAX_WINDOW_HEIGHT}
 if [[ "${VDI_enableXpra}" == "true" ]]; then
     # Capture every window into separate files.
     declare -a xids
-    while true; do
+    while test -e /var/run/appconfig/xpra_ready; do
         IFS="," read -ra xids <<< $(xprop -root | grep "^_NET_CLIENT_LIST(WINDOW)" | cut -d# -f2 | tr -d ' ')
 
         for xid in ${xids[*]}; do

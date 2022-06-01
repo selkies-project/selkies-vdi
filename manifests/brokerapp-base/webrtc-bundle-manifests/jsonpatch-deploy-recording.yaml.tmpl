@@ -19,6 +19,18 @@
   {{- end}}
 {{- end}}
 
+{{- $enableXpra := false }}
+{{- if .UserParams.enableXpra }}
+  {{- if eq .UserParams.enableXpra "true" }}
+    {{- $enableXpra = true }}
+  {{- end}}
+{{- end}}
+{{- if .AppParams.enableXpra }}
+  {{- if eq .AppParams.enableXpra "true" }}
+    {{- $enableXpra = true }}
+  {{- end}}
+{{- end}}
+
 #{{- $hostPath := printf "/tmp/webrtc_recordings/%s/%s" .User .Timestamp }}
 {{- $hostPath = "/tmp/webrtc_recordings" }}
 {{- $brokerCookie := .CookieValue }}
@@ -48,6 +60,9 @@
     image: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:latest
     securityContext:
       privileged: false
+      # Run as root to write to shared hostPath volume
+      runAsUser: 0
+      runAsGroup: 0
     workingDir: /tmp/recording
     command: ["/record.sh"]
     env:
@@ -77,6 +92,10 @@
         value: "{{ default "5" .AppParams.recordingFramerate }}"
       - name: REC_VIDEO_BITRATE
         value: "{{ default "500" .AppParams.recordingBitrate }}"
+      {{- if $enableXpra}}
+      - name: VDI_enableXpra
+        value: "true"
+      {{- end}}
       # Add the userParams to the env prefixed with VDI_
       {{- range $key, $value := .UserParams }}
       - name: VDI_{{ $key }}
@@ -89,6 +108,8 @@
         mountPath: /var/run/appconfig
       - name: recording
         mountPath: /tmp/recording
+      - name: dshm
+        mountPath: /dev/shm
     {{- if eq .NodeTier.Name "gpu" }}
     resources:
       limits:
