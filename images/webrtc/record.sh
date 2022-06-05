@@ -51,6 +51,9 @@ IFS='x' read -ra maxres <<< $(xrandr | head | grep -o "maximum.*" | sed 's/maxim
 MAX_WINDOW_WIDTH=${maxres[0]}
 MAX_WINDOW_HEIGHT=${maxres[1]}
 
+# Either 'mp4' or 'm3u8'
+REC_VIDEO_FORMAT=${REC_VIDEO_FORMAT:-"mp4"}
+
 echo "INFO: Maximum capture resolution: ${MAX_WINDOW_WIDTH}x${MAX_WINDOW_HEIGHT}, larger windows will be resized to fit."
 
 if [[ "${VDI_enableXpra}" == "true" ]]; then
@@ -118,11 +121,19 @@ if [[ "${VDI_enableXpra}" == "true" ]]; then
 
                 echo "INFO: starting recording for ${wm_class}, xid=${xid}, ts=${ts}, geometry=${WINDOW_SIZE}"
 
-                gst-launch-1.0 \
-                    ximagesrc xid=${xid} show-pointer=1 remote=1 use-damage=0 \
-                    ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
-                    ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
-                    ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%04d.mp4 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
+                if [[ ${REC_VIDEO_FORMAT?} == "m3u8" ]]; then
+                    gst-launch-1.0 \
+                        ximagesrc xid=${xid} show-pointer=1 remote=1 use-damage=0 \
+                        ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
+                        ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
+                        ! mpegtsmux ! hlssink location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%04d.ts playlist-length=0 target-duration=30 playlist-location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}.m3u8 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
+                else
+                    gst-launch-1.0 \
+                        ximagesrc xid=${xid} show-pointer=1 remote=1 use-damage=0 \
+                        ! video/x-raw,framerate=${REC_VIDEO_FRAMERATE:-5}/1 \
+                        ! videoconvert ! x264enc bitrate=${REC_VIDEO_BITRATE:-500} speed-preset=3 \
+                        ! splitmuxsink muxer=mp4mux use-robust-muxing=1 async-finalize=1 muxer-properties=properties,reserved-moov-update-period=1000000000,reserved-max-duration=10000000000 max-files=${MAX_FILES?} max-size-time=${max_size_time?} location=${DEST_DIR?}/stream_${ts}_${wm_class}_${xid}_${CURR_SIZE}_%04d.mp4 >/tmp/recording/stream_${ts}_${wm_class}_${xid}.log 2>&1 &
+                fi
             fi                
         done
 
