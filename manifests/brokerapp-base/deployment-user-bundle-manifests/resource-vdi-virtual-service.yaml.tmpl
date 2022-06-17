@@ -23,6 +23,22 @@ spec:
     - pod-broker-system/pod-broker-gateway
   http:
     ###
+    # rule for remote apps service
+    ###
+    - match:
+        - uri:
+            prefix: /{{.App}}/remote-apps/
+          headers:
+            cookie:
+              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: {{.FullName}}-{{.ServiceName}}
+            port:
+              number: 8842
+    ###
     # rule for webrtc web and signaling server
     ###
     - match:
