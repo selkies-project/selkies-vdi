@@ -48,6 +48,10 @@
   path: "/spec/template/spec/containers/0/args"
   value:
     - |
+      # Configure XDG_RUNTIME_DIR
+      export XDG_RUNTIME_DIR=/var/run/user
+      sudo chown -R $USER: ${XDG_RUNTIME_DIR}
+
       if [[ "${VDI_enableXpra}" == false ]]; then
         # Revert back to original entrypoint if the patched entrypoint gets commited to the image.
         exec /tini -- /entrypoint.sh
@@ -71,11 +75,17 @@
 
       # Configure docker unix socket proxy
       if [[ "${USE_DIND,,}" == "true" ]]; then
-          echo "INFO: Waiting for docker sidecar"
-          CERTFILE="/var/run/docker-certs/cert.pem"
-          until [[ -f ${CERTFILE} ]]; do sleep 1; done
-          echo "INFO: Docker sidecar is ready, starting unix socket proxy"
-          sudo /usr/share/cloudshell/start-docker-unix-proxy.sh
+        echo "INFO: Waiting for docker sidecar"
+        CERTFILE="/var/run/docker-certs/cert.pem"
+        until [[ -f ${CERTFILE} ]]; do sleep 1; done
+        echo "INFO: Docker sidecar is ready, starting unix socket proxy"
+        sudo /usr/share/cloudshell/start-docker-unix-proxy.sh
+      fi
+
+      # Start remote-apps service
+      if [[ -e /var/run/appconfig/.remote-apps-launcher/remote-apps ]]; then
+        echo "INFO: Starting remote apps service"
+        /var/run/appconfig/.remote-apps-launcher/remote-apps &
       fi
 
       while true; do
