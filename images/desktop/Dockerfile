@@ -119,7 +119,6 @@ RUN mkdir -p /usr/share/glvnd/egl_vendor.d
 COPY 10_nvidia.json /usr/share/glvnd/egl_vendor.d/
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # Add user and grant sudo
 RUN sed -i 's/:1000:/:2000:/g' /etc/{group,passwd} && \

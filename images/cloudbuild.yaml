@@ -16,12 +16,12 @@ timeout: 3600s
 options:
   machineType: "N1_HIGHCPU_32"
   diskSizeGb: "512"
-
+  dynamic_substitutions: true
 substitutions:
   _USE_CACHE: "true"
   _IMAGE_PREFIX: webrtc-gpu-streaming
   _IMAGE_TAG: latest
-
+  _TARGET_REPO: us-docker.pkg.dev/${PROJECT_ID}/spaces-images
 tags:
   - selkies-vdi-images
 
@@ -32,39 +32,62 @@ images: [
     # gst-webrtc-app
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-gst-webrtc-app:latest',
     # watchdog
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-watchdog:latest',
     # desktop
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-desktop:latest',
     # xserver
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest',
+        '${_TARGET_REPO}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-xserver:latest',
     # pulseaudio
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-pulseaudio:latest',
     # app-streaming
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:latest',
     # app-streaming:bionic
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic',
     # app-streaming:focal
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal',
     # app-streaming:focal-cuda
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda',
     # xpra
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-xpra:latest',
     # squid-proxy
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-squid-proxy:latest',
     # tinyfilemanager
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
     # uinput-device-plugin
     'gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/uinput-device-plugin:latest',
+    '${_TARGET_REPO}/uinput-device-plugin:${_IMAGE_TAG}',
+    '${_TARGET_REPO}/uinput-device-plugin:latest',
 ]
 
 steps:
@@ -83,6 +106,9 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:latest webrtc
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-gst-webrtc-app:latest
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -116,6 +142,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest watchdog
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-watchdog:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -148,6 +176,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:latest desktop
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-desktop:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -180,6 +210,9 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:latest xserver
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-xserver:latest
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -213,6 +246,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:latest pulseaudio
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-pulseaudio:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -245,6 +280,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:latest app-streaming
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -278,6 +315,7 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic -f app-streaming/Dockerfile.bionic app-streaming
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:bionic
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -301,6 +339,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal -f app-streaming/Dockerfile.focal app-streaming
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:focal
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -324,6 +364,7 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda -f app-streaming/Dockerfile.focal-cuda app-streaming
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:focal-cuda
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -347,6 +388,9 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:latest xpra
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-xpra:latest
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -379,6 +423,9 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:latest squid-proxy
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-squid-proxy:latest
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -411,6 +458,8 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest tinyfilemanager
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-tinyfilemanager:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
@@ -443,6 +492,9 @@ steps:
     - '-c'
     - |
       docker build -t gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG} --cache-from gcr.io/${PROJECT_ID}/uinput-device-plugin:latest uinput-device-plugin
+      docker tag gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}  ${_TARGET_REPO}/uinput-device-plugin:${_IMAGE_TAG}
+      docker tag gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG}  ${_TARGET_REPO}/uinput-device-plugin:${_IMAGE_TAG}
+
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
       curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
