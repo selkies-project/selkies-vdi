@@ -21,7 +21,7 @@ substitutions:
   _USE_CACHE: "true"
   _IMAGE_PREFIX: webrtc-gpu-streaming
   _IMAGE_TAG: latest
-  _TARGET_REPO: us-docker.pkg.dev/${PROJECT_ID}/spaces-images
+  _TARGET_REPO: us-docker.pkg.dev/${PROJECT_ID}/selkies-images
 tags:
   - selkies-vdi-images
 
@@ -111,9 +111,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-gst-webrtc-app:${_IMAGE_TAG} || true
   waitFor:
     -  gst-webrtc-app-pull
 
@@ -146,9 +145,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-watchdog:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG} || true
   waitFor:
     -  watchdog-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -180,9 +178,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-desktop:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-desktop:${_IMAGE_TAG} || true
   waitFor:
     - desktop-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -215,9 +212,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xserver:${_IMAGE_TAG} || true
   waitFor:
     - xserver-pull
 
@@ -250,9 +246,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-pulseaudio:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-pulseaudio:${_IMAGE_TAG} || true
   waitFor:
     - pulseaudio-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -284,9 +279,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:${_IMAGE_TAG} || true
   waitFor:
     - app-streaming-pull
 
@@ -318,9 +312,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:bionic
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:bionic || true
   waitFor:
     - app-streaming-bionic-pull
 
@@ -343,9 +336,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal || true
   waitFor:
     - app-streaming-focal-pull
 
@@ -367,9 +359,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda  ${_TARGET_REPO}/${_IMAGE_PREFIX}-app-streaming:focal-cuda
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-app-streaming:focal-cuda || true
   waitFor:
     - app-streaming-focal-cuda-pull
 
@@ -393,9 +384,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-xpra:${_IMAGE_TAG} || true
   waitFor:
     - xpra-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -428,9 +418,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-squid-proxy:${_IMAGE_TAG} || true
   waitFor:
     - squid-proxy-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -462,9 +451,8 @@ steps:
       docker tag gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}  ${_TARGET_REPO}/${_IMAGE_PREFIX}-tinyfilemanager:latest
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG} || true
   waitFor:
     - tinyfilemanager-pull
 - name: 'gcr.io/cloud-builders/docker'
@@ -497,9 +485,8 @@ steps:
 
       apt install jq -y
       export DOCKER_CLI_EXPERIMENTAL=enabled
-      curl -o check_docker_image.sh  https://gist.githubusercontent.com/deepak7093/17a0ce3506c39bae0ecaba46d0821510/raw/a2e63872ccb9ef02b718156a2b5c7744221830c5/check_docker_image.sh
-      chmod +x check_docker_image.sh
-      ./check_docker_image.sh -i gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG} || true
+      chmod +x setup/scripts/check_docker_image.sh
+      ./setup/scripts/check_docker_image.sh -i gcr.io/${PROJECT_ID}/uinput-device-plugin:${_IMAGE_TAG} || true
   waitFor:
     - uinput-device-plugin-pull
 
