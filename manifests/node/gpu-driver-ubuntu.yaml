@@ -29,7 +29,7 @@ metadata:
     app: nvidia-driver-installer-ubuntu
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: nvidia-driver-installer-ubuntu
   labels:
@@ -44,7 +44,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: nvidia-driver-installer-ubuntu
   labels:
