@@ -22,6 +22,14 @@ metadata:
 spec:
   location: US
   storageClass: NEARLINE
+  cors:
+  - maxAgeSeconds: 3600
+    method:
+    - GET
+    origin:
+    - '*'
+    responseHeader:
+    - Content-Type
   lifecycleRule:
     - action:
         type: Delete
