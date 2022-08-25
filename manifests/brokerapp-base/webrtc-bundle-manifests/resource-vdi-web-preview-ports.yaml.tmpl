@@ -32,7 +32,7 @@
 # ServiceEntry for web-preview URLs.
 # Required to do route based destinations and set-cookie redirect.
 ###
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
   name: {{.ServiceName}}-web-preview
@@ -48,7 +48,7 @@ spec:
     protocol: HTTP
   resolution: DNS
 ---
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: {{.ServiceName}}-web-preview
