@@ -178,15 +178,32 @@ spec:
             - |
               # Install CUDA libraries
               # NOTE the cuda package version must match the cuda driver version from the nvidia-smi output.
+              # CUDA driver and forward compatibility version matrix:
+              #   https://docs.nvidia.com/deploy/cuda-compatibility/#deployment-consideration-forward
+
               CUDA_LIB_DIR=/usr/local/nvidia/cuda/lib64
               [[ -d ${CUDA_LIB_DIR} ]] && echo "INFO: CUDA libs already installed." && exit 0
 
               apt-get update
-              apt-get install -y gnupg
+              apt-get install -y gnupg rsync
+
+              CUDA_SRC_DIR=""
+              CUDA_COMPAT_DIR=""
 
               IFS="." read -ra VERSION_TOKS <<< ${NVIDIA_DRIVER_VERSION}
+              if [[ ${VERSION_TOKS[0]} -ge 470 ]]; then
+                echo "Installing CUDA 11.4 with 11.7 compat libs"
+                apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+                curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-nvrtc-11-4_11.4.152-1_amd64.deb
+                curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-nvrtc-dev-11-4_11.4.152-1_amd64.deb
+                curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-compat-11-7_515.65.01-1_amd64.deb
 
-              if [[ ${VERSION_TOKS[0]} -ge 460 ]]; then
+                dpkg -i cuda-nvrtc-11-4_11.4.152-1_amd64.deb
+                dpkg -i cuda-nvrtc-dev-11-4_11.4.152-1_amd64.deb
+                dpkg -i cuda-compat-11-7_515.65.01-1_amd64.deb
+                CUDA_SRC_DIR="/usr/local/cuda-11.4/lib64"
+                CUDA_COMPAT_DIR="/usr/local/cuda-11.7/compat"
+              elif [[ ${VERSION_TOKS[0]} -ge 460 ]]; then
                 echo "Installing CUDA 11.2"
                 apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
                 curl -LO https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-nvrtc-11-2_11.2.152-1_amd64.deb
@@ -204,8 +221,20 @@ spec:
                 CUDA_SRC_DIR="/usr/local/cuda-10.1/lib64"
               fi
 
-              mkdir -p ${CUDA_LIB_DIR}
-              rsync -ra ${CUDA_SRC_DIR?}/* ${CUDA_LIB_DIR}
+              if [[ -n ${CUDA_SRC_DIR} && $(ls -l ${CUDA_SRC_DIR}/* | wc -l) -gt 0 ]]; then
+                mkdir -p ${CUDA_LIB_DIR}
+                rsync -ra ${CUDA_SRC_DIR?}/* ${CUDA_LIB_DIR}
+              else
+                echo "WARN: no cuda libs found in source dir: ${CUDA_SRC_DIR}"
+              fi
+
+              if [[ -n ${CUDA_COMPAT_DIR} && $(ls -l ${CUDA_COMPAT_DIR}/* | wc -l) -gt 0 ]]; then
+                mkdir -p ${CUDA_LIB_DIR}/compat
+                rsync -ra ${CUDA_COMPAT_DIR?}/* ${CUDA_LIB_DIR}/compat
+              else
+                echo "WARN: no cuda compat libs found in source dir: ${CUDA_COMPAT_DIR}"
+              fi
+
               touch /tmp/cuda_install_complete
           env:
             - name: NVIDIA_DRIVER_VERSION
