@@ -31,7 +31,7 @@ FROM gcr.io/cloudshell-images/cloudshell:latest
 
 # Install base dependencies
 RUN apt-get --allow-releaseinfo-change update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        bsdtar \
+        libarchive-tools \
         gdebi-core \
         gnupg2 \
         libxcb-keysyms1
@@ -55,12 +55,13 @@ RUN \
 # Install Vulkan, OpenGL-ES and GLX libraries.
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
         libvulkan1 \
-        vulkan-utils \
+        vulkan-tools \
         mesa-utils \
         mesa-vulkan-drivers \
         mesa-utils-extra \
         libxrandr-dev \
-        vdpau-va-driver \
+        mesa-va-drivers \
+        mesa-vdpau-drivers \
         vainfo \
         vdpauinfo \
         libegl1-mesa 
