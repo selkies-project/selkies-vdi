@@ -31,6 +31,14 @@
   {{- end}}
 {{- end}}
 
+{{- $enableSudo := true}}
+{{- if .AppParams.enableSudo }}
+  {{- if eq .AppParams.enableSudo "false"}}
+    {{- $enableSudo = false }}
+  {{- end}}
+{{- end}}
+
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -149,6 +157,7 @@ spec:
             privileged: false
             runAsUser: 1000
             runAsGroup: 1000
+            allowPrivilegeEscalation: {{$enableSudo}}
           env:
             - name: VDI_USER
               value: "{{.User}}"
