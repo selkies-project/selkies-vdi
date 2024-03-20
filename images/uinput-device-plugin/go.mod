@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/danisla/fsnotify v1.4.3-0.20200226160403-8a959c1a44e3
-	github.com/docker/docker v20.10.12+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/golang/glog v1.0.0
 	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba
 	google.golang.org/grpc v1.43.0
@@ -14,7 +14,6 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
